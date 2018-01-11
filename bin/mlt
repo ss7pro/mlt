@@ -1,10 +1,11 @@
 #!/usr/bin/env python
-"""tfs.
+"""mlt.
 Usage:
-  tfs (-h | --help)
-  tfs --version
-  tfs init [--framework=<tf,neon,mxnet>] <name>
-  tfs deploy
+  mlt (-h | --help)
+  mlt --version
+  mlt init [--framework=<tf,neon,mxnet>] <name>
+  mlt build [--watch]
+  mlt deploy
 """
 import sys
 import shutil
@@ -15,7 +16,7 @@ import time
 
 from docopt import docopt
 from string import Template
-from subprocess import call
+from subprocess import call, check_output
 
 def main():
     template_directory = "/".join([os.path.dirname(__file__), "..", "template"])
@@ -26,13 +27,15 @@ def main():
         try:
           shutil.copytree(template_directory, app_name)
 
+          project = check_output(["gcloud", "config", "list", "--format", "value(core.project)"]).strip()
+
           with open(app_name + '/.studio.json','w') as f:
             f.write('''
 {
   "name": "%s",
   "gceProject": "%s"
 }
-''' % (app_name, "personal-175700"))
+''' % (app_name, project))
 
         except OSError as exc:
           if exc.errno == 17:
@@ -59,7 +62,7 @@ def main():
       print("Deploy")
 
       # Write new container to deployment
-      with file('job.yaml') as f:
+      with open('job.yaml') as f:
         deployment_template = f.read()
         s = Template(deployment_template)
         out = s.substitute(image=remote_container_name, app=app_name, run=run)
