@@ -32,7 +32,8 @@ def main():
         try:
           shutil.copytree(template_directory, app_name)
 
-          project = str(check_output(["gcloud", "config", "list", "--format", "value(core.project)"])).strip()
+          raw_project_bytes = check_output(["gcloud", "config", "list", "--format", "value(core.project)"])
+          project = raw_project_bytes.decode("utf-8").strip()
 
           with open(app_name + '/.studio.json','w') as f:
             f.write('''
