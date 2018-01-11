@@ -69,16 +69,17 @@ def main():
       print("Deploy")
 
       # Write new container to deployment
-      with open('job.yaml') as f:
-        deployment_template = f.read()
-        s = Template(deployment_template)
-        out = s.substitute(image=remote_container_name, app=app_name, run=run)
+      for filename in os.listdir("k8s-templates"):
+        with open('k8s-templates/' + filename) as f:
+          deployment_template = f.read()
+          s = Template(deployment_template)
+          out = s.substitute(image=remote_container_name, app=app_name, run=run)
 
-        with open('k8s/job.yaml','w') as f:
-          f.write(out)
+          with open('k8s/' + filename,'w') as f:
+            f.write(out)
 
-      ensure_namespace_exists(namespace)
-      call(["kubectl", "--namespace", namespace, "apply", "-R", "-f", "k8s"])
+        ensure_namespace_exists(namespace)
+        call(["kubectl", "--namespace", namespace, "apply", "-R", "-f", "k8s"])
 
 
 def ensure_namespace_exists(ns):
