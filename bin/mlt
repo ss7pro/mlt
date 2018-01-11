@@ -3,9 +3,10 @@
 Usage:
   mlt (-h | --help)
   mlt --version
-  mlt init [--framework=<tf,neon,mxnet>] <name>
+  mlt init [--template=<template-name>] <name>
   mlt build [--watch]
   mlt deploy
+  mlt templates list
 """
 import sys
 import shutil
@@ -19,7 +20,7 @@ from string import Template
 from subprocess import call, check_output
 
 def main():
-    template_directory = "/".join([os.path.dirname(__file__), "..", "template"])
+    template_directory = "/".join([os.path.dirname(__file__), "..", "templates", "default"])
 
     args = docopt(__doc__, version="Container Studio v0.0.1")
     if args["init"]:
@@ -27,7 +28,7 @@ def main():
         try:
           shutil.copytree(template_directory, app_name)
 
-          project = check_output(["gcloud", "config", "list", "--format", "value(core.project)"]).strip()
+          project = str(check_output(["gcloud", "config", "list", "--format", "value(core.project)"])).strip()
 
           with open(app_name + '/.studio.json','w') as f:
             f.write('''
