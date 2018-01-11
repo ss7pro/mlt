@@ -3,10 +3,14 @@
 Usage:
   mlt (-h | --help)
   mlt --version
-  mlt init [--template=<template-name>] <name>
+  mlt init [--template=<template>] <name>
   mlt build [--watch]
   mlt deploy
   mlt templates list
+
+Options:
+  --template=<template>  Template name for app
+                         initialization [default: tf-single-node].
 """
 import sys
 import shutil
@@ -20,9 +24,9 @@ from string import Template
 from subprocess import call, check_output
 
 def main():
-    template_directory = "/".join([os.path.dirname(__file__), "..", "templates", "default"])
-
     args = docopt(__doc__, version="Container Studio v0.0.1")
+    template_directory = "/".join([os.path.dirname(__file__), "..", "templates", args["--template"]])
+
     if args["init"]:
         app_name = args["<name>"]
         try:
