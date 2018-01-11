@@ -33,9 +33,10 @@ def main():
             f.write('''
 {
   "name": "%s",
+  "namespace": "%s",
   "gceProject": "%s"
 }
-''' % (app_name, project))
+''' % (app_name, app_name, project))
 
         except OSError as exc:
           if exc.errno == 17:
@@ -46,6 +47,7 @@ def main():
     if args["deploy"]:
       config = json.load(open('.studio.json'))
       app_name = config['name']
+      namespace = config['namespace']
 
       container_id = str(uuid.uuid4())
       run = str(uuid.uuid4())
@@ -70,6 +72,16 @@ def main():
         with open('k8s/job.yaml','w') as f:
           f.write(out)
 
-      call(["kubectl", "apply", "-R", "-f", "k8s"])
+      ensure_namespace_exists(namespace)
+      call(["kubectl", "--namespace", namespace, "apply", "-R", "-f", "k8s"])
+
+
+def ensure_namespace_exists(ns):
+  exit_code = call(["kubectl", "get", "namespace", ns])
+  if exit_code is not 0:
+    exit_code = call(["kubectl", "create", "namespace", ns])
+  if exit_code is not 0:
+    raise("unable to verify / create namespace" % ns)
+
 
 main()
