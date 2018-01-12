@@ -20,24 +20,71 @@ import json
 import time
 import os.path
 import subprocess
+import progressbar
 
 from docopt import docopt
 from string import Template
-from subprocess import call, check_output
+from subprocess import call, check_output, Popen, PIPE
 from watchdog.observers import Observer
 from watchdog.events import LoggingEventHandler
+from threading import Timer
+
+def duration_progress(activity, duration, is_done):
+  def progress(activity, iterations=100):
+      bar = progressbar.ProgressBar(widgets=[activity, ' ', progressbar.Bar(), ' (', progressbar.ETA(), ') ', ])
+      return bar(range(iterations))
+
+  if duration is not None:
+    iterations = 100
+    time_per_iteration = float(duration) / float(iterations)
+
+    bar = progress(activity, iterations)
+    cursor = 0
+    for cursor in range(iterations):
+        bar.next()
+        time.sleep(time_per_iteration)
+
+        # If done early.
+        if is_done():
+          bar.update(100)
+          break
+
+  if not is_done():
+      # if still not done.
+      bar = progressbar.ProgressBar(widgets=[activity, ' ', progressbar.RotatingMarker(), ' (', progressbar.Timer(), ') ', ], max_value=progressbar.UnknownLength)
+      i = 0
+      while not is_done():
+          bar.update(i)
+          i += 1
+
+  print("")
 
 class EventHandler:
   def __init__(self, args):
     self.args = args
-  
+    self.last_changed = time.time()
+    self.dirty = False
+    self.timer = None
+
   def dispatch(self, event):
-    do_build(self.args)
+    if event.src_path == "./.git" or event.src_path == "./":
+      return
+
+    is_ignored = call(["git", "check-ignore", event.src_path], stdout=open(os.devnull, 'wb')) == 0
+    if is_ignored:
+      return
+
+    if self.timer:
+      self.timer.cancel()
+
+    def timer_triggered():
+      do_build(self.args)
+
+    self.timer = Timer(3, timer_triggered)
+    self.timer.start()
 
 
 def build(args):
-  do_build(args)
-
   if args['--watch']:
     event_handler = EventHandler(args)
     observer = Observer()
@@ -46,11 +93,24 @@ def build(args):
     try:
         while True:
             time.sleep(1)
+
     except KeyboardInterrupt:
         observer.stop()
     observer.join()
 
+  else:
+    do_build(args)
+
 def do_build(args):
+  last_build_duration = None
+  last_push_duration = None
+  if os.path.isfile('.status.json'):
+    status = json.load(open('.status.json'))
+    last_build_duration = status['last_build_duration']
+    last_push_duration = status['last_push_duration']
+
+  started_build_time = time.time()
+
   config = json.load(open('.studio.json'))
   app_name = config['name']
   namespace = config['namespace']
@@ -60,29 +120,42 @@ def do_build(args):
   container_name = app_name + ":" + container_id
   remote_container_name = "gcr.io/" + config['gceProject'] + "/" + container_name
 
-  print("Build container %s..." % container_name)
-  run(["docker", "build", "-t", container_name, "."])
-  print("Built container %s" % container_name)
+  print("Starting build %s" % container_name)
 
-  print("Push container %s to registry..." % container_name)
+  # Add bar
+  build_process = Popen(["docker", "build", "-t", container_name, "."], stdout=PIPE, stderr=PIPE)
+  def build_is_done():
+    return build_process.poll() is not None
+  duration_progress('Building', last_build_duration, build_is_done)
+
+  built_time = time.time()
+
+  started_push_time = time.time()
   run(["docker", "tag", container_name, remote_container_name])
-  run(["gcloud", "docker", "--", "push", remote_container_name])
+  push_process = Popen(["gcloud", "docker", "--", "push", remote_container_name], stdout=PIPE, stderr=PIPE)
+  def push_is_done():
+    return push_process.poll() is not None
+  duration_progress('Pushing ', last_push_duration, push_is_done)
+
+  pushed_time = time.time()
 
   # Write last container to file
   with open('.status.json', 'w') as f:
     f.write(json.dumps({
       "last_run": run_id,
-      "last_container": remote_container_name
+      "last_container": remote_container_name,
+      "last_build_duration": built_time - started_build_time,
+      "last_push_duration": pushed_time - started_push_time
     }))
-
-  print("Pushed container %s to registry" % container_name)
+ 
+  print("Built and pushed to %s" % remote_container_name)
 
 
 def deploy(args):
   if not os.path.isfile('.status.json'):
     do_build(args)
 
-  print("Deploy")
+  print("Deploying")
   config = json.load(open('.studio.json'))
   app_name = config['name']
   namespace = config['namespace']
