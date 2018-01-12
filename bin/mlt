@@ -18,6 +18,7 @@ import os
 import uuid
 import json
 import time
+import os.path
 
 from docopt import docopt
 from string import Template
@@ -65,9 +66,26 @@ def do_build(args):
   call(["docker", "tag", container_name, remote_container_name])
   call(["gcloud", "docker", "--", "push", remote_container_name])
 
+  # Write last container to file
+  with open('.status.json', 'w') as f:
+    f.write(json.dumps({
+      "last_run": run,
+      "last_container": remote_container_name
+    }))
+
 
 def deploy(args):
+  if not os.path.isfile('.status.json'):
+    do_build(args)
+
   print("Deploy")
+  config = json.load(open('.studio.json'))
+  app_name = config['name']
+  namespace = config['namespace']
+
+  status = json.load(open('.status.json'))
+  remote_container_name = status['last_container']
+  run = status['last_run']
 
   # Write new container to deployment
   for filename in os.listdir("k8s-templates"):
