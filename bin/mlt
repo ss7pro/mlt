@@ -155,7 +155,6 @@ def deploy(args):
   if not os.path.isfile('.status.json'):
     do_build(args)
 
-  print("Deploying")
   config = json.load(open('.studio.json'))
   app_name = config['name']
   namespace = config['namespace']
@@ -163,6 +162,8 @@ def deploy(args):
   status = json.load(open('.status.json'))
   remote_container_name = status['last_container']
   run_id = status['last_run']
+
+  print("Deploying %s" % remote_container_name)
 
   # Write new container to deployment
   for filename in os.listdir("k8s-templates"):
@@ -224,9 +225,17 @@ def main():
        init(args)
 
     if args["build"]:
+      if not os.path.isfile('.studio.json'):
+        print("`mlt build` requires you to be in a `mlt init` built directory.")
+        sys.exit(1)
+
       build(args)
 
     if args["deploy"]:
+      if not os.path.isfile('.studio.json'):
+        print("`mlt build` requires you to be in a `mlt init` built directory.")
+        sys.exit(1)
+
       deploy(args)
 
 main()
