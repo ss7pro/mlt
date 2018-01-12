@@ -1,1 +1,6 @@
 env/
+.Python
+pip-selfcheck.json
+.vscode
+include
+lib

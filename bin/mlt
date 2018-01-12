@@ -22,8 +22,33 @@ import time
 from docopt import docopt
 from string import Template
 from subprocess import call, check_output
+from watchdog.observers import Observer
+from watchdog.events import LoggingEventHandler
 
-def deploy(args):
+class EventHandler:
+  def __init__(self, args):
+    self.args = args
+  
+  def dispatch(self, event):
+    do_build(self.args)
+
+
+def build(args):
+  do_build(args)
+
+  if args['--watch']:
+    event_handler = EventHandler(args)
+    observer = Observer()
+    observer.schedule(event_handler, './', recursive=True)
+    observer.start()
+    try:
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        observer.stop()
+    observer.join()
+
+def do_build(args):
   config = json.load(open('.studio.json'))
   app_name = config['name']
   namespace = config['namespace']
@@ -40,6 +65,8 @@ def deploy(args):
   call(["docker", "tag", container_name, remote_container_name])
   call(["gcloud", "docker", "--", "push", remote_container_name])
 
+
+def deploy(args):
   print("Deploy")
 
   # Write new container to deployment
@@ -57,6 +84,7 @@ def deploy(args):
 
 
 def init(args):
+  template_directory = "/".join([os.path.dirname(__file__), "..", "templates", args["--template"]])
   app_name = args["<name>"]
   try:
     shutil.copytree(template_directory, app_name)
@@ -79,16 +107,6 @@ def init(args):
     else:
       print(exc)
 
-def main():
-    args = docopt(__doc__, version="Container Studio v0.0.1")
-    template_directory = "/".join([os.path.dirname(__file__), "..", "templates", args["--template"]])
-
-    if args["init"]:
-       init(args)
-
-    if args["deploy"]:
-      deploy(args)
-
 
 def ensure_namespace_exists(ns):
   exit_code = call(["kubectl", "get", "namespace", ns])
@@ -97,5 +115,17 @@ def ensure_namespace_exists(ns):
   if exit_code is not 0:
     raise("unable to verify / create namespace" % ns)
 
+
+def main():
+    args = docopt(__doc__, version="Container Studio v0.0.1")
+
+    if args["init"]:
+       init(args)
+
+    if args["build"]:
+      build(args)
+
+    if args["deploy"]:
+      deploy(args)
 
 main()
