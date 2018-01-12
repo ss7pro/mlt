@@ -23,20 +23,49 @@ from docopt import docopt
 from string import Template
 from subprocess import call, check_output
 
-def main():
-    args = docopt(__doc__, version="Container Studio v0.0.1")
-    template_directory = "/".join([os.path.dirname(__file__), "..", "templates", args["--template"]])
+def deploy(args):
+  config = json.load(open('.studio.json'))
+  app_name = config['name']
+  namespace = config['namespace']
 
-    if args["init"]:
-        app_name = args["<name>"]
-        try:
-          shutil.copytree(template_directory, app_name)
+  container_id = str(uuid.uuid4())
+  run = str(uuid.uuid4())
+  container_name = app_name + ":" + container_id
+  remote_container_name = "gcr.io/" + config['gceProject'] + "/" + container_name
 
-          raw_project_bytes = check_output(["gcloud", "config", "list", "--format", "value(core.project)"])
-          project = raw_project_bytes.decode("utf-8").strip()
+  print("Build container %s" % container_name)
+  call(["docker", "build", "-t", container_name, "."])
 
-          with open(app_name + '/.studio.json','w') as f:
-            f.write('''
+  print("Push container %s" % container_name)
+  call(["docker", "tag", container_name, remote_container_name])
+  call(["gcloud", "docker", "--", "push", remote_container_name])
+
+  print("Deploy")
+
+  # Write new container to deployment
+  for filename in os.listdir("k8s-templates"):
+    with open('k8s-templates/' + filename) as f:
+      deployment_template = f.read()
+      s = Template(deployment_template)
+      out = s.substitute(image=remote_container_name, app=app_name, run=run)
+
+      with open('k8s/' + filename,'w') as f:
+        f.write(out)
+
+    ensure_namespace_exists(namespace)
+    call(["kubectl", "--namespace", namespace, "apply", "-R", "-f", "k8s"])
+
+
+def init(args):
+  app_name = args["<name>"]
+  try:
+    shutil.copytree(template_directory, app_name)
+
+    raw_project_bytes = check_output(["gcloud", "config", "list", "--format", "value(core.project)"])
+    project = raw_project_bytes.decode("utf-8").strip()
+
+    with open(app_name + '/.studio.json','w') as f:
+      f.write('''
 {
   "name": "%s",
   "namespace": "%s",
@@ -44,43 +73,21 @@ def main():
 }
 ''' % (app_name, app_name, project))
 
-        except OSError as exc:
-          if exc.errno == 17:
-            print("Directory '%s' already exists: delete before trying to initialize new application" % app_name)
-          else:
-            print(exc)
+  except OSError as exc:
+    if exc.errno == 17:
+      print("Directory '%s' already exists: delete before trying to initialize new application" % app_name)
+    else:
+      print(exc)
+
+def main():
+    args = docopt(__doc__, version="Container Studio v0.0.1")
+    template_directory = "/".join([os.path.dirname(__file__), "..", "templates", args["--template"]])
+
+    if args["init"]:
+       init(args)
 
     if args["deploy"]:
-      config = json.load(open('.studio.json'))
-      app_name = config['name']
-      namespace = config['namespace']
-
-      container_id = str(uuid.uuid4())
-      run = str(uuid.uuid4())
-      container_name = app_name + ":" + container_id
-      remote_container_name = "gcr.io/" + config['gceProject'] + "/" + container_name
-
-      print("Build container %s" % container_name)
-      call(["docker", "build", "-t", container_name, "."])
-
-      print("Push container %s" % container_name)
-      call(["docker", "tag", container_name, remote_container_name])
-      call(["gcloud", "docker", "--", "push", remote_container_name])
-
-      print("Deploy")
-
-      # Write new container to deployment
-      for filename in os.listdir("k8s-templates"):
-        with open('k8s-templates/' + filename) as f:
-          deployment_template = f.read()
-          s = Template(deployment_template)
-          out = s.substitute(image=remote_container_name, app=app_name, run=run)
-
-          with open('k8s/' + filename,'w') as f:
-            f.write(out)
-
-        ensure_namespace_exists(namespace)
-        call(["kubectl", "--namespace", namespace, "apply", "-R", "-f", "k8s"])
+      deploy(args)
 
 
 def ensure_namespace_exists(ns):
