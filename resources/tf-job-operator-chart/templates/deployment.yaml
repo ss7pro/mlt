@@ -15,6 +15,7 @@ spec:
       containers:
       - name: tf-job-operator
         image: {{ .Values.image }}
+        imagePullPolicy: Always
         command:
           - /opt/mlkube/tf_operator
           {{- if .Values.config.configmap }}
