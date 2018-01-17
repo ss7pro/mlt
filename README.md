@@ -1,6 +1,11 @@
 # mlt
 Machine Learning Container Tool
 
+`mlt` aids the creation of containers for machine learning jobs.
+It does so by making it ease to use container and kubernetes object templates.
+
+![MLT flow diagram](docs/mlt.png)
+
 ## Build
 
 Prerequisites:
