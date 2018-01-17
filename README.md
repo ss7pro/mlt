@@ -18,7 +18,7 @@ Another aspect of the application development with containers `mlt` address, is 
 Prerequisites:
 - git
 - python
-- virutalenv
+- virtualenv
 
 Installation:
 
