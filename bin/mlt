@@ -225,7 +225,7 @@ def run(command, cwd=None):
   try:
     output = check_output(command, cwd=cwd)
   except subprocess.CalledProcessError as e:
-    print(e.output)
+    print(e.output.decode("utf-8"))
     sys.exit(1)
 
   return output
