@@ -35,10 +35,22 @@ $ . ./env/bin/activate
 # cd outside of the mlt tree
 $ cd ..
 $ mlt init my-app
-$ cd my-app
-$ mlt deploy
 ```
 
 ## Usage summary
 
-_TODO_
+```bash
+$ cd my-app
+$ mlt build
+Starting build niklas-distributed-tf:71fb176d-28a9-46c2-ab51-fe3d4a88b02c
+Building |######################################################| (ETA:  0:00:00)
+Pushing  |######################################################| (ETA:  0:00:00)
+Built and pushed to gcr.io/constant-cubist-173123/niklas-distributed-tf:71fb176d-28a9-46c2-ab51-fe3d4a88b02c
+
+$ mlt deploy
+Deploying gcr.io/constant-cubist-173123/niklas-distributed-tf:71fb176d-28a9-46c2-ab51-fe3d4a88b02c
+
+Inspect created objects by running:
+  $ kubectl get --namespace=niklas-distributed-tf all
+
+```

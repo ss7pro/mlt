@@ -119,7 +119,6 @@ def do_build(args):
   namespace = config['namespace']
 
   container_id = str(uuid.uuid4())
-  run_id = str(uuid.uuid4())
   container_name = app_name + ":" + container_id
   remote_container_name = "gcr.io/" + config['gceProject'] + "/" + container_name
 
@@ -151,12 +150,11 @@ def do_build(args):
   # Write last container to file
   with open('.status.json', 'w') as f:
     f.write(json.dumps({
-      "last_run": run_id,
       "last_container": remote_container_name,
       "last_build_duration": built_time - started_build_time,
       "last_push_duration": pushed_time - started_push_time
     }))
- 
+
   print("Built and pushed to %s" % remote_container_name)
 
 
@@ -170,7 +168,7 @@ def deploy(args):
 
   status = json.load(open('.status.json'))
   remote_container_name = status['last_container']
-  run_id = status['last_run']
+  run_id = str(uuid.uuid4())
 
   print("Deploying %s" % remote_container_name)
 
@@ -188,6 +186,16 @@ def deploy(args):
     run(["kubectl", "--namespace", namespace, "apply", "-R", "-f", "k8s"])
 
     print("\nInspect created objects by running:\n  $ kubectl get --namespace=%s all\n" % namespace)
+
+
+def undeploy(args):
+  if not os.path.isfile('.studio.json'):
+    print("run `mlt undeploy` within a project directory")
+    sys.exit(1)
+
+  config = json.load(open('.studio.json'))
+  namespace = config['namespace']
+  run(["kubectl", "--namespace", namespace, "delete", "-f", "k8s"])
 
 
 def init(args):
@@ -249,10 +257,10 @@ def templates_list():
             continue
           description = line
           break
-    
+
     table.append([filename, description])
-      
-  
+
+
   print(tabulate(table, headers=['Template', 'Description'], tablefmt="simple"))
 
 def main():
@@ -274,8 +282,11 @@ def main():
         sys.exit(1)
 
       deploy(args)
-    
+
     if args["templates"] and args["list"]:
       templates_list()
+
+    if args["undeploy"]:
+      undeploy(args)
 
 main()
