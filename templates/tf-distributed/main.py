@@ -12,6 +12,7 @@ import json
 import logging
 import os
 
+import numpy as np
 import tensorflow as tf
 
 
@@ -54,8 +55,8 @@ def run(server, cluster_spec):  # pylint: disable=too-many-statements, too-many-
       for i in range(len(cluster_spec[job_name])):
         d = "/job:{0}/task:{1}".format(job_name, i)
         with tf.device(d):
-          a = tf.constant(range(width * height), shape=[height, width])
-          b = tf.constant(range(width * height), shape=[height, width])
+          a = tf.constant(np.arange(width * height), shape=[height, width])
+          b = tf.constant(np.arange(width * height), shape=[height, width])
           c = tf.multiply(a, b)
           results.append(c)
 

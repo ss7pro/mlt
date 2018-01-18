@@ -6,6 +6,7 @@ Usage:
   mlt init [--template=<template>] <name>
   mlt build [--watch]
   mlt deploy
+  mlt undeploy
   mlt templates list
 
 Options:
@@ -185,6 +186,8 @@ def deploy(args):
 
     ensure_namespace_exists(namespace)
     run(["kubectl", "--namespace", namespace, "apply", "-R", "-f", "k8s"])
+
+    print("\nInspect created objects by running:\n  $ kubectl get --namespace=%s all\n" % namespace)
 
 
 def init(args):
