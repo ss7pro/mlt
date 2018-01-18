@@ -34,7 +34,13 @@ $ make
 $ . ./env/bin/activate
 # cd outside of the mlt tree
 $ cd ..
-$ mlt init my-app
+$ mlt templates list
+Template        Description
+--------------  ----------------------------------------------------------------------------------------------
+hello-world     A TensorFlow python HelloWorld example run through Kubernetes Jobs.
+tf-distributed  A distributed TensorFlow matrix multiplication run through the TensorFlow Kubernetes Operator.
+tf-single-node
+$ mlt init --template=hello-world my-app
 ```
 
 ## Usage summary
