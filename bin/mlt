@@ -223,9 +223,9 @@ def ensure_namespace_exists(ns):
 
 def run(command, cwd=None):
   try:
-    output = check_output(command, cwd=cwd)
+    output = check_output(command, cwd=cwd).decode("utf-8")
   except subprocess.CalledProcessError as e:
-    print(e.output.decode("utf-8"))
+    print(e.output)
     sys.exit(1)
 
   return output
