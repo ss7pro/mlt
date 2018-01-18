@@ -1,0 +1,32 @@
+apiVersion: "mxnet.mlkube.io/v1beta1"
+kind: "MxJob"
+metadata:
+  name: $app-$run
+spec:
+  jobMode: "dist"
+  replicaSpecs:
+    - replicas: 1
+      mxReplicaType: SCHEDULER
+      PsRootPort: 9091
+      template:
+        spec:
+          containers:
+            - image: $image
+              name: mxnet
+          restartPolicy: OnFailure
+    - replicas: 2
+      mxReplicaType: SERVER
+      template:
+        spec:
+          containers:
+            - image: $image
+              name: mxnet
+          restartPolicy: OnFailure
+    - replicas: 3
+      mxReplicaType: WORKER
+      template:
+        spec:
+          containers:
+            - image: $image
+              name: mxnet
+          restartPolicy: OnFailure
