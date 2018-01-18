@@ -7,7 +7,7 @@ Usage:
   mlt build [--watch]
   mlt deploy
   mlt undeploy
-  mlt templates list
+  mlt (template | templates) list
 
 Options:
   --template=<template>  Template name for app
@@ -283,7 +283,7 @@ def main():
 
       deploy(args)
 
-    if args["templates"] and args["list"]:
+    if (args["template"] or args["templates"]) and args["list"]:
       templates_list()
 
     if args["undeploy"]:
