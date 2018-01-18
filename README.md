@@ -31,26 +31,42 @@ Installation:
 
 ```bash
 $ make
-$ . ./env/bin/activate
-# cd outside of the mlt tree
-$ cd ..
-$ mlt init my-app
+$ source ./env/bin/activate
 ```
 
 ## Usage summary
 
 ```bash
+# cd outside of the mlt tree
+$ cd ..
+$ mlt templates list
+Template        Description
+--------------  ----------------------------------------------------------------------------------------------
+hello-world     A TensorFlow python HelloWorld example run through Kubernetes Jobs.
+tf-distributed  A distributed TensorFlow matrix multiplication run through the TensorFlow Kubernetes Operator.
+tf-single-node
+
+$ mlt init my-app --template=hello-world
+[master (root-commit) 40239a2] Initial commit.
+ 7 files changed, 191 insertions(+)
+ create mode 100644 .studio.json
+ create mode 100644 Dockerfile
+ create mode 100644 Makefile
+ create mode 100644 k8s-templates/tfjob.yaml
+ create mode 100644 k8s/README.md
+ create mode 100644 main.py
+ create mode 100644 requirements.txt
+
 $ cd my-app
 $ mlt build
-Starting build niklas-distributed-tf:71fb176d-28a9-46c2-ab51-fe3d4a88b02c
+Starting build my-app:71fb176d-28a9-46c2-ab51-fe3d4a88b02c
 Building |######################################################| (ETA:  0:00:00)
 Pushing  |######################################################| (ETA:  0:00:00)
-Built and pushed to gcr.io/constant-cubist-173123/niklas-distributed-tf:71fb176d-28a9-46c2-ab51-fe3d4a88b02c
+Built and pushed to gcr.io/my-project-12345/my-app:71fb176d-28a9-46c2-ab51-fe3d4a88b02c
 
 $ mlt deploy
-Deploying gcr.io/constant-cubist-173123/niklas-distributed-tf:71fb176d-28a9-46c2-ab51-fe3d4a88b02c
+Deploying gcr.io/my-project-12345/my-app:71fb176d-28a9-46c2-ab51-fe3d4a88b02c
 
 Inspect created objects by running:
-  $ kubectl get --namespace=niklas-distributed-tf all
-
+  $ kubectl get --namespace=my-app all
 ```
