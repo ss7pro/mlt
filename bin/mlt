@@ -21,6 +21,7 @@ import time
 import os.path
 import subprocess
 import progressbar
+from tabulate import tabulate
 
 from termcolor import colored
 from docopt import docopt
@@ -230,6 +231,27 @@ def run(command, cwd=None):
 
   return output
 
+def templates_list():
+  templates_directory = "/".join([os.path.dirname(__file__), "..", "templates"])
+
+  table = []
+  for filename in os.listdir(templates_directory):
+    description = ''
+    readme_file = templates_directory + "/" + filename + "/README.md"
+    if os.path.isfile(readme_file):
+      with open(readme_file) as f:
+        lines = f.readlines()
+        for line in lines:
+          if line[0] == '#' or line[0] == '\n':
+            continue
+          description = line
+          break
+    
+    table.append([filename, description])
+      
+  
+  print(tabulate(table, headers=['Template', 'Description'], tablefmt="simple"))
+
 def main():
     args = docopt(__doc__, version="ML Container Templates v0.0.1")
 
@@ -249,5 +271,8 @@ def main():
         sys.exit(1)
 
       deploy(args)
+    
+    if args["templates"] and args["list"]:
+      templates_list()
 
 main()
