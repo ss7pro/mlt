@@ -10,7 +10,7 @@ Usage:
 
 Options:
   --template=<template>  Template name for app
-                         initialization [default: tf-single-node].
+                         initialization [default: hello-world].
 """
 import sys
 import shutil
