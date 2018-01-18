@@ -106,11 +106,9 @@ def build(args):
 
 def do_build(args):
   last_build_duration = None
-  last_push_duration = None
-  if os.path.isfile('.status.json'):
-    status = json.load(open('.status.json'))
+  if os.path.isfile('.build.json'):
+    status = json.load(open('.build.json'))
     last_build_duration = status['last_build_duration']
-    last_push_duration = status['last_push_duration']
 
   started_build_time = time.time()
 
@@ -120,7 +118,6 @@ def do_build(args):
 
   container_id = str(uuid.uuid4())
   container_name = app_name + ":" + container_id
-  remote_container_name = "gcr.io/" + config['gceProject'] + "/" + container_name
 
   print("Starting build %s" % container_name)
 
@@ -135,6 +132,33 @@ def do_build(args):
 
   built_time = time.time()
 
+  # Write last container to file
+  with open('.build.json', 'w') as f:
+    f.write(json.dumps({
+      "last_container": container_name,
+      "last_build_duration": built_time - started_build_time
+    }))
+
+  print("Built %s" % container_name)
+
+
+def do_push(args):
+  last_push_duration = None
+  if os.path.isfile('.push.json'):
+    status = json.load(open('.push.json'))
+    last_push_duration = status['last_push_duration']
+
+  container_name = None
+  if os.path.isfile('.build.json'):
+    status = json.load(open('.build.json'))
+    container_name = status['last_container']
+  else:
+    print("Need to run build before pushing")
+    sys.exit(1)
+
+  config = json.load(open('.studio.json'))
+  remote_container_name = "gcr.io/" + config['gceProject'] + "/" + container_name
+
   started_push_time = time.time()
   run(["docker", "tag", container_name, remote_container_name])
   push_process = Popen(["gcloud", "docker", "--", "push", remote_container_name], stdout=PIPE, stderr=PIPE)
@@ -147,27 +171,27 @@ def do_build(args):
 
   pushed_time = time.time()
 
-  # Write last container to file
-  with open('.status.json', 'w') as f:
+  with open('.push.json', 'w') as f:
     f.write(json.dumps({
-      "last_container": remote_container_name,
-      "last_build_duration": built_time - started_build_time,
+      "last_remote_container": remote_container_name,
       "last_push_duration": pushed_time - started_push_time
     }))
 
-  print("Built and pushed to %s" % remote_container_name)
+  print("Pushed to %s" % remote_container_name)
 
 
 def deploy(args):
-  if not os.path.isfile('.status.json'):
+  if not os.path.isfile('.build.json'):
     do_build(args)
+
+  do_push(args)
 
   config = json.load(open('.studio.json'))
   app_name = config['name']
   namespace = config['namespace']
 
-  status = json.load(open('.status.json'))
-  remote_container_name = status['last_container']
+  status = json.load(open('.push.json'))
+  remote_container_name = status['last_remote_container']
   run_id = str(uuid.uuid4())
 
   print("Deploying %s" % remote_container_name)
