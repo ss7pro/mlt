@@ -54,7 +54,7 @@ Pushing  |######################################################| (ETA:  0:00:00
 Built and pushed to gcr.io/personal-453742/my-app:71fb176d-28a9-46c2-ab51-fe3d4a88b02c
 
 $ mlt deploy
-Deploying gcr.io/personal-453742/niklas-distributed-tf:71fb176d-28a9-46c2-ab51-fe3d4a88b02c
+Deploying gcr.io/personal-453742/my-app:71fb176d-28a9-46c2-ab51-fe3d4a88b02c
 
 Inspect created objects by running:
   $ kubectl get --namespace=my-app all
