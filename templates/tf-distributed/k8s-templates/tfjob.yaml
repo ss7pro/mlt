@@ -1,0 +1,26 @@
+apiVersion: "tensorflow.org/v1alpha1"
+kind: TfJob
+metadata:
+  name: $run
+  labels:
+    mlt-app-name: $app
+spec:
+  replicaSpecs:
+    - replicas: 1
+      tfReplicaType: PS
+    - replicas: 1
+      tfReplicaType: MASTER
+      template:
+        spec:
+          containers:
+            - image: $image
+              name: tensorflow
+          restartPolicy: OnFailure
+    - replicas: 1
+      tfReplicaType: WORKER
+      template:
+        spec:
+          containers:
+            - image: $image
+              name: tensorflow
+          restartPolicy: OnFailure

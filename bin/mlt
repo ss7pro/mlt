@@ -217,7 +217,7 @@ def init(args):
 
 
 def ensure_namespace_exists(ns):
-  exit_code = call(["kubectl", "get", "namespace", ns], stdout=open(os.devnull, 'wb'))
+  exit_code = call(["kubectl", "get", "namespace", ns], stdout=open(os.devnull, 'wb'), stderr=open(os.devnull, 'wb'))
   if exit_code is not 0:
     run(["kubectl", "create", "namespace", ns])
 
