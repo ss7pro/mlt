@@ -113,7 +113,6 @@ def do_build(args):
 
   config = json.load(open('.studio.json'))
   app_name = config['name']
-  namespace = config['namespace']
 
   container_id = str(uuid.uuid4())
   container_name = app_name + ":" + container_id
