@@ -29,7 +29,6 @@ from docopt import docopt
 from string import Template
 from subprocess import call, check_output, Popen, PIPE, STDOUT
 from watchdog.observers import Observer
-from watchdog.events import LoggingEventHandler
 from threading import Timer
 
 def duration_progress(activity, duration, is_done):
