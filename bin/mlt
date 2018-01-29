@@ -29,210 +29,213 @@ from docopt import docopt
 from string import Template
 from subprocess import call, check_output, Popen, PIPE, STDOUT
 from watchdog.observers import Observer
-from watchdog.events import LoggingEventHandler
 from threading import Timer
 
+
 def duration_progress(activity, duration, is_done):
-  def progress(activity, iterations=100):
-      bar = progressbar.ProgressBar(widgets=[activity, ' ', progressbar.Bar(), ' (', progressbar.ETA(), ') ', ])
-      return bar(range(iterations))
+    def progress(activity, iterations=100):
+        bar = progressbar.ProgressBar(widgets=[activity, ' ', progressbar.Bar(), ' (', progressbar.ETA(), ') ', ])
+        return bar(range(iterations))
 
-  if duration is not None:
-    iterations = 100
-    time_per_iteration = float(duration) / float(iterations)
+    if duration is not None:
+        iterations = 100
+        time_per_iteration = float(duration) / float(iterations)
 
-    bar = progress(activity, iterations)
-    cursor = 0
-    for cursor in range(iterations):
-        bar.next()
-        time.sleep(time_per_iteration)
+        bar = progress(activity, iterations)
+        cursor = 0
+        for cursor in range(iterations):
+            bar.next()
+            time.sleep(time_per_iteration)
 
-        # If done early.
-        if is_done():
-          bar.update(100)
-          break
+            # If done early.
+            if is_done():
+                bar.update(100)
+                break
 
-  if not is_done():
-      # if still not done.
-      bar = progressbar.ProgressBar(widgets=[activity, ' ', progressbar.RotatingMarker(), ' (', progressbar.Timer(), ') ', ], max_value=progressbar.UnknownLength)
-      i = 0
-      while not is_done():
-          bar.update(i)
-          i += 1
+    if not is_done():
+        # if still not done.
+        bar = progressbar.ProgressBar(widgets=[activity, ' ', progressbar.RotatingMarker(), ' (', progressbar.Timer(), ') ', ], max_value=progressbar.UnknownLength)
+        i = 0
+        while not is_done():
+            bar.update(i)
+            i += 1
 
-  print("")
+    print("")
+
 
 class EventHandler:
-  def __init__(self, args):
-    self.args = args
-    self.last_changed = time.time()
-    self.dirty = False
-    self.timer = None
+    def __init__(self, args):
+        self.args = args
+        self.last_changed = time.time()
+        self.dirty = False
+        self.timer = None
 
-  def dispatch(self, event):
-    if event.src_path == "./.git" or event.src_path == "./":
-      return
+    def dispatch(self, event):
+        if event.src_path == "./.git" or event.src_path == "./":
+            return
 
-    is_ignored = call(["git", "check-ignore", event.src_path], stdout=open(os.devnull, 'wb')) == 0
-    if is_ignored:
-      return
+        is_ignored = call(["git", "check-ignore", event.src_path], stdout=open(os.devnull, 'wb')) == 0
+        if is_ignored:
+            return
 
-    if self.timer:
-      self.timer.cancel()
+        if self.timer:
+            self.timer.cancel()
 
-    def timer_triggered():
-      do_build(self.args)
+        def timer_triggered():
+            do_build(self.args)
 
-    self.timer = Timer(3, timer_triggered)
-    self.timer.start()
+        self.timer = Timer(3, timer_triggered)
+        self.timer.start()
 
 
 def build(args):
-  if args['--watch']:
-    event_handler = EventHandler(args)
-    observer = Observer()
-    observer.schedule(event_handler, './', recursive=True)
-    observer.start()
-    try:
-        while True:
-            time.sleep(1)
+    if args['--watch']:
+        event_handler = EventHandler(args)
+        observer = Observer()
+        observer.schedule(event_handler, './', recursive=True)
+        observer.start()
+        try:
+            while True:
+                time.sleep(1)
 
-    except KeyboardInterrupt:
-        observer.stop()
-    observer.join()
+        except KeyboardInterrupt:
+            observer.stop()
+        observer.join()
 
-  else:
-    do_build(args)
+    else:
+        do_build(args)
+
 
 def do_build(args):
-  last_build_duration = None
-  if os.path.isfile('.build.json'):
-    status = json.load(open('.build.json'))
-    last_build_duration = status['last_build_duration']
+    last_build_duration = None
+    if os.path.isfile('.build.json'):
+        status = json.load(open('.build.json'))
+        last_build_duration = status['last_build_duration']
 
-  started_build_time = time.time()
+    started_build_time = time.time()
 
-  config = json.load(open('.studio.json'))
-  app_name = config['name']
-  namespace = config['namespace']
+    config = json.load(open('.studio.json'))
+    app_name = config['name']
 
-  container_id = str(uuid.uuid4())
-  container_name = app_name + ":" + container_id
+    container_id = str(uuid.uuid4())
+    container_name = app_name + ":" + container_id
 
-  print("Starting build %s" % container_name)
+    print("Starting build %s" % container_name)
 
-  # Add bar
-  build_process = Popen(["docker", "build", "-t", container_name, "."], stdout=PIPE, stderr=STDOUT)
-  def build_is_done():
-    return build_process.poll() is not None
-  duration_progress('Building', last_build_duration, build_is_done)
-  if build_process.poll() != 0:
-    print(colored(build_process.communicate()[0], 'red'))
-    sys.exit(1)
+    # Add bar
+    build_process = Popen(["docker", "build", "-t", container_name, "."], stdout=PIPE, stderr=STDOUT)
 
-  built_time = time.time()
+    def build_is_done():
+        return build_process.poll() is not None
+    duration_progress('Building', last_build_duration, build_is_done)
+    if build_process.poll() != 0:
+        print(colored(build_process.communicate()[0], 'red'))
+        sys.exit(1)
 
-  # Write last container to file
-  with open('.build.json', 'w') as f:
-    f.write(json.dumps({
-      "last_container": container_name,
-      "last_build_duration": built_time - started_build_time
-    }))
+    built_time = time.time()
 
-  print("Built %s" % container_name)
+    # Write last container to file
+    with open('.build.json', 'w') as f:
+        f.write(json.dumps({
+            "last_container": container_name,
+            "last_build_duration": built_time - started_build_time
+        }))
+
+    print("Built %s" % container_name)
 
 
 def do_push(args):
-  last_push_duration = None
-  if os.path.isfile('.push.json'):
-    status = json.load(open('.push.json'))
-    last_push_duration = status['last_push_duration']
+    last_push_duration = None
+    if os.path.isfile('.push.json'):
+        status = json.load(open('.push.json'))
+        last_push_duration = status['last_push_duration']
 
-  container_name = None
-  if os.path.isfile('.build.json'):
-    status = json.load(open('.build.json'))
-    container_name = status['last_container']
-  else:
-    print("Need to run build before pushing")
-    sys.exit(1)
+    container_name = None
+    if os.path.isfile('.build.json'):
+        status = json.load(open('.build.json'))
+        container_name = status['last_container']
+    else:
+        print("Need to run build before pushing")
+        sys.exit(1)
 
-  config = json.load(open('.studio.json'))
-  remote_container_name = "gcr.io/" + config['gceProject'] + "/" + container_name
+    config = json.load(open('.studio.json'))
+    remote_container_name = "gcr.io/" + config['gceProject'] + "/" + container_name
 
-  started_push_time = time.time()
-  run(["docker", "tag", container_name, remote_container_name])
-  push_process = Popen(["gcloud", "docker", "--", "push", remote_container_name], stdout=PIPE, stderr=PIPE)
-  def push_is_done():
-    return push_process.poll() is not None
-  duration_progress('Pushing ', last_push_duration, push_is_done)
-  if push_process.poll() != 0:
-    print(colored(push_process.communicate()[0], 'red'))
-    sys.exit(1)
+    started_push_time = time.time()
+    run(["docker", "tag", container_name, remote_container_name])
+    push_process = Popen(["gcloud", "docker", "--", "push", remote_container_name], stdout=PIPE, stderr=PIPE)
 
-  pushed_time = time.time()
+    def push_is_done():
+        return push_process.poll() is not None
+    duration_progress('Pushing ', last_push_duration, push_is_done)
+    if push_process.poll() != 0:
+        print(colored(push_process.communicate()[0], 'red'))
+        sys.exit(1)
 
-  with open('.push.json', 'w') as f:
-    f.write(json.dumps({
-      "last_remote_container": remote_container_name,
-      "last_push_duration": pushed_time - started_push_time
-    }))
+    pushed_time = time.time()
 
-  print("Pushed to %s" % remote_container_name)
+    with open('.push.json', 'w') as f:
+        f.write(json.dumps({
+            "last_remote_container": remote_container_name,
+            "last_push_duration": pushed_time - started_push_time
+        }))
+
+    print("Pushed to %s" % remote_container_name)
 
 
 def deploy(args):
-  if not os.path.isfile('.build.json'):
-    do_build(args)
+    if not os.path.isfile('.build.json'):
+        do_build(args)
 
-  do_push(args)
+    do_push(args)
 
-  config = json.load(open('.studio.json'))
-  app_name = config['name']
-  namespace = config['namespace']
+    config = json.load(open('.studio.json'))
+    app_name = config['name']
+    namespace = config['namespace']
 
-  status = json.load(open('.push.json'))
-  remote_container_name = status['last_remote_container']
-  run_id = str(uuid.uuid4())
+    status = json.load(open('.push.json'))
+    remote_container_name = status['last_remote_container']
+    run_id = str(uuid.uuid4())
 
-  print("Deploying %s" % remote_container_name)
+    print("Deploying %s" % remote_container_name)
 
-  # Write new container to deployment
-  for filename in os.listdir("k8s-templates"):
-    with open('k8s-templates/' + filename) as f:
-      deployment_template = f.read()
-      s = Template(deployment_template)
-      out = s.substitute(image=remote_container_name, app=app_name, run=run_id)
+    # Write new container to deployment
+    for filename in os.listdir("k8s-templates"):
+        with open('k8s-templates/' + filename) as f:
+            deployment_template = f.read()
+            s = Template(deployment_template)
+            out = s.substitute(image=remote_container_name, app=app_name, run=run_id)
 
-      with open('k8s/' + filename,'w') as f:
-        f.write(out)
+            with open('k8s/' + filename, 'w') as f:
+                f.write(out)
 
-    ensure_namespace_exists(namespace)
-    run(["kubectl", "--namespace", namespace, "apply", "-R", "-f", "k8s"])
+        ensure_namespace_exists(namespace)
+        run(["kubectl", "--namespace", namespace, "apply", "-R", "-f", "k8s"])
 
-    print("\nInspect created objects by running:\n  $ kubectl get --namespace=%s all\n" % namespace)
+        print("\nInspect created objects by running:\n  $ kubectl get --namespace=%s all\n" % namespace)
 
 
 def undeploy(args):
-  if not os.path.isfile('.studio.json'):
-    print("run `mlt undeploy` within a project directory")
-    sys.exit(1)
+    if not os.path.isfile('.studio.json'):
+        print("run `mlt undeploy` within a project directory")
+        sys.exit(1)
 
-  config = json.load(open('.studio.json'))
-  namespace = config['namespace']
-  run(["kubectl", "--namespace", namespace, "delete", "-f", "k8s"])
+    config = json.load(open('.studio.json'))
+    namespace = config['namespace']
+    run(["kubectl", "--namespace", namespace, "delete", "-f", "k8s"])
 
 
 def init(args):
-  template_directory = "/".join([os.path.dirname(__file__), "..", "templates", args["--template"]])
-  app_name = args["<name>"]
-  try:
-    shutil.copytree(template_directory, app_name)
+    template_directory = "/".join([os.path.dirname(__file__), "..", "templates", args["--template"]])
+    app_name = args["<name>"]
+    try:
+        shutil.copytree(template_directory, app_name)
 
-    raw_project_bytes = check_output(["gcloud", "config", "list", "--format", "value(core.project)"])
-    project = raw_project_bytes.decode("utf-8").strip()
+        raw_project_bytes = check_output(["gcloud", "config", "list", "--format", "value(core.project)"])
+        project = raw_project_bytes.decode("utf-8").strip()
 
-    with open(app_name + '/.studio.json','w') as f:
-      f.write('''
+        with open(app_name + '/.studio.json', 'w') as f:
+            f.write('''
 {
   "name": "%s",
   "namespace": "%s",
@@ -240,77 +243,80 @@ def init(args):
 }
 ''' % (app_name, app_name, project))
 
-    # Initialize new git repo in the project dir and commit initial state.
-    run(["git", "init", app_name])
-    run(["git", "add", "."], cwd=app_name)
-    print(run(["git", "commit", "-m", "Initial commit."], cwd=app_name))
+        # Initialize new git repo in the project dir and commit initial state.
+        run(["git", "init", app_name])
+        run(["git", "add", "."], cwd=app_name)
+        print(run(["git", "commit", "-m", "Initial commit."], cwd=app_name))
 
-  except OSError as exc:
-    if exc.errno == 17:
-      print("Directory '%s' already exists: delete before trying to initialize new application" % app_name)
-    else:
-      print(exc)
+    except OSError as exc:
+        if exc.errno == 17:
+            print("Directory '%s' already exists: delete before trying to initialize new application" % app_name)
+        else:
+            print(exc)
 
 
 def ensure_namespace_exists(ns):
-  exit_code = call(["kubectl", "get", "namespace", ns], stdout=open(os.devnull, 'wb'), stderr=open(os.devnull, 'wb'))
-  if exit_code is not 0:
-    run(["kubectl", "create", "namespace", ns])
+    exit_code = call(["kubectl", "get", "namespace", ns], stdout=open(os.devnull, 'wb'), stderr=open(os.devnull, 'wb'))
+    if exit_code is not 0:
+        run(["kubectl", "create", "namespace", ns])
+
 
 def run(command, cwd=None):
-  try:
-    output = check_output(command, cwd=cwd).decode("utf-8")
-  except subprocess.CalledProcessError as e:
-    print(e.output)
-    sys.exit(1)
+    try:
+        output = check_output(command, cwd=cwd).decode("utf-8")
+    except subprocess.CalledProcessError as e:
+        print(e.output)
+        sys.exit(1)
 
-  return output
+    return output
+
 
 def templates_list():
-  templates_directory = "/".join([os.path.dirname(__file__), "..", "templates"])
+    templates_directory = "/".join([os.path.dirname(__file__), "..", "templates"])
 
-  table = []
-  for filename in os.listdir(templates_directory):
-    description = ''
-    readme_file = templates_directory + "/" + filename + "/README.md"
-    if os.path.isfile(readme_file):
-      with open(readme_file) as f:
-        lines = f.readlines()
-        for line in lines:
-          if line[0] == '#' or line[0] == '\n':
-            continue
-          description = line
-          break
+    table = []
+    for filename in os.listdir(templates_directory):
+        description = ''
+        readme_file = templates_directory + "/" + filename + "/README.md"
+        if os.path.isfile(readme_file):
+            with open(readme_file) as f:
+                lines = f.readlines()
+                for line in lines:
+                    if line[0] == '#' or line[0] == '\n':
+                        continue
+                    description = line
+                    break
 
-    table.append([filename, description])
+        table.append([filename, description])
 
+    print(tabulate(table, headers=['Template', 'Description'], tablefmt="simple"))
 
-  print(tabulate(table, headers=['Template', 'Description'], tablefmt="simple"))
 
 def main():
     args = docopt(__doc__, version="ML Container Templates v0.0.1")
 
     if args["init"]:
-       init(args)
+        init(args)
 
     if args["build"]:
-      if not os.path.isfile('.studio.json'):
-        print("`mlt build` requires you to be in a `mlt init` built directory.")
-        sys.exit(1)
+        if not os.path.isfile('.studio.json'):
+            print("`mlt build` requires you to be in a `mlt init` built directory.")
+            sys.exit(1)
 
-      build(args)
+        build(args)
 
     if args["deploy"]:
-      if not os.path.isfile('.studio.json'):
-        print("`mlt build` requires you to be in a `mlt init` built directory.")
-        sys.exit(1)
+        if not os.path.isfile('.studio.json'):
+            print("`mlt build` requires you to be in a `mlt init` built directory.")
+            sys.exit(1)
 
-      deploy(args)
+        deploy(args)
 
     if (args["template"] or args["templates"]) and args["list"]:
-      templates_list()
+        templates_list()
 
     if args["undeploy"]:
-      undeploy(args)
+        undeploy(args)
+
 
 main()
