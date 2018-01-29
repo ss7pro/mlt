@@ -137,8 +137,8 @@ def do_build(args):
     # Write last container to file
     with open('.build.json', 'w') as f:
         f.write(json.dumps({
-          "last_container": container_name,
-          "last_build_duration": built_time - started_build_time
+            "last_container": container_name,
+            "last_build_duration": built_time - started_build_time
         }))
 
     print("Built %s" % container_name)
@@ -176,8 +176,8 @@ def do_push(args):
 
     with open('.push.json', 'w') as f:
         f.write(json.dumps({
-          "last_remote_container": remote_container_name,
-          "last_push_duration": pushed_time - started_push_time
+            "last_remote_container": remote_container_name,
+            "last_push_duration": pushed_time - started_push_time
         }))
 
     print("Pushed to %s" % remote_container_name)
@@ -206,7 +206,7 @@ def deploy(args):
             s = Template(deployment_template)
             out = s.substitute(image=remote_container_name, app=app_name, run=run_id)
 
-            with open('k8s/' + filename,'w') as f:
+            with open('k8s/' + filename, 'w') as f:
                 f.write(out)
 
         ensure_namespace_exists(namespace)
@@ -234,7 +234,7 @@ def init(args):
         raw_project_bytes = check_output(["gcloud", "config", "list", "--format", "value(core.project)"])
         project = raw_project_bytes.decode("utf-8").strip()
 
-        with open(app_name + '/.studio.json','w') as f:
+        with open(app_name + '/.studio.json', 'w') as f:
             f.write('''
 {
   "name": "%s",
