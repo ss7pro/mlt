@@ -31,6 +31,7 @@ from subprocess import call, check_output, Popen, PIPE, STDOUT
 from watchdog.observers import Observer
 from threading import Timer
 
+
 def duration_progress(activity, duration, is_done):
   def progress(activity, iterations=100):
       bar = progressbar.ProgressBar(widgets=[activity, ' ', progressbar.Bar(), ' (', progressbar.ETA(), ') ', ])
@@ -60,6 +61,7 @@ def duration_progress(activity, duration, is_done):
           i += 1
 
   print("")
+
 
 class EventHandler:
   def __init__(self, args):
@@ -103,6 +105,7 @@ def build(args):
   else:
     do_build(args)
 
+
 def do_build(args):
   last_build_duration = None
   if os.path.isfile('.build.json'):
@@ -121,6 +124,7 @@ def do_build(args):
 
   # Add bar
   build_process = Popen(["docker", "build", "-t", container_name, "."], stdout=PIPE, stderr=STDOUT)
+
   def build_is_done():
     return build_process.poll() is not None
   duration_progress('Building', last_build_duration, build_is_done)
@@ -160,6 +164,7 @@ def do_push(args):
   started_push_time = time.time()
   run(["docker", "tag", container_name, remote_container_name])
   push_process = Popen(["gcloud", "docker", "--", "push", remote_container_name], stdout=PIPE, stderr=PIPE)
+
   def push_is_done():
     return push_process.poll() is not None
   duration_progress('Pushing ', last_push_duration, push_is_done)
@@ -255,6 +260,7 @@ def ensure_namespace_exists(ns):
   if exit_code is not 0:
     run(["kubectl", "create", "namespace", ns])
 
+
 def run(command, cwd=None):
   try:
     output = check_output(command, cwd=cwd).decode("utf-8")
@@ -263,6 +269,7 @@ def run(command, cwd=None):
     sys.exit(1)
 
   return output
+
 
 def templates_list():
   templates_directory = "/".join([os.path.dirname(__file__), "..", "templates"])
@@ -282,8 +289,8 @@ def templates_list():
 
     table.append([filename, description])
 
-
   print(tabulate(table, headers=['Template', 'Description'], tablefmt="simple"))
+
 
 def main():
     args = docopt(__doc__, version="ML Container Templates v0.0.1")
@@ -310,5 +317,6 @@ def main():
 
     if args["undeploy"]:
       undeploy(args)
+
 
 main()
