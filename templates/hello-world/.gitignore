@@ -1,5 +1,6 @@
 k8s/**
-.status.json
+.build.json
+.push.json
 .studio.json
 *.swp
 .push.log
