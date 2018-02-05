@@ -1,6 +1,7 @@
 import os
 from tabulate import tabulate
 
+
 def templates_list():
     templates_directory = "/".join([os.path.dirname(__file__), "..", "templates"])
 

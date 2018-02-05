@@ -3,6 +3,7 @@ import shutil
 from subprocess import check_output
 from . import process_helpers
 
+
 def init(args):
     template_directory = "/".join([os.path.dirname(__file__), "..", "templates", args["--template"]])
     app_name = args["<name>"]

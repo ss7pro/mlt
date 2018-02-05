@@ -7,11 +7,12 @@ from string import Template
 from subprocess import Popen, PIPE
 from termcolor import colored
 
-from . import process_helpers, progress_bar, kubernetes_helpers
+from . import process_helpers, progress_bar, kubernetes_helpers, build
+
 
 def deploy(args):
     if not os.path.isfile('.build.json'):
-        do_build(args)
+        build.do_build(args)
 
     do_push(args)
 

@@ -1,6 +1,7 @@
 import progressbar
 import time
 
+
 def duration_progress(activity, duration, is_done):
     def progress(activity, iterations=100):
         bar = progressbar.ProgressBar(widgets=[activity, ' ', progressbar.Bar(), ' (', progressbar.ETA(), ') ', ])

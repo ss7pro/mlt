@@ -2,13 +2,15 @@ import os
 import time
 import json
 import uuid
+import sys
 
-from subprocess import call, check_output, Popen, PIPE, STDOUT
+from subprocess import Popen, PIPE, STDOUT
 from watchdog.observers import Observer
 from termcolor import colored
 
 from . import progress_bar
 from . import event_handler as eh
+
 
 def build(args):
     if args['--watch']:

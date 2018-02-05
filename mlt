@@ -14,19 +14,12 @@ Options:
                          initialization [default: hello-world].
 """
 import sys
-import shutil
 import os
-import uuid
-import json
-import time
-import os.path
-import subprocess
 
 from docopt import docopt
-from watchdog.observers import Observer
-from threading import Timer
 
 from mltlib import templates, init, build, deploy, undeploy
+
 
 def main():
     args = docopt(__doc__, version="ML Container Templates v0.0.1")
