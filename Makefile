@@ -11,5 +11,18 @@ dev-env: requirements.txt requirements-dev.txt
 lint:
 	. ./env/bin/activate && flake8 --ignore=E501 mlt mltlib
 
+docker:
+	docker build -t mlt .
+
+env-up: docker
+	docker-compose up -d
+
+end-down:
+	docker-compose down
+
+test: env-up
+	docker-compose exec test ./resources/wait-port kubernetes 8080
+	docker-compose exec test kubectl cluster-info
+
 clean:
 	rm -rf env
