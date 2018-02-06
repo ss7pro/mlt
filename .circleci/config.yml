@@ -10,6 +10,8 @@ jobs:
       - run:
           name: Installing lint dependencies
           command: |
+            apt-get update
+            apt-get install -y python python-pip
             pip install virtualenv
             make dev-env
 
@@ -22,7 +24,6 @@ jobs:
           name: Installing dependencies
           command: |
             set -x
-            apt-get update
             apt-get install -y curl make git ssh tar python
             VER="17.03.0-ce"
             curl -L -o /tmp/docker-$VER.tgz https://get.docker.com/builds/Linux/x86_64/docker-$VER.tgz
