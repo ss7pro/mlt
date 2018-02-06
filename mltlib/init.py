@@ -1,4 +1,5 @@
 import os
+import sys
 import shutil
 from subprocess import check_output
 from . import process_helpers
@@ -7,20 +8,35 @@ from . import process_helpers
 def init(args):
     template_directory = "/".join([os.path.dirname(__file__), "..", "templates", args["--template"]])
     app_name = args["<name>"]
+
+    print(args)
+    is_gke = args["--registry"] == None
+
     try:
         shutil.copytree(template_directory, app_name)
 
-        raw_project_bytes = check_output(["gcloud", "config", "list", "--format", "value(core.project)"])
-        project = raw_project_bytes.decode("utf-8").strip()
+        if is_gke:
+            raw_project_bytes = check_output(["gcloud", "config", "list", "--format", "value(core.project)"])
+            project = raw_project_bytes.decode("utf-8").strip()
 
-        with open(app_name + '/.studio.json', 'w') as f:
-            f.write('''
+            with open(app_name + '/.studio.json', 'w') as f:
+                f.write('''
 {
-  "name": "%s",
-  "namespace": "%s",
-  "gceProject": "%s"
+"name": "%s",
+"namespace": "%s",
+"gceProject": "%s"
 }
-''' % (app_name, app_name, project))
+    ''' % (app_name, app_name, project))
+
+        else:
+            with open(app_name + '/.studio.json', 'w') as f:
+                f.write('''
+{
+"name": "%s",
+"namespace": "%s",
+"registry": "%s"
+}
+    ''' % (app_name, app_name, args["--registry"]))
 
         # Initialize new git repo in the project dir and commit initial state.
         process_helpers.run(["git", "init", app_name])
@@ -32,3 +48,5 @@ def init(args):
             print("Directory '%s' already exists: delete before trying to initialize new application" % app_name)
         else:
             print(exc)
+        
+        sys.exit(1)

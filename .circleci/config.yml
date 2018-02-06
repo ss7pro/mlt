@@ -43,6 +43,11 @@ jobs:
       - setup_remote_docker
 
       - run:
+          name: Testing nested docker
+          command: |
+            docker run ubuntu sh -c "apt-get update ; apt-get install docker.io -y ; docker ps"
+
+      - run:
           name: Run e2e tests
           command: |
             set -x

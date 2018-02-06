@@ -10,3 +10,6 @@ WORKDIR /usr/share/mlt
 RUN pip install virtualenv
 RUN pip install -r requirements.txt
 RUN pip install -e .
+
+RUN git config --global user.email "test@docker"
+RUN git config --global user.name "Test Docker User"
