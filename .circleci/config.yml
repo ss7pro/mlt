@@ -45,7 +45,7 @@ jobs:
       - run:
           name: Testing nested docker
           command: |
-            docker run ubuntu sh -c "apt-get update ; apt-get install docker.io -y ; docker ps"
+            docker run -v /var/run/docker.sock:/var/run/docker.sock ubuntu sh -c "apt-get update ; apt-get install docker.io -y ; docker ps"
 
       - run:
           name: Run e2e tests
