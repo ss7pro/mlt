@@ -9,4 +9,4 @@ ADD . /usr/share/mlt
 WORKDIR /usr/share/mlt
 RUN pip install virtualenv
 RUN pip install -r requirements.txt
-RUN pip install .
+RUN pip install -e .

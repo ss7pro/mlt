@@ -19,6 +19,12 @@ jobs:
           name: lint tests
           command: |
             make lint
+      
+      - run:
+          name: Run unit tests
+          command: |
+            set -x
+            make test
 
       - run:
           name: Installing dependencies
@@ -35,7 +41,7 @@ jobs:
       - setup_remote_docker
 
       - run:
-          name: Run make test
+          name: Run e2e tests
           command: |
             set -x
-            make test
+            make test-e2e
