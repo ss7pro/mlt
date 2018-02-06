@@ -10,7 +10,7 @@ def init(args):
     app_name = args["<name>"]
 
     print(args)
-    is_gke = args["--registry"] == None
+    is_gke = args["--registry"] is None
 
     try:
         shutil.copytree(template_directory, app_name)
@@ -48,5 +48,5 @@ def init(args):
             print("Directory '%s' already exists: delete before trying to initialize new application" % app_name)
         else:
             print(exc)
-        
+
         sys.exit(1)
