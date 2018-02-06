@@ -12,7 +12,7 @@ jobs:
           command: |
             apt-get update
             apt-get install -y python python-pip
-            pip install virtualenv
+            pip install virtualenv pytest
             make dev-env
 
       - run:
