@@ -2,16 +2,48 @@ version: 2
 jobs:
   build:
     docker:
-      - image: circleci/python:3.6
+      - image: ubuntu:16.04
     working_directory: ~/repo
     steps:
       - checkout
+
       - run:
-          name: Install requirements
+          name: Installing lint dependencies
           command: |
-            sudo pip install virtualenv
+            apt-get update
+            apt-get install -y python python-pip
+            pip install virtualenv pytest
             make dev-env
+
       - run:
           name: lint tests
           command: |
             make lint
+      
+      - run:
+          name: Run unit tests
+          command: |
+            set -x
+            pip install -r requirements.txt
+            pip install -e .
+            make test
+
+      - run:
+          name: Installing dependencies
+          command: |
+            set -x
+            apt-get install -y curl make git ssh tar python
+            VER="17.03.0-ce"
+            curl -L -o /tmp/docker-$VER.tgz https://get.docker.com/builds/Linux/x86_64/docker-$VER.tgz
+            tar -xz -C /tmp -f /tmp/docker-$VER.tgz
+            mv /tmp/docker/* /usr/bin
+            curl -L https://github.com/docker/compose/releases/download/1.16.0/docker-compose-`uname -s`-`uname -m` > /usr/local/bin/docker-compose
+            chmod +x /usr/local/bin/docker-compose
+
+      - setup_remote_docker
+
+      - run:
+          name: Run e2e tests
+          command: |
+            set -x
+            make test-e2e
