@@ -57,11 +57,21 @@ def do_push(args):
         sys.exit(1)
 
     config = json.load(open('.studio.json'))
-    remote_container_name = "gcr.io/" + config['gceProject'] + "/" + container_name
+
+    is_gke = ('gceProject' in config)
+
+    if is_gke:
+        remote_container_name = "gcr.io/" + config['gceProject'] + "/" + container_name
+    else:
+        remote_container_name = config['registry'] + "/" + container_name
 
     started_push_time = time.time()
     process_helpers.run(["docker", "tag", container_name, remote_container_name])
-    push_process = Popen(["gcloud", "docker", "--", "push", remote_container_name], stdout=PIPE, stderr=PIPE)
+
+    if is_gke:
+        push_process = Popen(["gcloud", "docker", "--", "push", remote_container_name], stdout=PIPE, stderr=PIPE)
+    else:
+        push_process = Popen(["docker", "push", remote_container_name], stdout=PIPE, stderr=PIPE)
 
     def push_is_done():
         return push_process.poll() is not None
