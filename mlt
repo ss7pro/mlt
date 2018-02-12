@@ -1,0 +1,51 @@
+#!/usr/bin/env python
+"""mlt.
+Usage:
+  mlt (-h | --help)
+  mlt --version
+  mlt init [--template=<template>] <name>
+  mlt build [--watch]
+  mlt deploy
+  mlt undeploy
+  mlt (template | templates) list
+
+Options:
+  --template=<template>  Template name for app
+                         initialization [default: hello-world].
+"""
+import sys
+import os
+
+from docopt import docopt
+
+from mltlib import templates, init, build, deploy, undeploy
+
+
+def main():
+    args = docopt(__doc__, version="ML Container Templates v0.0.1")
+
+    if args["init"]:
+        init.init(args)
+
+    if args["build"]:
+        if not os.path.isfile('.studio.json'):
+            print("`mlt build` requires you to be in a `mlt init` built directory.")
+            sys.exit(1)
+
+        build.build(args)
+
+    if args["deploy"]:
+        if not os.path.isfile('.studio.json'):
+            print("`mlt build` requires you to be in a `mlt init` built directory.")
+            sys.exit(1)
+
+        deploy.deploy(args)
+
+    if (args["template"] or args["templates"]) and args["list"]:
+        templates.templates_list()
+
+    if args["undeploy"]:
+        undeploy.undeploy(args)
+
+
+main()

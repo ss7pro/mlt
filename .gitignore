@@ -5,3 +5,4 @@ pip-selfcheck.json
 include
 lib
 **.egg-info/
+*.pyc

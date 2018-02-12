@@ -9,7 +9,7 @@ dev-env: requirements.txt requirements-dev.txt
 	virtualenv env && . ./env/bin/activate && pip install -r requirements.txt -r requirements-dev.txt && pip install -e .
 
 lint:
-	. ./env/bin/activate && flake8 --ignore=E501 bin/*
+	. ./env/bin/activate && flake8 --ignore=E501 mlt mltlib
 
 clean:
 	rm -rf env
