@@ -27,3 +27,5 @@ services:
     environment:
       - KUBECONFIG=/usr/share/mlt/resources/config
     command: "sleep inf"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
