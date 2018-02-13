@@ -19,7 +19,7 @@ def init(args):
             raw_project_bytes = check_output(["gcloud", "config", "list", "--format", "value(core.project)"])
             project = raw_project_bytes.decode("utf-8").strip()
 
-            with open(app_name + '/.studio.json', 'w') as f:
+            with open(app_name + '/mlt.json', 'w') as f:
                 f.write('''
 {
 "name": "%s",
@@ -29,7 +29,7 @@ def init(args):
     ''' % (app_name, app_name, project))
 
         else:
-            with open(app_name + '/.studio.json', 'w') as f:
+            with open(app_name + '/mlt.json', 'w') as f:
                 f.write('''
 {
 "name": "%s",

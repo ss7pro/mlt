@@ -7,7 +7,7 @@ def test_init():
     p = subprocess.Popen(['mlt', 'init', '--registry=registry:5000', 'foobar'], cwd=workdir)
     assert p.wait() == 0
     project_dir = workdir + '/foobar'
-    assert os.path.isfile(project_dir + '/.studio.json')
+    assert os.path.isfile(project_dir + '/mlt.json')
 
     p = subprocess.Popen(['mlt', 'build'], cwd=project_dir)
     assert p.wait() == 0

@@ -49,7 +49,7 @@ tf-single-node
 $ mlt init my-app --template=hello-world
 [master (root-commit) 40239a2] Initial commit.
  7 files changed, 191 insertions(+)
- create mode 100644 .studio.json
+ create mode 100644 mlt.json
  create mode 100644 Dockerfile
  create mode 100644 Makefile
  create mode 100644 k8s-templates/tfjob.yaml

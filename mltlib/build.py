@@ -38,7 +38,7 @@ def do_build(args):
 
     started_build_time = time.time()
 
-    config = json.load(open('.studio.json'))
+    config = json.load(open('mlt.json'))
     app_name = config['name']
 
     container_id = str(uuid.uuid4())
