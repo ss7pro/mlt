@@ -30,14 +30,14 @@ def main():
         init.init(args)
 
     if args["build"]:
-        if not os.path.isfile('.studio.json'):
+        if not os.path.isfile('mlt.json'):
             print("`mlt build` requires you to be in a `mlt init` built directory.")
             sys.exit(1)
 
         build.build(args)
 
     if args["deploy"]:
-        if not os.path.isfile('.studio.json'):
+        if not os.path.isfile('mlt.json'):
             print("`mlt build` requires you to be in a `mlt init` built directory.")
             sys.exit(1)
 

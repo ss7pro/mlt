@@ -16,7 +16,7 @@ def deploy(args):
 
     do_push(args)
 
-    config = json.load(open('.studio.json'))
+    config = json.load(open('mlt.json'))
     app_name = config['name']
     namespace = config['namespace']
 
@@ -56,7 +56,7 @@ def do_push(args):
         print("Need to run build before pushing")
         sys.exit(1)
 
-    config = json.load(open('.studio.json'))
+    config = json.load(open('mlt.json'))
 
     is_gke = ('gceProject' in config)
 
