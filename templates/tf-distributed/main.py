@@ -133,7 +133,7 @@ def main():
     elif job_type == "worker":
         logging.info("Running Worker code.")
         # The worker just blocks because we let the master assign all ops.
-    server.join()
+        server.join()
     elif job_type == "master" or not job_type:
         logging.info("Running master.")
         with tf.device(device_func):
