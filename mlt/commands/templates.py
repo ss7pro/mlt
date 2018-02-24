@@ -1,21 +1,19 @@
 import os
 from tabulate import tabulate
 
+from mlt import TEMPLATES_DIR
 
-def parse_templates(templates_directory=None):
-    if not templates_directory:
-        templates_directory = "/".join(
-            [os.path.dirname(__file__), "..", "..", "templates"])
 
+def parse_templates(templates_directory=TEMPLATES_DIR):
     table = []
     for filename in os.listdir(templates_directory):
         description = ''
-        readme_file = templates_directory + "/" + filename + "/README.md"
+        readme_file = os.path.join(templates_directory, filename, "README.md")
         if os.path.isfile(readme_file):
             with open(readme_file) as f:
-                lines = f.readlines()
-                for line in lines:
-                    if line[0] == '#' or line[0] == '\n':
+                for line in f:
+                    line = line.strip()
+                    if line == '#' or not line:
                         continue
                     description = line
                     break
