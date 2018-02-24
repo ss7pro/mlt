@@ -10,8 +10,10 @@ setup(name='mlt',
       author='Intel Nervana',
       author_email='intelnervana@intel.com',
       url='http://www.intelnervana.com',
-      scripts=['bin/mlt'],
-      packages=['mlt'],
+      packages=find_packages(exclude=["tests"]),
+      entry_points={
+          'console_scripts': ['mlt=mlt.main:main']
+      },
       classifiers=['Development Status :: 3 - Alpha',
                    'Environment :: Console',
                    'Intended Audience :: End Users/Desktop',
