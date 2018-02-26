@@ -51,9 +51,8 @@ class Build(NeedsInitCommand):
         print("Built {}".format(container_name))
 
     def _watch_and_build(self):
-        event_handler = EventHandler(self._build)
+        event_handler = EventHandler(self._build, self.args)
         observer = Observer()
-        # TODO: what dir was this?
         observer.schedule(event_handler, './', recursive=True)
         observer.start()
         try:
