@@ -4,7 +4,8 @@ from tabulate import tabulate
 
 def parse_templates(templates_directory=None):
     if not templates_directory:
-        templates_directory = "/".join([os.path.dirname(__file__), "..", "templates"])
+        templates_directory = "/".join(
+            [os.path.dirname(__file__), "..", "..", "templates"])
 
     table = []
     for filename in os.listdir(templates_directory):
@@ -26,4 +27,5 @@ def parse_templates(templates_directory=None):
 
 def templates_list():
     table = parse_templates()
-    print(tabulate(table, headers=['Template', 'Description'], tablefmt="simple"))
+    print(tabulate(table, headers=['Template',
+                                   'Description'], tablefmt="simple"))

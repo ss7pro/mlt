@@ -4,7 +4,7 @@ from threading import Timer
 from subprocess import call
 
 
-class EventHandler:
+class EventHandler(object):
     def __init__(self, callback, args):
         self.args = args
         self.last_changed = time.time()
@@ -16,7 +16,8 @@ class EventHandler:
         if event.src_path == "./.git" or event.src_path == "./":
             return
 
-        is_ignored = call(["git", "check-ignore", event.src_path], stdout=open(os.devnull, 'wb')) == 0
+        is_ignored = call(["git", "check-ignore", event.src_path],
+                          stdout=open(os.devnull, 'wb')) == 0
         if is_ignored:
             return
 

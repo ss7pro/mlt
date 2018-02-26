@@ -1,4 +1,5 @@
-from mltlib import templates
+from mlt.commands import templates
+
 
 def test_template_list():
     table = templates.parse_templates()

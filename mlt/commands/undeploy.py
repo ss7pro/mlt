@@ -2,7 +2,7 @@ import os
 import sys
 import json
 
-from . import process_helpers
+from mlt.utils import process_helpers
 
 
 def undeploy(args):
@@ -12,4 +12,5 @@ def undeploy(args):
 
     config = json.load(open('mlt.json'))
     namespace = config['namespace']
-    process_helpers.run(["kubectl", "--namespace", namespace, "delete", "-f", "k8s"])
+    process_helpers.run(
+        ["kubectl", "--namespace", namespace, "delete", "-f", "k8s"])

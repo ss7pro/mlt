@@ -7,7 +7,8 @@ from string import Template
 from subprocess import Popen, PIPE
 from termcolor import colored
 
-from . import process_helpers, progress_bar, kubernetes_helpers, build
+from mlt.commands import build
+from mlt.utils import process_helpers, progress_bar, kubernetes_helpers
 
 
 def deploy(args):
@@ -31,15 +32,18 @@ def deploy(args):
         with open('k8s-templates/' + filename) as f:
             deployment_template = f.read()
             s = Template(deployment_template)
-            out = s.substitute(image=remote_container_name, app=app_name, run=run_id)
+            out = s.substitute(image=remote_container_name,
+                               app=app_name, run=run_id)
 
             with open('k8s/' + filename, 'w') as f:
                 f.write(out)
 
         kubernetes_helpers.ensure_namespace_exists(namespace)
-        process_helpers.run(["kubectl", "--namespace", namespace, "apply", "-R", "-f", "k8s"])
+        process_helpers.run(
+            ["kubectl", "--namespace", namespace, "apply", "-R", "-f", "k8s"])
 
-        print("\nInspect created objects by running:\n  $ kubectl get --namespace=%s all\n" % namespace)
+        print("\nInspect created objects by running:\n"
+              "$ kubectl get --namespace=%s all\n" % namespace)
 
 
 def do_push(args):
@@ -61,21 +65,27 @@ def do_push(args):
     is_gke = ('gceProject' in config)
 
     if is_gke:
-        remote_container_name = "gcr.io/" + config['gceProject'] + "/" + container_name
+        remote_container_name = "gcr.io/" + \
+            config['gceProject'] + "/" + container_name
     else:
         remote_container_name = config['registry'] + "/" + container_name
 
     started_push_time = time.time()
-    process_helpers.run(["docker", "tag", container_name, remote_container_name])
+    process_helpers.run(
+        ["docker", "tag", container_name, remote_container_name])
 
     if is_gke:
-        push_process = Popen(["gcloud", "docker", "--", "push", remote_container_name], stdout=PIPE, stderr=PIPE)
+        push_process = Popen(["gcloud", "docker", "--", "push",
+                              remote_container_name], stdout=PIPE, stderr=PIPE)
     else:
-        push_process = Popen(["docker", "push", remote_container_name], stdout=PIPE, stderr=PIPE)
+        push_process = Popen(
+            ["docker", "push", remote_container_name],
+            stdout=PIPE, stderr=PIPE)
 
     def push_is_done():
         return push_process.poll() is not None
-    progress_bar.duration_progress('Pushing ', last_push_duration, push_is_done)
+    progress_bar.duration_progress(
+        'Pushing ', last_push_duration, push_is_done)
     if push_process.poll() != 0:
         print(colored(push_process.communicate()[0], 'red'))
         sys.exit(1)

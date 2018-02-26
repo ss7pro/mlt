@@ -8,13 +8,13 @@ from subprocess import Popen, PIPE, STDOUT
 from watchdog.observers import Observer
 from termcolor import colored
 
-from . import progress_bar
-from . import event_handler as eh
+from mlt.utils import progress_bar
+from mlt.event_handler import EventHandler
 
 
 def build(args):
     if args['--watch']:
-        event_handler = eh.EventHandler(do_build, args)
+        event_handler = EventHandler(do_build, args)
         observer = Observer()
         observer.schedule(event_handler, './', recursive=True)
         observer.start()
@@ -47,11 +47,13 @@ def do_build(args):
     print("Starting build %s" % container_name)
 
     # Add bar
-    build_process = Popen(["docker", "build", "-t", container_name, "."], stdout=PIPE, stderr=STDOUT)
+    build_process = Popen(["docker", "build", "-t", container_name, "."],
+                          stdout=PIPE, stderr=STDOUT)
 
     def build_is_done():
         return build_process.poll() is not None
-    progress_bar.duration_progress('Building', last_build_duration, build_is_done)
+    progress_bar.duration_progress(
+        'Building', last_build_duration, build_is_done)
     if build_process.poll() != 0:
         print(colored(build_process.communicate()[0], 'red'))
         sys.exit(1)

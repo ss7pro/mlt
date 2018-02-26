@@ -20,7 +20,7 @@ import os
 
 from docopt import docopt
 
-from mltlib import templates, init, build, deploy, undeploy
+from mlt.commands import build, deploy, init, templates, undeploy
 
 
 def main():
@@ -31,14 +31,16 @@ def main():
 
     if args["build"]:
         if not os.path.isfile('mlt.json'):
-            print("`mlt build` requires you to be in a `mlt init` built directory.")
+            print("`mlt build` requires you to be in a `mlt init` "
+                  "built directory.")
             sys.exit(1)
 
         build.build(args)
 
     if args["deploy"]:
         if not os.path.isfile('mlt.json'):
-            print("`mlt build` requires you to be in a `mlt init` built directory.")
+            print("`mlt build` requires you to be in a `mlt init` "
+                  "built directory.")
             sys.exit(1)
 
         deploy.deploy(args)
