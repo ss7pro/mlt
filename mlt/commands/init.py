@@ -22,7 +22,7 @@ class Init(Command):
             shutil.copytree(template_directory, self.app_name)
             data = self._build_mlt_json()
             with open(os.path.join(self.app_name, 'mlt.json'), 'w') as f:
-                f.write(json.dumps(data, f, indent=2))
+                f.write(json.dump(data, f, indent=2))
             self._init_git_repo()
         except OSError as exc:
             if exc.errno == 17:
