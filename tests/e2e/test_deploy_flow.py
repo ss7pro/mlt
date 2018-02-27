@@ -29,14 +29,15 @@ def test_flow():
 
         # mlt init
         p = subprocess.Popen(
-            ['mlt', 'init', '--registry=registry:5000', 'foobar'], cwd=workdir)
+            ['mlt', 'init', '--registry=localhost:5000', 'foobar'],
+            cwd=workdir)
         assert p.wait() == 0
         assert os.path.isfile(mlt_json)
         with open(mlt_json) as f:
             assert json.loads(f.read()) == {
                 'namespace': 'foobar',
                 'name': 'foobar',
-                'registry': 'registry:5000'
+                'registry': 'localhost:5000'
             }
 
         # mlt build
@@ -55,8 +56,8 @@ def test_flow():
         assert os.path.isfile(deploy_json)
         with open(deploy_json) as f:
             deploy_data = json.loads(f.read())
-            assert 'last_push_duration' in build_data and \
-                'last_remote_container' in build_data
+            assert 'last_push_duration' in deploy_data and \
+                'last_remote_container' in deploy_data
 
         # mlt undeploy
         p = subprocess.Popen(['mlt', 'undeploy'], cwd=project_dir)

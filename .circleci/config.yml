@@ -53,4 +53,6 @@ jobs:
           name: Run e2e tests
           command: |
             set -x
+            # create local docker registry for deployment testing
+            docker run -d -p 5000:5000 --restart=always --name registry registry:2
             make test-e2e
