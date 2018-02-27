@@ -45,7 +45,7 @@ class Deploy(NeedsInitCommand, NeedsBuildCommand):
         last_push_duration = self._fetch_action_arg(
             'push', 'last_push_duration')
         self.container_name = self._fetch_action_arg(
-            'push', 'last_container')
+            'build', 'last_container')
 
         if 'gceProject' in self.config:
             self._push_gke()
@@ -68,16 +68,16 @@ class Deploy(NeedsInitCommand, NeedsBuildCommand):
         print("Pushed to {}".format(self.remote_container_name))
 
     def _push_gke(self):
-        self.remote_container_name = "gcr.io/" + \
-            self.config['gceProject'] + "/" + self.container_name
+        self.remote_container_name = "gcr.io/{}/{}".format(
+            self.config['gceProject'], self.container_name)
         self._start_push_time_and_tag()
         self.push_process = Popen(["gcloud", "docker", "--", "push",
                                    self.remote_container_name],
                                   stdout=PIPE, stderr=PIPE)
 
     def _push_docker(self):
-        self.remote_container_name = self.config['registry'] + \
-            "/" + self.container_name
+        self.remote_container_name = "{}/{}".format(
+            self.config['registry'], self.container_name)
         self._start_push_time_and_tag()
         self.push_process = Popen(
             ["docker", "push", self.remote_container_name],
