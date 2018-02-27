@@ -29,7 +29,7 @@ def test_flow():
 
         # mlt init
         p = subprocess.Popen(
-            ['mlt', 'init', '--registry=localhost:5000', 'foobar'],
+            ['mlt', 'init', '--registry=localhost:5001', 'foobar'],
             cwd=workdir)
         assert p.wait() == 0
         assert os.path.isfile(mlt_json)
