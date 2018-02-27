@@ -15,8 +15,6 @@ Options:
   --registry=<registry> Container registry to use.
                         If none is set, will attempt to use gcloud.
 """
-import os
-
 from docopt import docopt
 
 from mlt.commands import Build, Deploy, Init, Templates, Undeploy
