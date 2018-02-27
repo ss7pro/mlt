@@ -37,7 +37,7 @@ def test_flow():
             assert json.loads(f.read()) == {
                 'namespace': 'foobar',
                 'name': 'foobar',
-                'registry': 'localhost:5000'
+                'registry': 'localhost:5001'
             }
 
         # mlt build
