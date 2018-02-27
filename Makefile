@@ -1,18 +1,53 @@
-.PHONY: env
+PY_VERSION := 2
+# if py_version is 2, use virtualenv, else python3 venv
+VIRTUALENV_EXE=$(if $(subst 2,,$(PY_VERSION)),python3 -m venv,virtualenv)
+VIRTUALENV_DIR=$(if $(subst 2,,$(PY_VERSION)),.venv3,.venv)
+ACTIVATE="$(VIRTUALENV_DIR)/bin/activate"
 
-all: env
+.PHONY: venv
 
-env: requirements.txt
-	virtualenv env && . ./env/bin/activate && pip install -r requirements.txt && pip install -e .
+all: venv
 
-dev-env: requirements.txt requirements-dev.txt
-	virtualenv env && . ./env/bin/activate && pip install -r requirements.txt -r requirements-dev.txt && pip install -e .
 
-lint: dev-env
-	. ./env/bin/activate && flake8 bin/mlt mlt
+# we need to update pip and setuptools because venv versions aren't latest
+# need to prepend $(ACTIVATE) everywhere because all make calls are in subshells
+# otherwise we won't be installing anything in the venv itself
+$(ACTIVATE): requirements.txt requirements-dev.txt
+	@echo "Updating virtualenv dependencies in: $(VIRTUALENV_DIR)..."
+	@test -d $(VIRTUALENV_DIR) || $(VIRTUALENV_EXE) $(VIRTUALENV_DIR)
+	@. $(ACTIVATE) && python$(PY_VERSION) -m pip install -U pip setuptools
+	@. $(ACTIVATE) && python$(PY_VERSION) -m pip install -r requirements.txt -r requirements-dev.txt
+	@. $(ACTIVATE) && python$(PY_VERSION) -m pip install -e .
+	@touch $(ACTIVATE)
 
-test: lint
-	py.test -v tests/unit
+venv: $(ACTIVATE)
+	@echo -n "Using "
+	@. $(ACTIVATE) && python --version
+
+venv2: venv
+
+venv3: PY_VERSION=3
+venv3: $(ACTIVATE)
+	@echo -n "Using "
+	@. $(ACTIVATE) && python3 --version
+
+lint: venv
+	. $(ACTIVATE) && flake8 bin/mlt mlt
+
+lint3: PY_VERSION=3
+lint3: lint
+
+unit_test: venv
+	@echo "Running unit tests..."
+	@. $(ACTIVATE) && pytest -v $(TESTOPTS) tests/unit
+
+unit_test3: PY_VERSION=3
+unit_test3: unit_test
+
+test: lint unit_test
+
+test3: PY_VERSION=3
+test3: test
 
 docker:
 	docker build -t mlt .
@@ -30,4 +65,4 @@ test-e2e: env-up
 	docker-compose exec test py.test -v tests/e2e
 
 clean:
-	rm -rf env
+	rm -rf .venv .venv3

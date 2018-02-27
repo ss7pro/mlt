@@ -12,21 +12,23 @@ jobs:
           command: |
             apt-get update
             apt-get install -y python python-pip
-            pip install virtualenv pytest
-            make dev-env
+            # python3-venv is necessary or else venv initialization fails
+            # see alternate answer on https://stackoverflow.com/questions/39539110/pyvenv-not-working-because-ensurepip-is-not-available
+            apt-get install -y python3 python3-pip python3-venv
+            python2 -m pip install virtualenv
+            python3 -m pip install virtualenv
 
       - run:
           name: lint tests
           command: |
             make lint
+            make lint3
       
       - run:
           name: Run unit tests
           command: |
-            set -x
-            pip install -r requirements.txt
-            pip install -e .
-            make test
+            make unit_test
+            make unit_test3
 
       - run:
           name: Installing dependencies
