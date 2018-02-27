@@ -24,10 +24,12 @@ def test_simple_build(load_config_mock, verify_init_mock, open_mocker):
 
         # assert that we started build, then did build process, then built
         output = caught_output.getvalue()
-        build_start = output.find('Starting build')
-        building_start = output.find('Building')
-        built_start = output.find('Built')
-        assert build_start < building_start < built_start
+
+    starting = output.find('Starting build')
+    building = output.find('Building')
+    built = output.find('Built')
+    assert all(var >= 0 for var in (starting, building, built))
+    assert starting < building < built
 
 
 @patch('mlt.commands.build.Build._load_config')
