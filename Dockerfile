@@ -15,6 +15,7 @@ RUN chmod +x ./kubectl
 RUN mv ./kubectl /usr/local/bin/kubectl
 
 ADD . /usr/share/mlt
+RUN make clean
 
 WORKDIR /usr/share/mlt
 
