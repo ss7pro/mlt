@@ -1,8 +1,9 @@
+SHELL=bash
 PY_VERSION := 2
 # if py_version is 2, use virtualenv, else python3 venv
 VIRTUALENV_EXE=$(if $(subst 2,,$(PY_VERSION)),python3 -m venv,virtualenv)
 VIRTUALENV_DIR=$(if $(subst 2,,$(PY_VERSION)),.venv3,.venv)
-ACTIVATE="$(VIRTUALENV_DIR)/bin/activate"
+ACTIVATE=$(VIRTUALENV_DIR)/bin/activate
 
 .PHONY: venv
 
