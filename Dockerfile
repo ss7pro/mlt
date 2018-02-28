@@ -10,7 +10,6 @@ RUN add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubunt
 RUN apt-get update
 
 RUN apt-get install -y netcat docker-ce python python-pip
-RUN pip install virtualenv
 RUN curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.9.0/bin/linux/amd64/kubectl
 RUN chmod +x ./kubectl
 RUN mv ./kubectl /usr/local/bin/kubectl
@@ -18,8 +17,6 @@ RUN mv ./kubectl /usr/local/bin/kubectl
 ADD . /usr/share/mlt
 
 WORKDIR /usr/share/mlt
-RUN make clean
-RUN make venv
 
 RUN git config --global user.email "test@docker"
 RUN git config --global user.name "Test Docker User"

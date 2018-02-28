@@ -49,12 +49,12 @@ end-down:
 	docker-compose down
 
 test-e2e: env-up
-	docker-compose exec test pip install -r requirements-dev.txt
+	docker-compose exec test pip install -r requirements-dev.txt -r requirements.txt
+	docker-compose exec test pip install -e .
 	docker-compose exec test ./resources/wait-port kubernetes 8080
 	docker-compose exec test kubectl cluster-info
 	# conftest + docker have issues because of runtime path differences
 	# https://stackoverflow.com/questions/44067609/getting-error-importmismatcherror-while-running-py-test
-	docker-compose exec test find . -name \*.pyc -delete
 	docker-compose exec test py.test -v tests/e2e
 
 clean:
