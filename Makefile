@@ -59,3 +59,4 @@ test-e2e: env-up
 
 clean:
 	rm -rf .venv .venv3
+	find . -name '*.pyc' -delete
