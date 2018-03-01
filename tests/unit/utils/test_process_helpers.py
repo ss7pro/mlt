@@ -9,14 +9,14 @@ from test_utils.io import catch_stdout
 
 @patch('mlt.utils.process_helpers.check_output')
 def test_run_no_cwd(check_output):
-    check_output.return_value = 'tacos and salad'
+    check_output.return_value.decode.return_value = 'tacos and salad'
     output = run('ls')
     assert output == 'tacos and salad'
 
 
 @patch('mlt.utils.process_helpers.check_output')
 def test_run_cwd(check_output):
-    check_output.return_value = 'trumpetseverywhere'
+    check_output.return_value.decode.return_value = 'trumpetseverywhere'
     output = run('ls', '/tmp')
     assert output == 'trumpetseverywhere'
 
