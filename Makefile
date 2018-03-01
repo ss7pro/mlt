@@ -39,7 +39,12 @@ lint3: lint
 
 unit_test: venv
 	@echo "Running unit tests..."
-	@. $(ACTIVATE) && pytest -v $(TESTOPTS) tests/unit
+	@. $(ACTIVATE) && pytest -v --cov-report term-missing --cov=tests/unit \
+		--cov-report html $(TESTOPTS) tests/unit
+
+coverage: unit_test
+	@echo "Serving coverage report at: http://$(shell hostname -f):8000"
+	@-cd htmlcov && python -m SimpleHTTPServer
 
 unit_test3: PY_VERSION=3
 unit_test3: unit_test
