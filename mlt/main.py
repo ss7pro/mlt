@@ -15,18 +15,20 @@ Options:
   --registry=<registry> Container registry to use.
                         If none is set, will attempt to use gcloud.
 """
+import os
 from docopt import docopt
 
-from mlt.commands import Build, Deploy, Init, Templates, Undeploy
+from mlt.commands import (BuildCommand, DeployCommand, InitCommand,
+                          TemplatesCommand, UndeployCommand)
 
 # every available command and its corresponding action will go here
 COMMAND_MAP = (
-    ('build', Build),
-    ('deploy', Deploy),
-    ('init', Init),
-    ('template', Templates),
-    ('templates', Templates),
-    ('undeploy', Undeploy),
+    ('build', BuildCommand),
+    ('deploy', DeployCommand),
+    ('init', InitCommand),
+    ('template', TemplatesCommand),
+    ('templates', TemplatesCommand),
+    ('undeploy', UndeployCommand),
 )
 
 

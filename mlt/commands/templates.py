@@ -5,7 +5,7 @@ from mlt import TEMPLATES_DIR
 from mlt.commands import Command
 
 
-class Templates(Command):
+class TemplatesCommand(Command):
     def action(self):
         """lists templates available"""
         self._parse_templates()

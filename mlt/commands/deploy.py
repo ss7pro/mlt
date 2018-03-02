@@ -7,18 +7,23 @@ from string import Template
 from subprocess import Popen, PIPE
 from termcolor import colored
 
-from mlt.commands import NeedsInitCommand, NeedsBuildCommand
-from mlt.utils import process_helpers, progress_bar, kubernetes_helpers
+from mlt.commands import Command
+from mlt.utils import (build_helpers, config_helpers, files,
+                       kubernetes_helpers, progress_bar, process_helpers)
 
 
-class Deploy(NeedsInitCommand, NeedsBuildCommand):
+class DeployCommand(Command):
+    def __init__(self, args):
+        super(DeployCommand, self).__init__(args)
+        self.config = config_helpers.load_config()
+        build_helpers.verify_build(self.args)
+
     def action(self):
         self._push()
 
         app_name = self.config['name']
         namespace = self.config['namespace']
-
-        remote_container_name = self._fetch_action_arg(
+        remote_container_name = files.fetch_action_arg(
             'push', 'last_remote_container')
 
         print("Deploying {}".format(remote_container_name))
@@ -42,11 +47,14 @@ class Deploy(NeedsInitCommand, NeedsBuildCommand):
                   "$ kubectl get --namespace={} all\n".format(namespace))
 
     def _push(self):
-        last_push_duration = self._fetch_action_arg(
+        last_push_duration = files.fetch_action_arg(
             'push', 'last_push_duration')
-        self.container_name = self._fetch_action_arg(
+        self.container_name = files.fetch_action_arg(
             'build', 'last_container')
 
+        self.started_push_time = time.time()
+        # TODO: unify these commands by factoring out docker command
+        # based on config
         if 'gceProject' in self.config:
             self._push_gke()
         else:
@@ -70,7 +78,7 @@ class Deploy(NeedsInitCommand, NeedsBuildCommand):
     def _push_gke(self):
         self.remote_container_name = "gcr.io/{}/{}".format(
             self.config['gceProject'], self.container_name)
-        self._start_push_time_and_tag()
+        self._tag()
         self.push_process = Popen(["gcloud", "docker", "--", "push",
                                    self.remote_container_name],
                                   stdout=PIPE, stderr=PIPE)
@@ -78,12 +86,11 @@ class Deploy(NeedsInitCommand, NeedsBuildCommand):
     def _push_docker(self):
         self.remote_container_name = "{}/{}".format(
             self.config['registry'], self.container_name)
-        self._start_push_time_and_tag()
+        self._tag()
         self.push_process = Popen(
             ["docker", "push", self.remote_container_name],
             stdout=PIPE, stderr=PIPE)
 
-    def _start_push_time_and_tag(self):
-        self.started_push_time = time.time()
+    def _tag(self):
         process_helpers.run(
             ["docker", "tag", self.container_name, self.remote_container_name])

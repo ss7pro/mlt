@@ -5,7 +5,7 @@ import pytest
 import shutil
 import uuid
 
-from mlt.commands.init import Init
+from mlt.commands.init import InitCommand
 from test_utils.io import catch_stdout
 
 
@@ -16,7 +16,7 @@ def test_init_dir_exists():
     try:
         with catch_stdout() as caught_output:
             with pytest.raises(SystemExit) as bad_init:
-                Init(init_dict).action()
+                InitCommand(init_dict).action()
                 assert caught_output.getvalue() == \
                     "Directory '{}' already exists: delete ".format(
                         new_dir) + "before trying to initialize new " + \
@@ -29,7 +29,7 @@ def test_init_dir_exists():
 @patch('mlt.commands.init.shutil')
 @patch('mlt.commands.init.process_helpers')
 @patch('mlt.commands.init.open')
-def test_init(shutil_mock, proc_helpers_mock, open_mock):
+def test_init(open_mock, proc_helpers, shutil_mock):
     open_mock = MockOpen()
     new_dir = str(uuid.uuid4())
     init_dict = {
@@ -38,7 +38,7 @@ def test_init(shutil_mock, proc_helpers_mock, open_mock):
         '<name>': new_dir,
         '--registry': None
     }
-    init = Init(init_dict)
+    init = InitCommand(init_dict)
     with patch('mlt.commands.init.check_output') as check_output_mock:
         check_output_mock.return_value.decode.return_value = 'tacos'
         init.action()
@@ -48,7 +48,7 @@ def test_init(shutil_mock, proc_helpers_mock, open_mock):
 @patch('mlt.commands.init.shutil')
 @patch('mlt.commands.init.process_helpers')
 @patch('mlt.commands.init.open')
-def test_init_registry(shutil_mock, proc_helpers_mock, open_mock):
+def test_init(open_mock, proc_helpers, shutil_mock):
     open_mock = MockOpen()
     new_dir = str(uuid.uuid4())
     init_dict = {
@@ -57,6 +57,6 @@ def test_init_registry(shutil_mock, proc_helpers_mock, open_mock):
         '<name>': new_dir,
         '--registry': True
     }
-    init = Init(init_dict)
+    init = InitCommand(init_dict)
     init.action()
     assert init.app_name == new_dir

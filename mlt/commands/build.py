@@ -6,13 +6,16 @@ import sys
 from watchdog.observers import Observer
 from termcolor import colored
 
-from mlt.commands import NeedsInitCommand
+from mlt.commands import Command
 from mlt.event_handler import EventHandler
-from mlt.utils import progress_bar
-from mlt.utils.process_helpers import run_popen
+from mlt.utils import config_helpers, files, progress_bar, process_helpers
 
 
-class Build(NeedsInitCommand):
+class BuildCommand(Command):
+    def __init__(self, args):
+        super(BuildCommand, self).__init__(args)
+        self.config = config_helpers.load_config()
+
     def action(self):
         """creates docker images
            if `--watch` is passed, continually will build on change
@@ -20,7 +23,7 @@ class Build(NeedsInitCommand):
         self._watch_and_build() if self.args['--watch'] else self._build()
 
     def _build(self):
-        last_build_duration = self._fetch_action_arg(
+        last_build_duration = files.fetch_action_arg(
             'build', 'last_build_duration')
 
         started_build_time = time.time()
@@ -29,7 +32,7 @@ class Build(NeedsInitCommand):
         print("Starting build {}".format(container_name))
 
         # Add bar
-        build_process = run_popen(
+        build_process = process_helpers.run_popen(
             ["docker", "build", "-t", container_name, "."])
 
         progress_bar.duration_progress(

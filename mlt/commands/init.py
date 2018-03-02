@@ -9,14 +9,17 @@ from mlt.commands import Command
 from mlt.utils import process_helpers
 
 
-class Init(Command):
-    # debated using `git` package instead of calling out to git, but
-    # git package takes a bit to import afair so didn't change it on first pass
+class InitCommand(Command):
+    def __init__(self, args):
+        super(InitCommand, self).__init__(args)
+        self.app_name = self.args["<name>"]
+
     def action(self):
-        """creates a new mlt git package in the current folder"""
+        """Creates a new git repository based on an mlt template in the
+           current working directory.
+        """
         template_directory = os.path.join(
             TEMPLATES_DIR, self.args["--template"])
-        self.app_name = self.args["<name>"]
 
         try:
             shutil.copytree(template_directory, self.app_name)

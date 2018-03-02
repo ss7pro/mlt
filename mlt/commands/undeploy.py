@@ -1,8 +1,12 @@
-from mlt.commands import NeedsInitCommand
-from mlt.utils import process_helpers
+from mlt.commands import Command
+from mlt.utils import config_helpers, process_helpers
 
 
-class Undeploy(NeedsInitCommand):
+class UndeployCommand(Command):
+    def __init__(self, args):
+        super(UndeployCommand, self).__init__(args)
+        self.config = config_helpers.load_config()
+
     def action(self):
         """deletes current kubernetes namespace"""
         namespace = self.config['namespace']
