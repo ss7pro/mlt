@@ -1,5 +1,5 @@
 import sys
-from subprocess import check_output, CalledProcessError
+from subprocess import check_output, CalledProcessError, Popen, PIPE, STDOUT
 
 
 def run(command, cwd=None):
@@ -10,3 +10,7 @@ def run(command, cwd=None):
         sys.exit(1)
 
     return output
+
+
+def run_popen(command_array):
+    return Popen(command_array, stdout=PIPE, stderr=STDOUT)

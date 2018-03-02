@@ -31,7 +31,10 @@ Installation:
 
 ```bash
 $ make
-$ source ./env/bin/activate
+# Two different options to running `mlt`:
+$ source ./.venv/bin/activate
+# add this to ~/.bash_profile, ~/.bashrc, etc and then source it
+alias mlt='{path_to_mlt_repo}/.venv/bin/mlt'
 ```
 
 ## Usage summary

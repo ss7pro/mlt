@@ -7,95 +7,91 @@ from string import Template
 from subprocess import Popen, PIPE
 from termcolor import colored
 
-from mlt.commands import build
-from mlt.utils import process_helpers, progress_bar, kubernetes_helpers
+from mlt.commands.base import Command
+from mlt.utils import (build_helpers, config_helpers, files,
+                       kubernetes_helpers, progress_bar, process_helpers)
 
 
-def deploy(args):
-    if not os.path.isfile('.build.json'):
-        build.do_build(args)
+class DeployCommand(Command):
+    def __init__(self, args):
+        super(DeployCommand, self).__init__(args)
+        self.config = config_helpers.load_config()
+        build_helpers.verify_build(self.args)
 
-    do_push(args)
+    def action(self):
+        self._push()
 
-    config = json.load(open('mlt.json'))
-    app_name = config['name']
-    namespace = config['namespace']
+        app_name = self.config['name']
+        namespace = self.config['namespace']
 
-    status = json.load(open('.push.json'))
-    remote_container_name = status['last_remote_container']
-    run_id = str(uuid.uuid4())
+        remote_container_name = files.fetch_action_arg(
+            'push', 'last_remote_container')
 
-    print("Deploying %s" % remote_container_name)
+        print("Deploying {}".format(remote_container_name))
 
-    # Write new container to deployment
-    for filename in os.listdir("k8s-templates"):
-        with open('k8s-templates/' + filename) as f:
-            deployment_template = f.read()
-            s = Template(deployment_template)
-            out = s.substitute(image=remote_container_name,
-                               app=app_name, run=run_id)
+        # Write new container to deployment
+        for filename in os.listdir("k8s-templates"):
+            with open(os.path.join('k8s-templates', filename)) as f:
+                template = Template(f.read())
+                out = template.substitute(image=remote_container_name,
+                                          app=app_name, run=str(uuid.uuid4()))
 
-            with open('k8s/' + filename, 'w') as f:
-                f.write(out)
+                with open(os.path.join('k8s', filename), 'w') as f:
+                    f.write(out)
 
-        kubernetes_helpers.ensure_namespace_exists(namespace)
-        process_helpers.run(
-            ["kubectl", "--namespace", namespace, "apply", "-R", "-f", "k8s"])
+            kubernetes_helpers.ensure_namespace_exists(namespace)
+            process_helpers.run(
+                ["kubectl", "--namespace", namespace, "apply", "-R",
+                 "-f", "k8s"])
 
-        print("\nInspect created objects by running:\n"
-              "$ kubectl get --namespace=%s all\n" % namespace)
+            print("\nInspect created objects by running:\n"
+                  "$ kubectl get --namespace={} all\n".format(namespace))
 
+    def _push(self):
+        last_push_duration = files.fetch_action_arg(
+            'push', 'last_push_duration')
+        self.container_name = files.fetch_action_arg(
+            'push', 'last_container')
 
-def do_push(args):
-    last_push_duration = None
-    if os.path.isfile('.push.json'):
-        status = json.load(open('.push.json'))
-        last_push_duration = status['last_push_duration']
+        self.started_push_time = time.time()
+        # TODO: unify these commands by factoring out docker command
+        # based on config
+        if 'gceProject' in self.config:
+            self._push_gke()
+        else:
+            self._push_docker()
 
-    container_name = None
-    if os.path.isfile('.build.json'):
-        status = json.load(open('.build.json'))
-        container_name = status['last_container']
-    else:
-        print("Need to run build before pushing")
-        sys.exit(1)
+        progress_bar.duration_progress(
+            'Pushing ', last_push_duration,
+            lambda: self.push_process.poll() is not None)
+        if self.push_process.poll() != 0:
+            print(colored(self.push_process.communicate()[0], 'red'))
+            sys.exit(1)
 
-    config = json.load(open('mlt.json'))
+        with open('.push.json', 'w') as f:
+            f.write(json.dumps({
+                "last_remote_container": self.remote_container_name,
+                "last_push_duration": time.time() - self.started_push_time
+            }))
 
-    is_gke = ('gceProject' in config)
+        print("Pushed to {}".format(self.remote_container_name))
 
-    if is_gke:
-        remote_container_name = "gcr.io/" + \
-            config['gceProject'] + "/" + container_name
-    else:
-        remote_container_name = config['registry'] + "/" + container_name
+    def _push_gke(self):
+        self.remote_container_name = "gcr.io/" + \
+            self.config['gceProject'] + "/" + self.container_name
+        self._tag()
+        self.push_process = Popen(["gcloud", "docker", "--", "push",
+                                   self.remote_container_name],
+                                  stdout=PIPE, stderr=PIPE)
 
-    started_push_time = time.time()
-    process_helpers.run(
-        ["docker", "tag", container_name, remote_container_name])
-
-    if is_gke:
-        push_process = Popen(["gcloud", "docker", "--", "push",
-                              remote_container_name], stdout=PIPE, stderr=PIPE)
-    else:
-        push_process = Popen(
-            ["docker", "push", remote_container_name],
+    def _push_docker(self):
+        self.remote_container_name = self.config['registry'] + \
+            "/" + self.container_name
+        self._tag()
+        self.push_process = Popen(
+            ["docker", "push", self.remote_container_name],
             stdout=PIPE, stderr=PIPE)
 
-    def push_is_done():
-        return push_process.poll() is not None
-    progress_bar.duration_progress(
-        'Pushing ', last_push_duration, push_is_done)
-    if push_process.poll() != 0:
-        print(colored(push_process.communicate()[0], 'red'))
-        sys.exit(1)
-
-    pushed_time = time.time()
-
-    with open('.push.json', 'w') as f:
-        f.write(json.dumps({
-            "last_remote_container": remote_container_name,
-            "last_push_duration": pushed_time - started_push_time
-        }))
-
-    print("Pushed to %s" % remote_container_name)
+    def _tag(self):
+        process_helpers.run(
+            ["docker", "tag", self.container_name, self.remote_container_name])

@@ -1,16 +1,14 @@
-import os
-import sys
-import json
-
-from mlt.utils import process_helpers
+from mlt.commands.base import Command
+from mlt.utils import config_helpers, process_helpers
 
 
-def undeploy(args):
-    if not os.path.isfile('mlt.json'):
-        print("run `mlt undeploy` within a project directory")
-        sys.exit(1)
+class UndeployCommand(Command):
+    def __init__(self, args):
+        super(UndeployCommand, self).__init__(args)
+        self.config = config_helpers.load_config()
 
-    config = json.load(open('mlt.json'))
-    namespace = config['namespace']
-    process_helpers.run(
-        ["kubectl", "--namespace", namespace, "delete", "-f", "k8s"])
+    def action(self):
+        """deletes current kubernetes namespace"""
+        namespace = self.config['namespace']
+        process_helpers.run(
+            ["kubectl", "--namespace", namespace, "delete", "-f", "k8s"])

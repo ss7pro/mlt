@@ -1,59 +1,60 @@
+import json
 import os
 import sys
 import shutil
 from subprocess import check_output
+
+from mlt import TEMPLATES_DIR
+from mlt.commands.base import Command
 from mlt.utils import process_helpers
 
 
-def init(args):
-    template_directory = "/".join([os.path.dirname(__file__),
-                                   "..", "..", "templates",
-                                   args["--template"]])
-    app_name = args["<name>"]
+class InitCommand(Command):
+    def __init__(self, args):
+        super(InitCommand, self).__init__(args)
+        self.app_name = self.args["<name>"]
 
-    print(args)
-    is_gke = args["--registry"] is None
+    def action(self):
+        """Creates a new git repository based on an mlt template in the
+           current working directory.
+        """
+        template_directory = os.path.join(
+            TEMPLATES_DIR, self.args["--template"])
 
-    try:
-        shutil.copytree(template_directory, app_name)
+        try:
+            shutil.copytree(template_directory, self.app_name)
+            data = self._build_mlt_json()
+            with open(os.path.join(self.app_name, 'mlt.json'), 'w') as f:
+                f.write(json.dump(data, f, indent=2))
+            self._init_git_repo()
+        except OSError as exc:
+            if exc.errno == 17:
+                print(
+                    "Directory '{}' already exists: delete before trying to "
+                    "initialize new application".format(self.app_name))
+            else:
+                print(exc)
 
-        if is_gke:
+            sys.exit(1)
+
+    def _build_mlt_json(self):
+        """generates the data to write to mlt.json"""
+        data = {'name': self.app_name, 'namespace': self.app_name}
+        if self.args["--registry"] is None:
             raw_project_bytes = check_output(
                 ["gcloud", "config", "list", "--format",
                  "value(core.project)"])
             project = raw_project_bytes.decode("utf-8").strip()
-
-            with open(app_name + '/mlt.json', 'w') as f:
-                f.write('''
-{
-"name": "%s",
-"namespace": "%s",
-"gceProject": "%s"
-}
-    ''' % (app_name, app_name, project))
-
+            data['gceProject'] = project
         else:
-            with open(app_name + '/mlt.json', 'w') as f:
-                f.write('''
-{
-"name": "%s",
-"namespace": "%s",
-"registry": "%s"
-}
-    ''' % (app_name, app_name, args["--registry"]))
+            data['registry'] = self.args["--registry"]
+        return data
 
-        # Initialize new git repo in the project dir and commit initial state.
-        process_helpers.run(["git", "init", app_name])
-        process_helpers.run(["git", "add", "."], cwd=app_name)
+    def _init_git_repo(self):
+        """
+        Initialize new git repo in the project dir and commit initial state.
+        """
+        process_helpers.run(["git", "init", self.app_name])
+        process_helpers.run(["git", "add", "."], cwd=self.app_name)
         print(process_helpers.run(
-            ["git", "commit", "-m", "Initial commit."], cwd=app_name))
-
-    except OSError as exc:
-        if exc.errno == 17:
-            print(
-                "Directory '%s' already exists: delete before trying to "
-                "initialize new application" % app_name)
-        else:
-            print(exc)
-
-        sys.exit(1)
+            ["git", "commit", "-m", "Initial commit."], cwd=self.app_name))
