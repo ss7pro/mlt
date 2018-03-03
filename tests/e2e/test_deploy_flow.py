@@ -1,9 +1,10 @@
 from contextlib import contextmanager
 import json
+import os
 import shutil
 import subprocess
 import tempfile
-import os
+import uuid
 
 from mlt.utils.process_helpers import run, run_popen_unsecure
 
@@ -23,22 +24,24 @@ def create_work_dir():
 # whole flow built on itself
 # TODO: figure out a better way maybe?
 def test_flow():
+    # just in case tests fail during development, want a clean namespace always
+    namespace = str(uuid.uuid4())[:10]
     with create_work_dir() as workdir:
-        project_dir = os.path.join(workdir, 'foobar')
+        project_dir = os.path.join(workdir, namespace)
         mlt_json = os.path.join(project_dir, 'mlt.json')
         build_json = os.path.join(project_dir, '.build.json')
         deploy_json = os.path.join(project_dir, '.push.json')
 
         # mlt init
         p = subprocess.Popen(
-            ['mlt', 'init', '--registry=localhost:5000', 'foobar'],
+            ['mlt', 'init', '--registry=localhost:5000', namespace],
             cwd=workdir)
         assert p.wait() == 0
         assert os.path.isfile(mlt_json)
         with open(mlt_json) as f:
             assert json.loads(f.read()) == {
-                'namespace': 'foobar',
-                'name': 'foobar',
+                'namespace': namespace,
+                'name': namespace,
                 'registry': 'localhost:5000'
             }
         # verify we created a git repo with our project init
@@ -54,10 +57,10 @@ def test_flow():
             build_data = json.loads(f.read())
             assert 'last_container' in build_data and \
                 'last_build_duration' in build_data
-        # verify that we created a docker image with repo name `foobar`
+        # verify that we created a docker image
         assert run_popen_unsecure(
             "docker images | awk '{print $1}' | sed -n 2p"
-        ).stdout.read().strip() == 'foobar'
+        ).stdout.read().strip() == namespace
 
         # mlt deploy
         p = subprocess.Popen(['mlt', 'deploy'], cwd=project_dir)
@@ -69,19 +72,20 @@ def test_flow():
             assert 'last_push_duration' in deploy_data and \
                 'last_remote_container' in deploy_data
         # verify that the docker image has been pushed to our local registry
-        assert run_popen_unsecure(
-            "curl --noproxy \"*\"  localhost:5000/v2/_catalog | "
-            "jq .repositories | jq 'contains([\"foobar\"])'"
-        ).stdout.read().strip() == 'true'
+        assert 'true' in run_popen_unsecure(
+            "curl --noproxy \"*\"  registry:5000/v2/_catalog | "
+            "jq .repositories | jq 'contains([\"{}\"])'".format(namespace)
+        ).stdout.read().strip()
         # verify that our job did indeed get deployed to k8s
         assert run_popen_unsecure(
-            "kubectl get jobs --namespace=foobar | awk '{print $1}' | "
-            "sed -n 2p").stdout.read().strip() is not None
+            "kubectl get jobs --namespace={} | awk '{{print $1}}' | "
+            "sed -n 2p".format(namespace)).stdout.read().strip() is not None
 
         # mlt undeploy
         p = subprocess.Popen(['mlt', 'undeploy'], cwd=project_dir)
         assert p.wait() == 0
         # verify no more deployment job
         assert run_popen_unsecure(
-            "kubectl get jobs --namespace=foobar | awk '{print $1}' | "
-            "sed -n 2p").stdout.read().strip() == "No resources found."
+            "kubectl get jobs --namespace={} | awk '{{print $1}}' | "
+            "sed -n 2p".format(namespace)
+        ).stdout.read().strip() == "No resources found."
