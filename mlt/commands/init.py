@@ -1,3 +1,4 @@
+import getpass
 import json
 import os
 import sys
@@ -39,7 +40,8 @@ class InitCommand(Command):
 
     def _build_mlt_json(self):
         """generates the data to write to mlt.json"""
-        data = {'name': self.app_name, 'namespace': self.app_name}
+        data = {'name': self.app_name,
+                'namespace': getpass.getuser()+'-'+self.app_name}
         if self.args["--registry"] is None:
             raw_project_bytes = check_output(
                 ["gcloud", "config", "list", "--format",
