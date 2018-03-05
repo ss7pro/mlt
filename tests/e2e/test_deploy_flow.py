@@ -59,8 +59,8 @@ def test_flow():
                 'last_build_duration' in build_data
         # verify that we created a docker image
         assert run_popen_unsecure(
-            "docker images | awk '{print $1}' | sed -n 2p"
-        ).stdout.read().strip() == namespace
+            "cat {}/.build.json | jq .last_container | xargs -n1 ".format(
+                project_dir) + "docker image inspect").wait() == 0
 
         # mlt deploy
         p = subprocess.Popen(['mlt', 'deploy'], cwd=project_dir)
@@ -78,14 +78,12 @@ def test_flow():
         ).stdout.read().strip()
         # verify that our job did indeed get deployed to k8s
         assert run_popen_unsecure(
-            "kubectl get jobs --namespace={} | awk '{{print $1}}' | "
-            "sed -n 2p".format(namespace)).stdout.read().strip() is not None
+            "kubectl get jobs --namespace={}".format(namespace)).wait() == 0
 
         # mlt undeploy
         p = subprocess.Popen(['mlt', 'undeploy'], cwd=project_dir)
         assert p.wait() == 0
         # verify no more deployment job
         assert run_popen_unsecure(
-            "kubectl get jobs --namespace={} | awk '{{print $1}}' | "
-            "sed -n 2p".format(namespace)
-        ).stdout.read().strip() == "No resources found."
+            "kubectl get jobs --namespace={}".format(namespace)
+        ).wait() == 0
