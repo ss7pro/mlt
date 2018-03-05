@@ -1,4 +1,4 @@
-from mock import patch
+from mock import patch, MagicMock
 import pytest
 
 from mlt.utils.progress_bar import duration_progress
@@ -6,15 +6,12 @@ from mlt.utils.progress_bar import duration_progress
 
 @patch('mlt.utils.progress_bar.progressbar')
 def test_duration_progress_not_done(progressbar):
-    """duration progress + not is_done once"""
-    test_duration_progress_not_done.done = False
-
-    def not_done():
-        if test_duration_progress_not_done.done:
-            return True
-        test_duration_progress_not_done.done = True
-
-    duration_progress('billy', 1, not_done)
+    """We have a duration of 1 and then we aren't done once
+       and then we finish, which means bar.next() is called twice inside
+       of the for loop and and update happens once as we're done early
+    """
+    duration_progress('activity', 1, MagicMock(
+        side_effect=[False, True, True]))
 
     progressbar_obj = progressbar.ProgressBar.return_value.return_value
     assert progressbar_obj.next.call_count == 2
@@ -23,8 +20,11 @@ def test_duration_progress_not_done(progressbar):
 
 @patch('mlt.utils.progress_bar.progressbar')
 def test_duration_progress_duration_done(progressbar):
-    """duration progress + done immediately"""
-    duration_progress('billy', 1, lambda: True)
+    """We have a duration of 1 but then terminate immediately
+       So we have a bar.next() call, then we update as we're done early
+       and then `if not is_done()` is not called so func terminates
+    """
+    duration_progress('activity', 1, lambda: True)
 
     progressbar_obj = progressbar.ProgressBar.return_value.return_value
     assert progressbar_obj.next.call_count == 1
@@ -33,17 +33,11 @@ def test_duration_progress_duration_done(progressbar):
 
 @patch('mlt.utils.progress_bar.progressbar')
 def test_duration_progress_no_duration_not_done(progressbar):
-    """no duration progress + not done + while not_is_done one iteration"""
-
-    test_duration_progress_no_duration_not_done.done = 1
-
-    def done():
-        if test_duration_progress_no_duration_not_done.done | 3 == 3:
-            test_duration_progress_no_duration_not_done.done += 1
-            return False
-        return True
-
-    duration_progress('billy', None, done)
+    """We have no duration, then we aren't done yet, then we enter the while
+       loop for one iteration to update the bar and then terminate
+    """
+    duration_progress('activity', None, MagicMock(
+        side_effect=[False, False, False, True]))
 
     progressbar_obj = progressbar.ProgressBar.return_value.return_value
     progressbar_obj.next.assert_not_called()
@@ -52,8 +46,8 @@ def test_duration_progress_no_duration_not_done(progressbar):
 
 @patch('mlt.utils.progress_bar.progressbar')
 def test_duration_progress_no_duration_done(progressbar):
-    """no duration progress + done immediately"""
-    duration_progress('billy', None, lambda: True)
+    """Duration is None and we are done so nothing is called in the func"""
+    duration_progress('activity', None, lambda: True)
 
     progressbar_obj = progressbar.ProgressBar.return_value.return_value
     progressbar_obj.next.assert_not_called()
