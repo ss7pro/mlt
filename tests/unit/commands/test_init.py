@@ -40,7 +40,7 @@ def test_init(open_mock, proc_helpers, shutil_mock):
     }
     init = InitCommand(init_dict)
     with patch('mlt.commands.init.check_output') as check_output_mock:
-        check_output_mock.return_value.decode.return_value = 'tacos'
+        check_output_mock.return_value.decode.return_value = 'bar'
         init.action()
     assert init.app_name == new_dir
 

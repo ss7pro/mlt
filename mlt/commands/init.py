@@ -3,6 +3,7 @@ import os
 import sys
 import shutil
 from subprocess import check_output
+import traceback
 
 from mlt import TEMPLATES_DIR
 from mlt.commands import Command
@@ -33,7 +34,6 @@ class InitCommand(Command):
                     "Directory '{}' already exists: delete before trying to "
                     "initialize new application".format(self.app_name))
             else:
-                import traceback
                 traceback.print_exc()
 
             sys.exit(1)
