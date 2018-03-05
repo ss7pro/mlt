@@ -57,10 +57,10 @@ def test_flow():
             build_data = json.loads(f.read())
             assert 'last_container' in build_data and \
                 'last_build_duration' in build_data
-        # verify that we created a docker image
-        assert run_popen_unsecure(
-            "cat {}/.build.json | jq .last_container | xargs -n1 ".format(
-                project_dir) + "docker image inspect").wait() == 0
+            # verify that we created a docker image
+            assert run_popen_unsecure(
+                "docker image inspect {}".format(build_data['last_container'])
+            ).wait() == 0
 
         # mlt deploy
         p = subprocess.Popen(['mlt', 'deploy'], cwd=project_dir)
