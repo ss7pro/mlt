@@ -6,7 +6,7 @@ import sys
 from watchdog.observers import Observer
 from termcolor import colored
 
-from mlt.commands.base import Command
+from mlt.commands import Command
 from mlt.event_handler import EventHandler
 from mlt.utils import config_helpers, files, progress_bar, process_helpers
 

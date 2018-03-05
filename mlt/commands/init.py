@@ -5,7 +5,7 @@ import shutil
 from subprocess import check_output
 
 from mlt import TEMPLATES_DIR
-from mlt.commands.base import Command
+from mlt.commands import Command
 from mlt.utils import process_helpers
 
 
@@ -25,7 +25,7 @@ class InitCommand(Command):
             shutil.copytree(template_directory, self.app_name)
             data = self._build_mlt_json()
             with open(os.path.join(self.app_name, 'mlt.json'), 'w') as f:
-                f.write(json.dump(data, f, indent=2))
+                json.dump(data, f, indent=2)
             self._init_git_repo()
         except OSError as exc:
             if exc.errno == 17:
@@ -33,7 +33,7 @@ class InitCommand(Command):
                     "Directory '{}' already exists: delete before trying to "
                     "initialize new application".format(self.app_name))
             else:
-                print(exc)
+                print("Exception: {}".format(exc))
 
             sys.exit(1)
 

@@ -1,4 +1,4 @@
-from mlt.commands.base import Command
+from mlt.commands import Command
 from mlt.utils import config_helpers, process_helpers
 
 

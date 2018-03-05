@@ -2,7 +2,7 @@ import os
 from tabulate import tabulate
 
 from mlt import TEMPLATES_DIR
-from mlt.commands.base import Command
+from mlt.commands import Command
 
 
 class TemplatesCommand(Command):

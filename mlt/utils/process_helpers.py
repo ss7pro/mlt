@@ -14,3 +14,7 @@ def run(command, cwd=None):
 
 def run_popen(command_array):
     return Popen(command_array, stdout=PIPE, stderr=STDOUT)
+
+
+def run_popen_unsecure(command_string):
+    return Popen(command_string, stdout=PIPE, stderr=STDOUT, shell=True)

@@ -15,8 +15,6 @@ Options:
   --registry=<registry> Container registry to use.
                         If none is set, will attempt to use gcloud.
 """
-import os
-
 from docopt import docopt
 
 from mlt.commands import (BuildCommand, DeployCommand, InitCommand,
@@ -43,12 +41,4 @@ def run_command(args):
 
 def main():
     args = docopt(__doc__, version="ML Container Templates v0.0.1")
-    try:
-        run_command(args)
-    except Exception as e:
-        # ex: export MLT_DEBUG=1 will dump a traceback on fail
-        if os.environ.get('MLT_DEBUG', '') != '':
-            import traceback
-            traceback.print_exc()
-        else:
-            print(e)
+    run_command(args)
