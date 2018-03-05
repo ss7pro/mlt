@@ -30,7 +30,7 @@ lint2: venv2
 
 unit_test2: venv2
 	@echo "Running unit tests..."
-	@. $(ACTIVATE) && pytest -v --cov-report term-missing --cov=tests/unit \
+	@. $(ACTIVATE2) && pytest -v --cov-report term-missing --cov=tests/unit \
 		--cov-report html $(TESTOPTS) tests/unit
 
 $(ACTIVATE3): requirements.txt requirements-dev.txt
@@ -49,7 +49,7 @@ lint3: venv3
 
 unit_test3: venv3
 	@echo "Running unit tests..."
-	@. $(ACTIVATE) && pytest -v --cov-report term-missing --cov=tests/unit \
+	@. $(ACTIVATE3) && pytest -v --cov-report term-missing --cov=tests/unit \
 		--cov-report html $(TESTOPTS) tests/unit
 
 coverage: unit_test
