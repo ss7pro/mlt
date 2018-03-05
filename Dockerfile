@@ -1,9 +1,13 @@
 FROM ubuntu:16.04
 
-RUN apt-get update
+# fix-missing is needed to get `git` to work
+RUN apt-get update --fix-missing
+RUN apt-get upgrade -y
 RUN apt-get install -y apt-transport-https \
     ca-certificates \
     curl \
+    git \
+    jq \
     software-properties-common
 RUN curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add -
 RUN add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
@@ -17,7 +21,7 @@ RUN mv ./kubectl /usr/local/bin/kubectl
 ADD . /usr/share/mlt
 
 WORKDIR /usr/share/mlt
-RUN make venv
+RUN make clean
 
 RUN git config --global user.email "test@docker"
 RUN git config --global user.name "Test Docker User"
