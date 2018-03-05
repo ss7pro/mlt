@@ -1,49 +1,54 @@
 SHELL=bash
 
-.PHONY: venv
+.PHONY: venv venv2 venv3 lint lint2 lint3 unit_test unit_test2 unit_test3 clean test
+
+VENV2_BIN := virtualenv
+VENV3_BIN := python3 -m venv
+VENV2_DIR := .venv
+VENV3_DIR := .venv3
+ACTIVATE2 := .venv/bin/activate
+ACTIVATE3 := .venv3/bin/activate
 
 all: venv
 
-# HERE BE DRAGONS
-# When make resolves variable names, it does two passes:
-# 1. immediately resolve targets and dependencies
-# 2. in a deferred manner, resolve variables used inside build targets
-# This means that for the first pass, lazy evaluation is not lazy, and a
-# variable used as a target/dependency may have a different value from the same
-# variable *within* the build target.
-# see https://www.gnu.org/software/make/manual/html_node/Reading-Makefiles.html for details
-# Thus, the only way* to parametrize build targets is by using functions, and the
-# arguments cannot be named/aliased.  Welcome to `make`.
-
-# *secondary expansion might also work, but it's no prettier
-
-# pyversion_targets(python_version, venv_cmd, venv_dir, activate)
-define pyversion_targets
 # we need to update pip and setuptools because venv versions aren't latest
 # need to prepend `activate` everywhere because all make calls are in subshells
 # otherwise we won't be installing anything in the venv itself
-$(4): requirements.txt requirements-dev.txt
-	@echo "Updating virtualenv dependencies in: $(3)..."
-	@test -d $(3) || $(2) $(3)
-	@. $(4) && python$(1) -m pip install -U pip setuptools
-	@. $(4) && python$(1) -m pip install -r requirements.txt -r requirements-dev.txt
-	@. $(4) && python$(1) -m pip install -e .
+$(ACTIVATE2): requirements.txt requirements-dev.txt
+	@echo "Updating virtualenv dependencies in: $(VENV2_DIR)..."
+	@test -d $(VENV2_DIR) || $(VENV2_BIN) $(VENV2_DIR)
+	@. $(ACTIVATE2) && python -m pip install -U pip setuptools
+	@. $(ACTIVATE2) && python -m pip install -r requirements.txt -r requirements-dev.txt
+	@. $(ACTIVATE2) && python -m pip install -e .
 
-venv$(1): $(4)
+venv2: $(ACTIVATE2)
 	@echo -n "Using "
-	@. $(4) && python --version
+	@. $(ACTIVATE2) && python --version
 
-lint$(1): venv$(1)
-	@. $(4) && flake8 bin/mlt mlt
+lint2: venv2
+	@. $(ACTIVATE2) && flake8 bin/mlt mlt
 
-unit_test$(1): venv$(1)
+unit_test2: venv2
 	@echo "Running unit tests..."
-	@. $(4) && pytest -v $$(TESTOPTS) tests/unit
+	@. $(ACTIVATE2) && pytest -v $(TESTOPTS) tests/unit
 
-endef
+$(ACTIVATE3): requirements.txt requirements-dev.txt
+	@echo "Updating virtualenv dependencies in: $(VENV3_DIR)..."
+	@test -d $(VENV3_DIR) || $(VENV3_BIN) $(VENV3_DIR)
+	@. $(ACTIVATE3) && python$(1) -m pip install -U pip setuptools
+	@. $(ACTIVATE3) && python$(1) -m pip install -r requirements.txt -r requirements-dev.txt
+	@. $(ACTIVATE3) && python$(1) -m pip install -e .
 
-$(eval $(call pyversion_targets,2,virtualenv,.venv,.venv/bin/activate))
-$(eval $(call pyversion_targets,3,python3 -m venv,.venv3,.venv3/bin/activate))
+venv3: $(ACTIVATE3)
+	@echo -n "Using "
+	@. $(ACTIVATE3) && python --version
+
+lint3: venv3
+	@. $(ACTIVATE3) && flake8 bin/mlt mlt
+
+unit_test3: venv3
+	@echo "Running unit tests..."
+	@. $(ACTIVATE3) && pytest -v $(TESTOPTS) tests/unit
 
 # defaults/shortcuts for python 2
 venv: venv2
