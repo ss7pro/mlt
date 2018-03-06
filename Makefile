@@ -30,7 +30,8 @@ lint2: venv2
 
 unit_test2: venv2
 	@echo "Running unit tests..."
-	@. $(ACTIVATE2) && pytest -v $(TESTOPTS) tests/unit
+	@. $(ACTIVATE2) && pytest -v --cov-report term-missing --cov-fail-under=90 --cov=tests/unit \
+		--cov-report html $(TESTOPTS) tests/unit
 
 $(ACTIVATE3): requirements.txt requirements-dev.txt
 	@echo "Updating virtualenv dependencies in: $(VENV3_DIR)..."
@@ -48,7 +49,16 @@ lint3: venv3
 
 unit_test3: venv3
 	@echo "Running unit tests..."
-	@. $(ACTIVATE3) && pytest -v $(TESTOPTS) tests/unit
+	@. $(ACTIVATE3) && pytest -v --cov-report term-missing --cov-fail-under=90 --cov=tests/unit \
+		--cov-report html $(TESTOPTS) tests/unit
+
+coverage: unit_test
+	@echo "Serving coverage report at: http://$(shell hostname -f):8000"
+	@-cd htmlcov && python -m SimpleHTTPServer
+
+coverage3: unit_test3
+	@echo "Serving coverage report at: http://$(shell hostname -f):8000"
+	@-cd htmlcov && python3 -m SimpleHTTPServer
 
 # defaults/shortcuts for python 2
 venv: venv2
