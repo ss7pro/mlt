@@ -17,7 +17,7 @@ all: venv
 $(ACTIVATE2): requirements.txt requirements-dev.txt
 	@echo "Updating virtualenv dependencies in: $(VENV2_DIR)..."
 	@test -d $(VENV2_DIR) || $(VENV2_BIN) $(VENV2_DIR)
-	@. $(ACTIVATE2) && python -m pip install -U pip setuptools
+	@. $(ACTIVATE2) && python -m pip install -U pip setuptools wheel
 	@. $(ACTIVATE2) && python -m pip install -r requirements.txt -r requirements-dev.txt
 	@. $(ACTIVATE2) && python -m pip install -e .
 
@@ -36,7 +36,7 @@ unit_test2: venv2
 $(ACTIVATE3): requirements.txt requirements-dev.txt
 	@echo "Updating virtualenv dependencies in: $(VENV3_DIR)..."
 	@test -d $(VENV3_DIR) || $(VENV3_BIN) $(VENV3_DIR)
-	@. $(ACTIVATE3) && python$(1) -m pip install -U pip setuptools
+	@. $(ACTIVATE3) && python$(1) -m pip install -U pip setuptools wheel
 	@. $(ACTIVATE3) && python$(1) -m pip install -r requirements.txt -r requirements-dev.txt
 	@. $(ACTIVATE3) && python$(1) -m pip install -e .
 
