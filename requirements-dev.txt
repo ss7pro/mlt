@@ -3,4 +3,3 @@ pytest
 pytest-cov
 mock
 mock-open
-wheel
