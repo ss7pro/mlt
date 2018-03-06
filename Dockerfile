@@ -7,6 +7,7 @@ RUN apt-get update && apt-get install -yq --no-install-recommends --fix-missing 
     curl \
     git \
     jq \
+    make \
     software-properties-common
 
 RUN curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add -
