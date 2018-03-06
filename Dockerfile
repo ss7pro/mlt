@@ -20,9 +20,8 @@ RUN apt-get update && apt-get install -yq --no-install-recommends --fix-missing 
 RUN curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add -
 RUN add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
 RUN apt-get update && apt-get install -yq --no-install-recommends --fix-missing \
-    docker-ce
-
-RUN apt-get clean && \
+    docker-ce && \
+    apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
 RUN curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.9.0/bin/linux/amd64/kubectl
