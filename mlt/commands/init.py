@@ -40,16 +40,17 @@ class InitCommand(Command):
 
     def _build_mlt_json(self):
         """generates the data to write to mlt.json"""
-        data = {'name': self.app_name,
-                'namespace': getpass.getuser()+'-'+self.app_name}
+        data = {'name': self.app_name, 'namespace': self.app_name}
         if self.args["--registry"] is None:
             raw_project_bytes = check_output(
                 ["gcloud", "config", "list", "--format",
                  "value(core.project)"])
             project = raw_project_bytes.decode("utf-8").strip()
             data['gceProject'] = project
+            data['namespace'] = getpass.getuser() + '-' + self.app_name
         else:
             data['registry'] = self.args["--registry"]
+
         return data
 
     def _init_git_repo(self):
