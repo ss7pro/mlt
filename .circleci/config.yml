@@ -10,10 +10,8 @@ jobs:
       - run:
           name: Installing lint dependencies
           command: |
-            apt-get update
             # python3-venv is necessary or else venv initialization fails
             # see alternate answer on https://stackoverflow.com/questions/39539110/pyvenv-not-working-because-ensurepip-is-not-available
-            apt-get install -yq --no-install-recommends --fix-missing python python-dev python-pip python3 python3-dev python3-pip python3-venv
             python2 -m pip install virtualenv
             python3 -m pip install virtualenv
       - run:
@@ -32,7 +30,28 @@ jobs:
           name: Installing dependencies
           command: |
             set -x
-            apt-get install -yq --no-install-recommends --fix-missing curl make git ssh tar python
+            apt-get update
+            apt-get install -yq --no-install-recommends --fix-missing \
+                apt-transport-https \
+                ca-certificates \
+                curl \
+                git \
+                jq \
+                make \
+                netcat \
+                python \
+                python-dev \
+                python-pip \
+                python-setuptools \
+                python-wheel \
+                python3 \
+                python3-dev \
+                python3-pip \
+                python3-setuptools \
+                python3-wheel \
+                software-properties-common \
+                ssh \
+                tar
             VER="17.03.0-ce"
             curl -L -o /tmp/docker-$VER.tgz https://get.docker.com/builds/Linux/x86_64/docker-$VER.tgz
             tar -xz -C /tmp -f /tmp/docker-$VER.tgz
