@@ -8,6 +8,8 @@ RUN apt-get update && apt-get install -yq --no-install-recommends --fix-missing 
     git \
     jq \
     make \
+    python-setuptools \
+    python3-setuptools \
     software-properties-common
 
 RUN curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add -
