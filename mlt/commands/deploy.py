@@ -19,7 +19,10 @@ class DeployCommand(Command):
         build_helpers.verify_build(self.args)
 
     def action(self):
-        self._push()
+        if self.args['--no-push']:
+            print("Skipping image push")
+        else:
+            self._push()
 
         app_name = self.config['name']
         namespace = self.config['namespace']
