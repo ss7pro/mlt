@@ -5,7 +5,7 @@ Usage:
   mlt --version
   mlt init [--template=<template>] [--registry=<registry>] <name>
   mlt build [--watch]
-  mlt deploy
+  mlt deploy [--no-push]
   mlt undeploy
   mlt (template | templates) list
 
