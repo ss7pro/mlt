@@ -27,4 +27,4 @@ class TemplatesCommand(Command):
                             continue
                         description = line
                         break
-            self.table.append([filename, description])
+                self.table.append([filename, description])

@@ -1,14 +1,19 @@
 FROM ubuntu:16.04
 
+# separately install software properties for adding apt-repo; then 1 update is needed rather than 2
+RUN apt-get update -y --fix-missing
+RUN apt-get install -y software-properties-common
+RUN add-apt-repository ppa:deadsnakes/ppa
+RUN apt-get update -y
 # fix-missing is needed to get `git` to work
-RUN apt-get update --fix-missing
 RUN apt-get upgrade -y
 RUN apt-get install -y apt-transport-https \
     ca-certificates \
     curl \
     git \
     jq \
-    software-properties-common
+    python3.6
+
 RUN curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add -
 RUN add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
 RUN apt-get update
@@ -21,7 +26,8 @@ RUN mv ./kubectl /usr/local/bin/kubectl
 ADD . /usr/share/mlt
 
 WORKDIR /usr/share/mlt
+# need to clean so as to not get conftest importmismatch error
 RUN make clean
 
-RUN git config --global user.email "test@docker"
+RUN git config --global user.email "test@example.com"
 RUN git config --global user.name "Test Docker User"
