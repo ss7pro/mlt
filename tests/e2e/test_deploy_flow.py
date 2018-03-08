@@ -72,10 +72,11 @@ def test_flow():
             assert 'last_push_duration' in deploy_data and \
                 'last_remote_container' in deploy_data
         # verify that the docker image has been pushed to our local registry
+        # need to decode because in python3 this output is in bytes
         assert 'true' in run_popen_unsecure(
             "curl --noproxy \"*\"  registry:5000/v2/_catalog | "
             "jq .repositories | jq 'contains([\"{}\"])'".format(namespace)
-        ).stdout.read().strip()
+        ).stdout.read().decode("utf-8")
         # verify that our job did indeed get deployed to k8s
         assert run_popen_unsecure(
             "kubectl get jobs --namespace={}".format(namespace)).wait() == 0

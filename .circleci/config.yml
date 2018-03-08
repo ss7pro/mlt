@@ -37,19 +37,18 @@ jobs:
                 tar
             # python3-venv is necessary or else venv initialization fails
             # see alternate answer on https://stackoverflow.com/questions/39539110/pyvenv-not-working-because-ensurepip-is-not-available
-            python2 -m pip install virtualenv
-            python3 -m pip install virtualenv
+            python2 -m pip install virtualenv tox
+            python3 -m pip install virtualenv tox
+
       - run:
           name: lint tests
           command: |
             make lint
-            make lint3
       
       - run:
           name: Run unit tests
           command: |
-            make unit_test
-            make unit_test3
+            make test
 
       - run:
           name: Installing docker dependencies

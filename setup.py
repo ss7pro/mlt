@@ -14,6 +14,10 @@ setup(name='mlt',
       entry_points={
           'console_scripts': ['mlt=mlt.main:main']
       },
+      package_data={
+          'mlt': ['../templates']
+      },
+      include_package_data=True,
       classifiers=['Development Status :: 3 - Alpha',
                    'Environment :: Console',
                    'Intended Audience :: End Users/Desktop',
