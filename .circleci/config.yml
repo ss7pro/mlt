@@ -15,13 +15,13 @@ jobs:
             # get python3 for tox
             apt-get update
             apt-get install -yq --no-install-recommends --fix-missing \
-                apt-transport-https \
-                ca-certificates \
+                # apt-transport-https \
+                # ca-certificates \
                 curl \
-                git \
-                jq \
+                # git \
+                # jq \
                 make \
-                netcat \
+                # netcat \
                 python \
                 python-dev \
                 python-pip \
@@ -33,11 +33,11 @@ jobs:
                 python3-setuptools \
                 python3-venv \
                 python3-wheel \
-                ssh \
+                # ssh \
                 tar
             # python3-venv is necessary or else venv initialization fails
             # see alternate answer on https://stackoverflow.com/questions/39539110/pyvenv-not-working-because-ensurepip-is-not-available
-            python3 -m pip install virtualenv tox
+            python3 -m pip install tox
 
       - run:
           name: lint tests
