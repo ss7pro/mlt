@@ -1,5 +1,4 @@
 from mock import patch
-from mock_open import MockOpen
 import os
 import pytest
 import shutil
@@ -31,7 +30,6 @@ def test_init_dir_exists():
 @patch('mlt.commands.init.process_helpers')
 @patch('mlt.commands.init.open')
 def test_init(open_mock, proc_helpers, shutil_mock, check_output):
-    open_mock = MockOpen()
     check_output_mock.return_value.decode.return_value = 'bar'
     new_dir = str(uuid.uuid4())
 
@@ -50,7 +48,6 @@ def test_init(open_mock, proc_helpers, shutil_mock, check_output):
 @patch('mlt.commands.init.process_helpers')
 @patch('mlt.commands.init.open')
 def test_init(open_mock, proc_helpers, shutil_mock):
-    open_mock = MockOpen()
     new_dir = str(uuid.uuid4())
     init_dict = {
         'init': True,

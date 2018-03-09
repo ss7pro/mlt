@@ -1,7 +1,6 @@
 from __future__ import print_function
 
 from mock import patch, MagicMock
-from mock_open import MockOpen
 
 from mlt.commands.deploy import DeployCommand
 from test_utils.io import catch_stdout
@@ -20,7 +19,6 @@ from test_utils.io import catch_stdout
 def test_deploy_gce(listdir_mock, progress_bar, popen_mock, open_mock,
                     template, kube_helpers, process_helpers, verify_build,
                     verify_init, fetch_action_arg):
-    open_mock = MockOpen()
     listdir_mock.return_value = ['besttacofile', 'besttrumpetfile']
     progress_bar.duration_progress.side_effect = \
         lambda x, y, z: print('Pushing ')
@@ -60,7 +58,6 @@ def test_deploy_gce(listdir_mock, progress_bar, popen_mock, open_mock,
 def test_deploy_docker(listdir_mock, progress_bar, popen_mock, open_mock,
                        template, kube_helpers, process_helpers, verify_build,
                        verify_init, fetch_action_arg):
-    open_mock = MockOpen()
     listdir_mock.return_value = ['besttacofile', 'besttrumpetfile']
     progress_bar.duration_progress.side_effect = \
         lambda x, y, z: print('Pushing ')
@@ -98,9 +95,8 @@ def test_deploy_docker(listdir_mock, progress_bar, popen_mock, open_mock,
 @patch('mlt.commands.deploy.progress_bar')
 @patch('mlt.commands.deploy.os.listdir')
 def test_deploy_without_push(listdir_mock, progress_bar, popen_mock, open_mock,
-                       template, kube_helpers, process_helpers, verify_build,
-                       verify_init, fetch_action_arg):
-    open_mock = MockOpen()
+                             template, kube_helpers, process_helpers,
+                             verify_build, verify_init, fetch_action_arg):
     listdir_mock.return_value = ['foo', 'bar']
     progress_bar.duration_progress.side_effect = \
         lambda x, y, z: print('Pushing ')

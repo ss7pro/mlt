@@ -1,7 +1,6 @@
 from __future__ import print_function
 
 from mock import patch, MagicMock
-from mock_open import MockOpen
 
 from mlt.commands.build import BuildCommand
 from test_utils.io import catch_stdout
@@ -13,7 +12,6 @@ from test_utils.io import catch_stdout
 @patch('mlt.commands.build.progress_bar')
 def test_simple_build(progress_bar, popen, open_mock,
                       verify_init):
-    open_mock = MockOpen()
     progress_bar.duration_progress.side_effect = \
         lambda x, y, z: print('Building')
     popen.return_value.poll.return_value = 0
@@ -38,7 +36,6 @@ def test_simple_build(progress_bar, popen, open_mock,
 @patch('mlt.commands.build.Observer')
 @patch('mlt.commands.build.open')
 def test_watch_build(open_mock, observer, sleep_mock, verify_init):
-    open_mock = MockOpen()
     sleep_mock.side_effect = KeyboardInterrupt
 
     build = BuildCommand({'build': True, '--watch': True})
