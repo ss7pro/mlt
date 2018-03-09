@@ -14,6 +14,8 @@ jobs:
           command: |
             # get python3 for tox
             apt-get update
+            apt-get install -yq --no-install-recommends --fix-missing \
+                software-properties-common
             add-apt-repository -y ppa:deadsnakes/ppa
             apt-get update
             apt-get install -yq --no-install-recommends --fix-missing \
@@ -35,7 +37,6 @@ jobs:
                 python3-setuptools \
                 python3-venv \
                 python3-wheel \
-                software-properties-common \
                 ssh \
                 tar
             # python3-venv is necessary or else venv initialization fails
