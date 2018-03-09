@@ -1,8 +1,7 @@
 FROM ubuntu:16.04
 
 # separately install software properties for adding apt-repo; then 1 update is needed rather than 2
-RUN apt-get update && apt-get install -yq --no-install-recommends --fix-missing \
-RUN apt-get install -y \
+RUN apt-get update && apt-get install -yq --no-install-recommends --fix-missing && \
     apt-transport-https \
     ca-certificates \
     curl \
