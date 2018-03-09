@@ -13,6 +13,7 @@ jobs:
           name: Installing test/lint dependencies
           command: |
             # get python3 for tox
+            apt-get update
             add-apt-repository -y ppa:deadsnakes/ppa
             apt-get update
             apt-get install -yq --no-install-recommends --fix-missing \
