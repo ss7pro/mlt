@@ -2,17 +2,14 @@ FROM ubuntu:16.04
 
 # separately install software properties for adding apt-repo; then 1 update is needed rather than 2
 RUN apt-get update -y --fix-missing
-RUN apt-get install -y software-properties-common
-RUN add-apt-repository ppa:deadsnakes/ppa
-RUN apt-get update -y
-# fix-missing is needed to get `git` to work
-RUN apt-get upgrade -y
-RUN apt-get install -y apt-transport-https \
+RUN apt-get install -y \
+    apt-transport-https \
     ca-certificates \
     curl \
     git \
     jq \
-    python3.6
+    python3 \
+    software-properties-common
 
 RUN curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add -
 RUN add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
