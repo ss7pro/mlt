@@ -6,12 +6,18 @@ import uuid
 
 from mlt.commands.init import InitCommand
 from test_utils.io import catch_stdout
+from test_utils import project
 
 
 def test_init_dir_exists():
     new_dir = str(uuid.uuid4())
     os.mkdir(new_dir)
-    init_dict = {'init': True, '--template': 'hello-world', '<name>': new_dir}
+    init_dict = {
+        'init': True,
+        '--template': 'hello-world',
+        '<name>': new_dir,
+        '--template-repo': project.basedir()
+    }
     try:
         with catch_stdout() as caught_output:
             with pytest.raises(SystemExit) as bad_init:
@@ -36,6 +42,7 @@ def test_init(open_mock, proc_helpers, shutil_mock, check_output):
     init_dict = {
         'init': True,
         '--template': 'hello-world',
+        '--template-repo': project.basedir(),
         '--registry': None,
         '--namespace': None,
         '<name>': new_dir
@@ -53,6 +60,7 @@ def test_init(open_mock, proc_helpers, shutil_mock):
     init_dict = {
         'init': True,
         '--template': 'hello-world',
+        '--template-repo': project.basedir(),
         '--registry': True,
         '--namespace': None,
         '<name>': new_dir

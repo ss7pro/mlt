@@ -8,6 +8,7 @@ import tempfile
 import uuid
 
 from mlt.utils.process_helpers import run, run_popen_unsecure
+from test_utils import project
 
 
 @contextmanager
@@ -37,7 +38,9 @@ def test_flow():
         # mlt init
         p = subprocess.Popen(
             ['mlt', 'init', '--registry=localhost:5000',
-             '--namespace={}'.format(namespace), app_name], cwd=workdir)
+             '--template-repo={}'.format(project.basedir()), namespace],
+             '--namespace={}'.format(namespace), app_name],
+            cwd=workdir)
         assert p.wait() == 0
         assert os.path.isfile(mlt_json)
         with open(mlt_json) as f:

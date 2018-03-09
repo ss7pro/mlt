@@ -8,7 +8,7 @@ import traceback
 
 from mlt import TEMPLATES_DIR
 from mlt.commands import Command
-from mlt.utils import process_helpers
+from mlt.utils import process_helpers, git_helpers
 
 
 class InitCommand(Command):
@@ -20,24 +20,29 @@ class InitCommand(Command):
         """Creates a new git repository based on an mlt template in the
            current working directory.
         """
-        template_directory = os.path.join(
-            TEMPLATES_DIR, self.args["--template"])
+        template_name = self.args["--template"]
+        template_repo = self.args["--template-repo"]
 
-        try:
-            shutil.copytree(template_directory, self.app_name)
-            data = self._build_mlt_json()
-            with open(os.path.join(self.app_name, 'mlt.json'), 'w') as f:
-                json.dump(data, f, indent=2)
-            self._init_git_repo()
-        except OSError as exc:
-            if exc.errno == 17:
-                print(
-                    "Directory '{}' already exists: delete before trying to "
-                    "initialize new application".format(self.app_name))
-            else:
-                traceback.print_exc()
+        with git_helpers.clone_repo(template_repo) as temp_clone:
+            templates_directory = os.path.join(
+                temp_clone, TEMPLATES_DIR, template_name)
 
-            sys.exit(1)
+            try:
+                shutil.copytree(templates_directory, self.app_name)
+
+                data = self._build_mlt_json()
+                with open(os.path.join(self.app_name, 'mlt.json'), 'w') as f:
+                    json.dump(data, f, indent=2)
+                self._init_git_repo()
+            except OSError as exc:
+                if exc.errno == 17:
+                    print(
+                        "Directory '{}' already exists: delete before trying "
+                        "to initialize new application".format(self.app_name))
+                else:
+                    traceback.print_exc()
+
+                sys.exit(1)
 
     def _build_mlt_json(self):
         """generates the data to write to mlt.json"""
