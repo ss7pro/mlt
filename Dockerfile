@@ -1,7 +1,8 @@
 FROM ubuntu:16.04
 
-# fix-missing is needed to get `git` to work
+# separately install software properties for adding apt-repo; then 1 update is needed rather than 2
 RUN apt-get update && apt-get install -yq --no-install-recommends --fix-missing \
+RUN apt-get install -y \
     apt-transport-https \
     ca-certificates \
     curl \
@@ -35,7 +36,8 @@ RUN mv ./kubectl /usr/local/bin/kubectl
 ADD . /usr/share/mlt
 
 WORKDIR /usr/share/mlt
+# need to clean so as to not get conftest importmismatch error
 RUN make clean
 
-RUN git config --global user.email "test@docker"
+RUN git config --global user.email "test@example.com"
 RUN git config --global user.name "Test Docker User"

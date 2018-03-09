@@ -1,5 +1,4 @@
 from mock import patch
-from mock_open import MockOpen
 
 from mlt.utils.files import fetch_action_arg
 
