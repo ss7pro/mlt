@@ -13,7 +13,7 @@ class EventHandler(object):
         self.callback = callback
 
     def dispatch(self, event):
-        if event.src_path == "./.git" or event.src_path == "./":
+        if event.src_path in ("./.git", "./"):
             return
 
         is_ignored = call(["git", "check-ignore", event.src_path],
@@ -24,10 +24,7 @@ class EventHandler(object):
         if self.timer:
             self.timer.cancel()
 
-        print("event.src_path %s" % event.src_path)
+        print("event.src_path {}".format(event.src_path))
 
-        def timer_triggered():
-            self.callback(self.args)
-
-        self.timer = Timer(3, timer_triggered)
+        self.timer = Timer(3, lambda: self.callback(self.args))
         self.timer.start()
