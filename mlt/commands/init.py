@@ -48,7 +48,7 @@ class InitCommand(Command):
                  "value(core.project)"])
             project = raw_project_bytes.decode("utf-8").strip()
             data['gceProject'] = project
-            data['namespace'] = getpass.getuser() + '-' + self.app_name
+            data['namespace'] = getpass.getuser()
         else:
             data['registry'] = self.args["--registry"]
 
