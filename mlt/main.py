@@ -3,7 +3,7 @@
 Usage:
   mlt (-h | --help)
   mlt --version
-  mlt init [--template=<template>] [--registry=<registry>] \
+  mlt init [--template=<template>] [--registry=<registry>]
       [--namespace=<namespace] <name>
   mlt build [--watch]
   mlt deploy [--no-push]

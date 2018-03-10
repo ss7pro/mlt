@@ -38,6 +38,7 @@ def test_init(open_mock, proc_helpers, shutil_mock, check_output):
         '--template': 'hello-world',
         '<name>': new_dir,
         '--registry': None
+        '--namespace': None
     }
     init = InitCommand(init_dict)
     init.action()
@@ -54,6 +55,7 @@ def test_init(open_mock, proc_helpers, shutil_mock):
         '--template': 'hello-world',
         '<name>': new_dir,
         '--registry': True
+        '--namespace': None
     }
     init = InitCommand(init_dict)
     init.action()
