@@ -3,7 +3,8 @@
 Usage:
   mlt (-h | --help)
   mlt --version
-  mlt init [--template=<template>] [--registry=<registry>] <name>
+  mlt init [--template=<template>] [--registry=<registry>] \
+      [--namespace=<namespace] <name>
   mlt build [--watch]
   mlt deploy [--no-push]
   mlt undeploy
@@ -14,6 +15,10 @@ Options:
                         initialization [default: hello-world].
   --registry=<registry> Container registry to use.
                         If none is set, will attempt to use gcloud.
+  --namespace=<namespace> Kubernetes Namespace to use.
+                        If none is set, will attempt to create or
+                        use a namespace identical to username.
+
 """
 from docopt import docopt
 
