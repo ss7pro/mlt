@@ -43,7 +43,7 @@ def test_flow():
         with open(mlt_json) as f:
             assert json.loads(f.read()) == {
                 'namespace': namespace,
-                'name': app_id,
+                'name': app_name,
                 'registry': 'localhost:5000'
             }
         # verify we created a git repo with our project init
