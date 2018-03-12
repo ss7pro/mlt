@@ -1,6 +1,7 @@
 from contextlib import contextmanager
 import json
 import os
+import getpass
 import shutil
 import subprocess
 import tempfile
@@ -25,23 +26,24 @@ def create_work_dir():
 # TODO: figure out a better way maybe?
 def test_flow():
     # just in case tests fail during development, want a clean namespace always
-    namespace = str(uuid.uuid4())[:10]
+    app_name = str(uuid.uuid4())[:10]
+    namespace = getpass.getuser() + app_name
     with create_work_dir() as workdir:
-        project_dir = os.path.join(workdir, namespace)
+        project_dir = os.path.join(workdir, app_name)
         mlt_json = os.path.join(project_dir, 'mlt.json')
         build_json = os.path.join(project_dir, '.build.json')
         deploy_json = os.path.join(project_dir, '.push.json')
 
         # mlt init
         p = subprocess.Popen(
-            ['mlt', 'init', '--registry=localhost:5000', namespace],
-            cwd=workdir)
+            ['mlt', 'init', '--registry=localhost:5000',
+             '--namespace={}'.format(namespace), app_name], cwd=workdir)
         assert p.wait() == 0
         assert os.path.isfile(mlt_json)
         with open(mlt_json) as f:
             assert json.loads(f.read()) == {
                 'namespace': namespace,
-                'name': namespace,
+                'name': app_id,
                 'registry': 'localhost:5000'
             }
         # verify we created a git repo with our project init
