@@ -33,7 +33,8 @@ class BuildCommand(Command):
 
         # Add bar
         build_process = process_helpers.run_popen(
-            ["docker", "build", "-t", container_name, "."])
+            "CONTAINER_NAME={} make build".format(container_name),
+            shell=True)
 
         progress_bar.duration_progress(
             'Building', last_build_duration,
