@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-# because pkg_resources is slow
-# also see https://github.com/pypa/setuptools/issues/510
 from setuptools import setup, find_packages
 
 setup(name='mlt',
