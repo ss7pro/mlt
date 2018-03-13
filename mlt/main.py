@@ -3,22 +3,23 @@
 Usage:
   mlt (-h | --help)
   mlt --version
-  mlt init [--template=<template>] [--registry=<registry>]
-      [--namespace=<namespace] <name>
+  mlt init [--template=<template> --template-repo=<repo>]
+      [--registry=<registry> --namespace=<namespace] <name>
   mlt build [--watch]
   mlt deploy [--no-push]
   mlt undeploy
-  mlt (template | templates) list
+  mlt (template | templates) list [--template-repo=<repo>]
 
 Options:
   --template=<template>   Template name for app
                           initialization [default: hello-world].
+  --template-repo=<repo>  Git URL of template repository.
+                          [default: git@github.com:NervanaSystems/mlt.git]
   --registry=<registry>   Container registry to use.
                           If none is set, will attempt to use gcloud.
   --namespace=<namespace> Kubernetes Namespace to use.
                           If none is set, will attempt to create or
                           use a namespace identical to username.
-
 """
 from docopt import docopt
 
