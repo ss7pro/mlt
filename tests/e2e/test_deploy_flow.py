@@ -7,7 +7,7 @@ import subprocess
 import tempfile
 import uuid
 
-from mlt.utils.process_helpers import run, run_popen_unsecure
+from mlt.utils.process_helpers import run, run_popen
 from test_utils import project
 
 
@@ -63,8 +63,9 @@ def test_flow():
             assert 'last_container' in build_data and \
                 'last_build_duration' in build_data
             # verify that we created a docker image
-            assert run_popen_unsecure(
-                "docker image inspect {}".format(build_data['last_container'])
+            assert run_popen(
+                "docker image inspect {}".format(build_data['last_container']),
+                shell=True
             ).wait() == 0
 
         # mlt deploy
@@ -78,18 +79,20 @@ def test_flow():
                 'last_remote_container' in deploy_data
         # verify that the docker image has been pushed to our local registry
         # need to decode because in python3 this output is in bytes
-        assert 'true' in run_popen_unsecure(
+        assert 'true' in run_popen(
             "curl --noproxy \"*\"  registry:5000/v2/_catalog | "
-            "jq .repositories | jq 'contains([\"{}\"])'".format(app_name)
+            "jq .repositories | jq 'contains([\"{}\"])'".format(app_name),
+            shell=True
         ).stdout.read().decode("utf-8")
         # verify that our job did indeed get deployed to k8s
-        assert run_popen_unsecure(
-            "kubectl get jobs --namespace={}".format(namespace)).wait() == 0
+        assert run_popen(
+            "kubectl get jobs --namespace={}".format(namespace),
+            shell=True).wait() == 0
 
         # mlt undeploy
         p = subprocess.Popen(['mlt', 'undeploy'], cwd=project_dir)
         assert p.wait() == 0
         # verify no more deployment job
-        assert run_popen_unsecure(
-            "kubectl get jobs --namespace={}".format(namespace)
+        assert run_popen(
+            "kubectl get jobs --namespace={}".format(namespace), shell=True
         ).wait() == 0

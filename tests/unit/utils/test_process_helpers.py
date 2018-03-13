@@ -3,7 +3,7 @@ import pytest
 import uuid
 from subprocess import CalledProcessError
 
-from mlt.utils.process_helpers import run, run_popen, run_popen_unsecure
+from mlt.utils.process_helpers import run, run_popen
 from test_utils.io import catch_stdout
 
 
@@ -50,8 +50,8 @@ def test_run_popen(popen):
 
 
 @patch('mlt.utils.process_helpers.Popen')
-def test_run_popen_unsecure(popen):
+def test_run_popen_shell(popen):
     """Popen call should succeed"""
     popen.return_value = 0
-    result = run_popen_unsecure('ls /tmp')
+    result = run_popen('ls /tmp', shell=True)
     assert result == 0
