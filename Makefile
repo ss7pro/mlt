@@ -24,6 +24,10 @@ coverage:
 	@echo "Running coverage report..."
 	@tox -e py2-coverage -e py3-coverage
 
+install:
+	pip install -r requirements.txt
+	pip install --upgrade --force-reinstall .
+
 docker:
 	docker build \
         --build-arg HTTP_PROXY=${HTTP_PROXY} \
