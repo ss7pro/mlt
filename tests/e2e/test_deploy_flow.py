@@ -38,7 +38,7 @@ def test_flow():
         # mlt init
         p = subprocess.Popen(
             ['mlt', 'init', '--registry=localhost:5000',
-             '--template-repo={}'.format(project.basedir()), namespace],
+             '--template-repo={}'.format(project.basedir()),
              '--namespace={}'.format(namespace), app_name],
             cwd=workdir)
         assert p.wait() == 0
