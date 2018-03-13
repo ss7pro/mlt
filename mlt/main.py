@@ -11,13 +11,13 @@ Usage:
   mlt (template | templates) list
 
 Options:
-  --template=<template> Template name for app
-                        initialization [default: hello-world].
-  --registry=<registry> Container registry to use.
-                        If none is set, will attempt to use gcloud.
+  --template=<template>   Template name for app
+                          initialization [default: hello-world].
+  --registry=<registry>   Container registry to use.
+                          If none is set, will attempt to use gcloud.
   --namespace=<namespace> Kubernetes Namespace to use.
-                        If none is set, will attempt to create or
-                        use a namespace identical to username.
+                          If none is set, will attempt to create or
+                          use a namespace identical to username.
 
 """
 from docopt import docopt
