@@ -38,12 +38,12 @@ class TemplatesCommand(Command):
                        tablefmt="simple"))
 
     def _parse_templates(self, templates_directory):
+        """parses template dirs in sorted order, pulling data from READMEs"""
         result = []
-        for filename in os.listdir(templates_directory):
-            description = ''
+        for filename in sorted(os.listdir(templates_directory)):
+            description = '<none>'
             readme_file = os.path.join(
                 templates_directory, filename, "README.md")
-            description = '<none>'
             if os.path.isfile(readme_file):
                 with open(readme_file) as f:
                     for line in f:

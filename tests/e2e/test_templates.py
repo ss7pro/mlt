@@ -26,4 +26,10 @@ def test_templates():
     output = check_output(['mlt', 'templates', 'list',
                            '--template-repo={}'.format(project.basedir())]
                           ).decode("utf-8")
-    assert len(output.split('\n')) == 5
+    desired_template_output = """Template        Description
+--------------  --------------------------------------------------------------------------------------------------
+hello-world     A TensorFlow python HelloWorld example run through Kubernetes Jobs.
+pytorch         Sample distributed application taken from http://pytorch.org/tutorials/intermediate/dist_tuto.html
+tf-distributed  A distributed TensorFlow matrix multiplication run through the TensorFlow Kubernetes Operator.
+"""
+    assert output == desired_template_output

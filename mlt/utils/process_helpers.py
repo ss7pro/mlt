@@ -17,9 +17,9 @@
 #
 # SPDX-License-Identifier: EPL-2.0
 #
-
+import os
 import sys
-from subprocess import check_output, CalledProcessError, Popen, PIPE, STDOUT
+from subprocess import check_output, CalledProcessError, Popen, PIPE
 
 
 def run(command, cwd=None):
@@ -32,5 +32,9 @@ def run(command, cwd=None):
     return output
 
 
-def run_popen(command, shell=False):
-    return Popen(command, stdout=PIPE, stderr=STDOUT, shell=shell)
+def run_popen(command, shell=False, stdout=PIPE, stderr=PIPE):
+    """to suppress any output, pass falsy to stdout or stderr"""
+    with open(os.devnull, 'w') as quiet:
+        stdout = stdout or quiet
+        stderr = stderr or quiet
+        return Popen(command, stdout=stdout, stderr=stderr, shell=shell)
