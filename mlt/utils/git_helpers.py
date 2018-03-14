@@ -27,7 +27,9 @@ import tempfile
 @contextmanager
 def clone_repo(repo):
     destination = tempfile.mkdtemp()
-    process_helpers.run(["git", "clone", repo, destination])
+    process_helpers.run_popen(
+        "git clone {} {}".format(repo, destination),
+        shell=True, stdout=None, stderr=None).wait()
     try:
         yield destination
     finally:
