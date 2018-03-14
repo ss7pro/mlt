@@ -41,7 +41,7 @@ end-down:
 	docker-compose down
 
 test-e2e: env-up
-	docker-compose exec test ./resources/wait-port kubernetes 8080
+	docker-compose exec test ./resources/wait-port.sh kubernetes 8080
 	docker-compose exec test kubectl cluster-info
 	docker-compose exec test pip install tox
 	docker-compose exec test tox -e py2-e2e -e py3-e2e
