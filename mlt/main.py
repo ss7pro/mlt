@@ -66,4 +66,7 @@ def run_command(args):
 
 def main():
     args = docopt(__doc__, version="ML Container Templates v0.0.1")
+    # docker requires repo name to be in lowercase
+    if args["<name>"]:
+        args["<name>"] = args["<name>"].lower()
     run_command(args)
