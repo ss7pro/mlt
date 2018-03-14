@@ -14,7 +14,7 @@ from mlt.utils import process_helpers, git_helpers
 class InitCommand(Command):
     def __init__(self, args):
         super(InitCommand, self).__init__(args)
-        self.app_name = self.args["<name>"]
+        self.app_name = self.args["<name>"].lower()
 
     def action(self):
         """Creates a new git repository based on an mlt template in the
