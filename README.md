@@ -41,6 +41,9 @@ alias mlt='{path_to_mlt_repo}/.venv/bin/mlt'
 
 ## Usage summary
 
+### Sample mlt deployment
+[![asciicast](https://asciinema.org/a/171353.png)](https://asciinema.org/a/171353)
+
 ```bash
 # cd outside of the mlt tree
 $ cd ..
