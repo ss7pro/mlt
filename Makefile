@@ -42,8 +42,12 @@ coverage:
 	@tox -e py2-coverage -e py3-coverage
 
 install:
-	pip install -r requirements.txt
-	pip install --upgrade --force-reinstall .
+	@echo "Installing mlt to system..."
+	@python setup.py install
+
+uninstall:
+	@echo "Uninstalling mlt from system..."
+	@python setup.py uninstall
 
 docker:
 	docker build \
