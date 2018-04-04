@@ -17,15 +17,42 @@
 #
 # SPDX-License-Identifier: EPL-2.0
 #
+from __future__ import print_function
 
 import os
-import pytest
 import uuid
-from mock import patch
+import shutil
+
+import pytest
 
 from mlt.commands.init import InitCommand
 from test_utils import project
 from test_utils.io import catch_stdout
+
+
+@pytest.fixture
+def checking_crds_mock(patch):
+    return patch('kubernetes_helpers.checking_crds_on_k8')
+
+
+@pytest.fixture
+def open_mock(patch):
+    return patch('open')
+
+
+@pytest.fixture
+def shutil_mock(patch):
+    return patch('shutil')
+
+
+@pytest.fixture
+def process_helpers(patch):
+    return patch('process_helpers')
+
+
+@pytest.fixture
+def check_output_mock(patch):
+    return patch('check_output')
 
 
 def test_init_dir_exists():
@@ -35,6 +62,7 @@ def test_init_dir_exists():
         'init': True,
         '--template': 'hello-world',
         '<name>': new_dir,
+        '--skip-crd-check': True,
         '--template-repo': project.basedir()
     }
     try:
@@ -50,11 +78,7 @@ def test_init_dir_exists():
         os.rmdir(new_dir)
 
 
-@patch('mlt.commands.init.check_output')
-@patch('mlt.commands.init.shutil')
-@patch('mlt.commands.init.process_helpers')
-@patch('mlt.commands.init.open')
-def test_init(open_mock, proc_helpers, shutil_mock, check_output):
+def test_init(open_mock, process_helpers, shutil_mock, check_output_mock):
     check_output_mock.return_value.decode.return_value = 'bar'
     new_dir = str(uuid.uuid4())
 
@@ -64,6 +88,7 @@ def test_init(open_mock, proc_helpers, shutil_mock, check_output):
         '--template-repo': project.basedir(),
         '--registry': None,
         '--namespace': None,
+        '--skip-crd-check': True,
         '<name>': new_dir
     }
     init = InitCommand(init_dict)
@@ -71,19 +96,25 @@ def test_init(open_mock, proc_helpers, shutil_mock, check_output):
     assert init.app_name == new_dir
 
 
-@patch('mlt.commands.init.shutil')
-@patch('mlt.commands.init.process_helpers')
-@patch('mlt.commands.init.open')
-def test_init(open_mock, proc_helpers, shutil_mock):
+def test_init_crd_check(checking_crds_mock, process_helpers, check_output_mock):
     new_dir = str(uuid.uuid4())
     init_dict = {
         'init': True,
-        '--template': 'hello-world',
+        '--template': 'tf-distributed',
         '--template-repo': project.basedir(),
         '--registry': True,
         '--namespace': None,
+        '--skip-crd-check': False,
         '<name>': new_dir
     }
+    checking_crds_mock.return_value = {'tfjobs.kubeflow.org'}
     init = InitCommand(init_dict)
-    init.action()
-    assert init.app_name == new_dir
+    try:
+        with catch_stdout() as caught_output:
+            init.action()
+            output = caught_output.getvalue()
+
+        message_code = output.find("tfjobs.kubeflow.org")
+        assert message_code >= 0
+    finally:
+        shutil.rmtree(new_dir)
