@@ -37,4 +37,4 @@ in to the `k8s-templates` directory when the app is deployed.
 5. To test your template, you need to use the `--template-repo`
 parameter with `mlt templates list` and `mlt templates init` in order
 to specify the git url for  template repo (otherwise, this defaults to
-`git@github.com:IntelAI/mlt.git`).
+`https://github.com/IntelAI/mlt`).
