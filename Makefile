@@ -16,6 +16,7 @@
 #
 
 SHELL=bash
+PY := $(shell python --version 2>&1  | cut -c8)
 
 .PHONY: venv test lint clean
 
@@ -41,6 +42,14 @@ coverage:
 	@echo "Running coverage report..."
 	@tox -e py2-coverage -e py3-coverage
 
+install:
+	@echo "Installing mlt to system..."
+	@python${PY} setup.py install
+
+uninstall:
+	@echo "Uninstalling mlt from system..."
+	@pip${PY} uninstall -y mlt
+
 docker:
 	docker build \
         --build-arg HTTP_PROXY=${HTTP_PROXY} \
@@ -57,11 +66,20 @@ env-up: docker
 end-down:
 	docker-compose down
 
+# kubeflow is needed for the TFJob operator (our TF templates use this)
 test-e2e: env-up
 	docker-compose exec test ./resources/wait-port.sh kubernetes 8080
 	docker-compose exec test kubectl cluster-info
 	docker-compose exec test pip install tox
+	docker-compose exec test sh -c "cd /kubeflow && ks apply default -c kubeflow-core"
 	docker-compose exec test tox -e py2-e2e -e py3-e2e
+
+# EXTRA_ARGS enables usage of other docker registries for testing
+# ex: EXTRA_ARGS=`$MLT_REGISTRY_AUTH_COMMAND` make test-e2e-no-docker
+# if you'd like to use something other than localhost:5000, also set
+# MLT_REGISTRY env var and that'll be respected by tox
+test-e2e-no-docker:
+	@${EXTRA_ARGS:} tox -e py2-e2e -e py3-e2e
 
 clean:
 	rm -rf .venv .venv3

@@ -1,5 +1,5 @@
-apiVersion: "tensorflow.org/v1alpha1"
-kind: TfJob
+apiVersion: "kubeflow.org/v1alpha1"
+kind: TFJob
 metadata:
   name: $app-$run
   labels:
@@ -8,6 +8,12 @@ spec:
   replicaSpecs:
     - replicas: 1
       tfReplicaType: PS
+      template:
+        spec:
+          containers:
+            - image: $image
+              name: tensorflow
+          restartPolicy: OnFailure
     - replicas: 1
       tfReplicaType: MASTER
       template:

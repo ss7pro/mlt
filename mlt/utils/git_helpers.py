@@ -18,10 +18,12 @@
 # SPDX-License-Identifier: EPL-2.0
 #
 
-from contextlib import contextmanager
-from mlt.utils import process_helpers
+import os
 import shutil
 import tempfile
+from contextlib import contextmanager
+
+from mlt.utils import process_helpers
 
 
 @contextmanager
@@ -29,8 +31,11 @@ def clone_repo(repo):
     destination = tempfile.mkdtemp()
     process_helpers.run_popen(
         "git clone {} {}".format(repo, destination),
-        shell=True, stdout=None, stderr=None).wait()
+        shell=True, stdout=False, stderr=False).wait()
     try:
         yield destination
     finally:
-        shutil.rmtree(destination)
+        # This is really a bug in 'shutil' as described here:
+        # https://bugs.python.org/issue29699
+        if os.path.exists(destination):
+            shutil.rmtree(destination)
