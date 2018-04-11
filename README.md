@@ -1,8 +1,8 @@
 # mlt
 Machine Learning Container Tool
 
-> MLT: it’s like the keras of kubernetes
->  
+> MLT: it's like the keras of kubernetes
+>
 > \- @mas-dse-greina
 
 [![CircleCI](https://circleci.com/gh/IntelAI/mlt.svg?style=svg&circle-token=239cc4305ca25063bf9a40cd332c822f5e64663f)](https://circleci.com/gh/IntelAI/mlt)
