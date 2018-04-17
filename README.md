@@ -1,5 +1,5 @@
 # mlt
-Machine Learning Container Tool
+Machine Learning Container Templates
 
 > MLT: it's like the keras of kubernetes
 >
