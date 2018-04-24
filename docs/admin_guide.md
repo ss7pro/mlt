@@ -89,7 +89,8 @@ pip install dist/mlt-0.1.0a1+18.g60503e0-py2.py3-none-any.whl
 
 ## Publish current mlt version to PyPI
 In order to push Python distribution of `mlt` to `PyPI`, `.pypirc` file need to be configured in Admin user's home directory which [distutils](https://docs.python.org/2/distutils/packageindex.html) checks.
-The file `.pypirc` format is as follows:
+
+Read/Write permissions to the file `.pypirc` should be reserved to only current user and it's format should be as follows:
 
 ```
 [distutils]
