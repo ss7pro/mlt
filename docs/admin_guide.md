@@ -122,7 +122,7 @@ Minutes later, end users would be able to just run:
 ```
 pip install mlt
 ```
-to install current version of `mlt` on their systems, or they can upgrade existing `mlt` to latests version:
+to install current version of `mlt` on their systems, or they can upgrade existing `mlt` to latest version:
 ```bash
 pip install -U mlt
 ```
