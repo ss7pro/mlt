@@ -113,12 +113,12 @@ Usually people publish the distributions to `PyPI` for latest tags.
 Once the distribution binary is built successfully for a given tag, you should be able to run:
 
 ```bash
-mlt push dist/mlt-0.1.0a1+18.g60503e0-py2.py3-none-any.whl
+make release dist/mlt-0.1.0a1+18.g60503e0-py2.py3-none-any.whl
 ```
 
 and that publishes the distribution to `PyPI`.
 
-Minutes later, end users would be able to just run:
+Minutes later end users would be able to just run:
 ```
 pip install mlt
 ```
