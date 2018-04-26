@@ -294,5 +294,5 @@ class DeployCommand(Command):
             time.sleep(1)
 
         process_helpers.run_popen(
-            ["kubectl", "exec", "-it", podname,
+            ["kubectl", "exec", "-it", podname, "--namespace", self.namespace,
              "/bin/bash"], stdout=None, stderr=None).wait()
