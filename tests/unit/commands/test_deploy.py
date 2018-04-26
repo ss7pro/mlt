@@ -22,7 +22,7 @@ from __future__ import print_function
 
 import uuid
 import pytest
-from mock import MagicMock
+from mock import call, MagicMock
 
 from mlt.commands.deploy import DeployCommand
 from test_utils.io import catch_stdout
@@ -189,8 +189,11 @@ def test_deploy_interactive_one_file(walk_mock, progress_bar, popen_mock,
     verify_successful_deploy(output, interactive=True)
 
     # verify that kubectl commands are specifying namespace
-    for call in process_helpers.run_popen.call_args_list:
-        command = call[0][0]
+    for call_args in process_helpers.run_popen.call_args_list:
+        assert isinstance(call_args, type(call))
+        assert isinstance(call_args[0], tuple)
+        assert len(call_args[0]) > 0
+        command = call_args[0][0]
         if command[0] == "kubectl":
             assert "--namespace" in command
 
