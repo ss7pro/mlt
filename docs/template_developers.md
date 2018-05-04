@@ -24,7 +24,7 @@ By default `crd-check` is performed during the execution of both `mlt init` and 
 * `Dockerfile` - modified if the name of the python file to execute is different,
 etc.
 * `k8s-templates/job.yaml` - required for the kubernetes job, may need to be
-modified if a CRD is used, if multiple replicas are needed, or 
+modified if a CRD is used, if multiple replicas are needed, or
 if environment variables need to be set, etc.  Note that all files in
 the `k8s-templates` directory can have variables like `$app`, `$run`,
 and `$image` that will be subbed into the template when the app is
