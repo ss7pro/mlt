@@ -109,6 +109,10 @@ Deploying gcr.io/my-project-12345/my-app:71fb176d-28a9-46c2-ab51-fe3d4a88b02c
 Inspect created objects by running:
   $ kubectl get --namespace=my-app all
 
+$ mlt status
+NAME                                                  READY     STATUS    RESTARTS   AGE       IP            NODE
+my-app-897cb68f-e91f-42a0-968e-3e8073334450-vvpqj     1/1       Running   0          14s       10.23.45.67   gke-my-cluster-highmem-8-skylake-1
+
 ### To deploy in interactive mode (using no-push as an example)
 ### NOTE: only basic functionality is supported at this time. Only one container and one pod in a deployment for now.
 #### If more than one container in a deployment, we'll pick the first one we find and deploy that.
