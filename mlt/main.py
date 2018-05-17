@@ -31,6 +31,7 @@ Usage:
   mlt undeploy
   mlt status
   mlt (template | templates) list [--template-repo=<repo>]
+  mlt events
 
 Options:
   --template=<template>     Template name for app
@@ -64,7 +65,8 @@ import mlt
 from docopt import docopt
 
 from mlt.commands import (BuildCommand, DeployCommand, InitCommand,
-                          StatusCommand, TemplatesCommand, UndeployCommand)
+                          TemplatesCommand, UndeployCommand, EventsCommand,
+                          StatusCommand)
 from mlt.utils import regex_checks
 
 # every available command and its corresponding action will go here
@@ -76,6 +78,7 @@ COMMAND_MAP = (
     ('template', TemplatesCommand),
     ('templates', TemplatesCommand),
     ('undeploy', UndeployCommand),
+    ('events', EventsCommand)
 )
 
 
