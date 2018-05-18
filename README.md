@@ -35,6 +35,7 @@ Prerequisites:
 - [python](https://www.python.org/downloads/)
 - [pip](https://pip.pypa.io/en/stable/installing/)
 - [TFJob operator](https://github.com/kubeflow/tf-operator#installing-the-tfjob-crd-and-operator-on-your-k8s-cluster) (for the distributed tensorflow templates)
+- [PyTorch operator](https://github.com/kubeflow/pytorch-operator) (for the pytorch-distributed template)
 
 
 ## Installation
@@ -74,12 +75,14 @@ mlt-0.1.0a1+12.gf49c412.dirty-py2.py3-none-any.whl
 [![asciicast](https://asciinema.org/a/171353.png)](https://asciinema.org/a/171353)
 
 ```bash
-$ mlt templates list
-Template        Description
---------------  ----------------------------------------------------------------------------------------------
-hello-world     A TensorFlow python HelloWorld example run through Kubernetes Jobs.
-tf-distributed  A distributed TensorFlow matrix multiplication run through the TensorFlow Kubernetes Operator.
-tf-single-node
+$ mlt template list
+Template             Description
+-------------------  --------------------------------------------------------------------------------------------------
+hello-world          A TensorFlow python HelloWorld example run through Kubernetes Jobs.
+pytorch              Sample distributed application taken from http://pytorch.org/tutorials/intermediate/dist_tuto.html
+pytorch-distributed  A distributed PyTorch MNIST example run using the pytorch-operator.
+tf-dist-mnist        A distributed TensorFlow MNIST model which designates worker 0 as the chief.
+tf-distributed       A distributed TensorFlow matrix multiplication run through the TensorFlow Kubernetes Operator.
 
 $ mlt init my-app --template=hello-world
 [master (root-commit) 40239a2] Initial commit.
