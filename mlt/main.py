@@ -25,6 +25,7 @@ Usage:
   mlt init [--template=<template> --template-repo=<repo>]
       [--registry=<registry> --namespace=<namespace]
       [--skip-crd-check] <name>
+  mlt config (list | set <name> <value> | remove <name>)
   mlt build [--watch]
   mlt deploy [--no-push] [-i | --interactive]
       [--retries=<retries>] [--skip-crd-check] [<kube_spec>]
@@ -64,14 +65,15 @@ import mlt
 
 from docopt import docopt
 
-from mlt.commands import (BuildCommand, DeployCommand, InitCommand,
-                          TemplatesCommand, UndeployCommand, EventsCommand,
-                          StatusCommand)
+from mlt.commands import (BuildCommand, ConfigCommand, DeployCommand,
+                          EventsCommand, InitCommand, StatusCommand,
+                          TemplatesCommand, UndeployCommand)
 from mlt.utils import regex_checks
 
 # every available command and its corresponding action will go here
 COMMAND_MAP = (
     ('build', BuildCommand),
+    ('config', ConfigCommand),
     ('deploy', DeployCommand),
     ('init', InitCommand),
     ('status', StatusCommand),
@@ -100,7 +102,7 @@ def sanitize_input(args, regex=None):
        It is recommended on docopt github to do validation
     """
     # docker requires repo name to be in lowercase
-    if args["<name>"]:
+    if args["<name>"] and args.get("init"):
         args["<name>"] = args["<name>"].lower()
 
         if not regex_checks.k8s_name_is_valid(args["<name>"], "pod"):
@@ -126,6 +128,11 @@ def sanitize_input(args, regex=None):
                          "https://kubernetes.io/docs/concepts/overview"
                          "/working-with-objects/names/#names".format(
                              args['--namespace']))
+
+    # Set and Unset config commands require the name arg
+    if (args.get('set') or args.get('remove')) and not args.get('<name>'):
+        raise ValueError("Name of the configuration parameter must be "
+                         "specified.")
 
     return args
 
