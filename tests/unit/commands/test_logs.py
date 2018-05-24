@@ -33,29 +33,36 @@ from test_utils.io import catch_stdout
 def json_mock(patch):
     return patch('log_helpers.json')
 
+
 @pytest.fixture
 def open_mock(patch):
     return patch('open')
+
 
 @pytest.fixture
 def sleep_mock(patch):
     return patch('log_helpers.sleep')
 
+
 @pytest.fixture
 def process_helpers(patch):
     return patch('log_helpers.process_helpers.run_popen')
+
 
 @pytest.fixture
 def os_path_mock(patch):
     return patch('log_helpers.os.path')
 
+
 @pytest.fixture
 def check_for_pods_readiness_mock(patch):
     return patch('log_helpers.check_for_pods_readiness')
 
+
 @pytest.fixture
 def verify_init(patch):
     return patch('config_helpers.load_config')
+
 
 def test_logs_get_logs(json_mock, open_mock, verify_init, sleep_mock,
                        check_for_pods_readiness_mock,
@@ -80,6 +87,7 @@ def test_logs_get_logs(json_mock, open_mock, verify_init, sleep_mock,
         output = caught_output.getvalue()
     assert log_value in output
 
+
 def test_logs_no_push_json_file(open_mock, verify_init, sleep_mock,
                                 process_helpers, os_path_mock):
     os_path_mock.exists.return_value = False
@@ -92,6 +100,7 @@ def test_logs_no_push_json_file(open_mock, verify_init, sleep_mock,
         output = caught_output.getvalue()
 
     assert "This app has not been deployed yet" in output
+
 
 def test_logs_corrupted_app_run_id(json_mock, open_mock, sleep_mock,
                                    verify_init, process_helpers, os_path_mock):
@@ -111,6 +120,7 @@ def test_logs_corrupted_app_run_id(json_mock, open_mock, sleep_mock,
         output = caught_output.getvalue()
 
     assert"Please re-deploy app again, something went wrong." in output
+
 
 def test_logs_exception(json_mock, open_mock, verify_init, sleep_mock,
                         check_for_pods_readiness_mock,
@@ -195,6 +205,7 @@ def test_logs_check_for_pods_readiness(process_helpers, sleep_mock):
     assert found == True
     assert "Checking for pod(s) readiness" in output
 
+
 def test_logs_check_for_pods_readiness_max_retries_reached(process_helpers, sleep_mock):
     run_id = str(uuid.uuid4()).split("-")
     filter_tag = "-".join(["app", run_id[0], run_id[1]])
@@ -206,4 +217,20 @@ def test_logs_check_for_pods_readiness_max_retries_reached(process_helpers, slee
         output = caught_output.getvalue()
 
     assert found == False
+    assert "Max retries Reached." in output
+
+
+def test_logs_check_for_pods_readiness_max_retries_when_status_is_not_running(process_helpers, sleep_mock):
+    run_id = str(uuid.uuid4()).split("-")
+    filter_tag = "-".join(["app", run_id[0], run_id[1]])
+    process_helpers.return_value.stdout.read.return_value = "\n".join([
+        filter_tag+"-ps-"+run_id[3]+" 1/1  ContainerCreating  0  16d",
+        filter_tag+"-worker1-"+run_id[3]+" 1/1  ContainerCreating  0  16d",
+        filter_tag+"-worker2-"+run_id[3]+" 1/1  ContainerCreating  0  16d"])
+
+    with catch_stdout() as caught_output:
+        running = check_for_pods_readiness(namespace='namespace', filter_tag=filter_tag, retries=4)
+        output = caught_output.getvalue()
+
+    assert running == False
     assert "Max retries Reached." in output

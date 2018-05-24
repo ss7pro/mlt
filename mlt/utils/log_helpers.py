@@ -51,9 +51,9 @@ def call_logs(config, args):
     retires = args["--retries"]
 
     # check for pod readiness before fetching logs.
-    found = check_for_pods_readiness(namespace, prefix, retires)
+    running = check_for_pods_readiness(namespace, prefix, retires)
 
-    if found:
+    if running:
         since = args["--since"]
         _get_logs(prefix, since, namespace)
     else:
@@ -118,11 +118,6 @@ def check_for_pods_readiness(namespace, filter_tag, retries):
                     status = str(pod.split()[2].strip())
                     if status == 'Running':
                         pods_running += 1
-                    else:
-                        tries += 1
-                        print("Retrying {}/{}".format(tries, retries))
-                        sleep(1)
-                        continue
 
         if pods_running == pods_found and pods_found > 0:
             break
@@ -133,4 +128,4 @@ def check_for_pods_readiness(namespace, filter_tag, retries):
             print("Retrying {}/{}".format(tries, retries))
             sleep(1)
 
-    return pods_found > 0
+    return pods_running > 0
