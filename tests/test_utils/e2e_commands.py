@@ -86,10 +86,10 @@ class CommandTester(object):
             raise ValueError("No pod(s) deployed to namespace {}".format(
                 self.namespace))
 
-    def init(self, template='hello-world'):
+    def init(self, template='hello-world', template_repo=basedir()):
         p = Popen(
             ['mlt', 'init', '--registry={}'.format(self.registry),
-             '--template-repo={}'.format(basedir()),
+             '--template-repo={}'.format(template_repo),
              '--namespace={}'.format(self.namespace),
              '--template={}'.format(template), self.app_name],
             cwd=self.workdir)
