@@ -1,0 +1,3 @@
+tensorflow-gpu
+pycodestyle==2.3.1
+scipy==1.0.1
