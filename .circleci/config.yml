@@ -71,7 +71,7 @@ jobs:
       - run:
           name: Install gcloud
           command: |
-            GCLOUD_SDK_VERSION="197.0.0"
+            GCLOUD_SDK_VERSION="202.0.0"
             curl -sSLo google-cloud-sdk.tar.gz https://storage.googleapis.com/cloud-sdk-release/google-cloud-sdk-${GCLOUD_SDK_VERSION}-linux-x86_64.tar.gz \
             && tar zxf google-cloud-sdk.tar.gz \
             && rm google-cloud-sdk.tar.gz \
@@ -90,7 +90,7 @@ jobs:
             echo $GKE_CREDENTIALS | base64 -di > mltkey.json
             ./google-cloud-sdk/bin/gcloud auth activate-service-account mltjson@intelai-mlt.iam.gserviceaccount.com --key-file=mltkey.json
             ./google-cloud-sdk/bin/gcloud --project intelai-mlt beta container clusters create "$MLT_TEST_CLUSTER" \
-            --zone "us-west1-b" --cluster-version "1.9.6-gke.1" --num-nodes "5" --machine-type "n1-highmem-4"
+            --zone "us-west1-b" --cluster-version "1.10.2-gke.3" --num-nodes "5" --machine-type "n1-highmem-4"
             sudo apt-get install -y kubectl
             ./google-cloud-sdk/bin/gcloud --project intelai-mlt beta container clusters get-credentials "$MLT_TEST_CLUSTER" \
             --zone "us-west1-b"
@@ -107,7 +107,7 @@ jobs:
           name: Run e2e tests
           command: |
             make test-e2e
-      
+
       - run:
           name: cleanup cluster
           when: always
