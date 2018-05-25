@@ -39,7 +39,8 @@ Usage:
 Options:
   --template=<template>     Template name for app
                             initialization [default: hello-world].
-  --template-repo=<repo>    Git URL of template repository.
+  --template-repo=<repo>    Git URL of template repository or the path to a
+                            local MLT repository.
                             [default: https://github.com/IntelAI/mlt]
   --registry=<registry>     Container registry to use.
                             If none is set, will attempt to use gcloud.
@@ -48,8 +49,9 @@ Options:
                             use a namespace identical to username.
   --skip-crd-check          To avoid crd check during mlt init
                             [default: False].
-  --retries=<retries>       Number of times to connect to a pod interactively.
-                            Waits 1 second between retrying.
+  --retries=<retries>       Number of times to retry while waiting for pods to
+                            be running. Waits 1 second between retrying. Used
+                            with interactive deploy and logs.
                             [default: 10]
   --interactive             Rewrites container command to infinite sleep,
                             and then drops user into `kubectl exec` shell.
