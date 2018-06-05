@@ -182,12 +182,6 @@ class CommandTester(object):
                 deploy_data = json.loads(f.read())
                 assert 'last_push_duration' in deploy_data and \
                        'last_remote_container' in deploy_data
-            # verify that the docker image has been pushed to our registry
-            # need to decode because in python3 this output is in bytes
-            assert 'true' in run_popen(
-                "{} | jq .repositories | jq 'contains([\"{}\"])'".format(
-                    self.registry_catalog_call, self.app_name),
-                shell=True).stdout.read().decode("utf-8")
 
         self._verify_pod_success(interactive)
 
