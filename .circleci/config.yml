@@ -44,7 +44,13 @@ jobs:
           name: Run make dist and test the wheels and versions
           command: |
             make dist
-            SHORT_HASH=$(git rev-parse --short HEAD)
+            LATEST_TAG=$(git describe --abbrev=0 --tags)
+            DIFF=$(git diff $LATEST_TAG)
+            if [[ -z "$DIFF" ]]; then
+              SHORT_HASH=${LATEST_TAG#"v"}
+            else
+              SHORT_HASH=$(git rev-parse --short HEAD)
+            fi
             MLT_DIST_WHEEL="mlt*${SHORT_HASH}*-py2.py3-none-any.whl"
             ls dist/${MLT_DIST_WHEEL}
             if [[ $? != 0 ]]; then
