@@ -296,8 +296,8 @@ class DeployCommand(Command):
             if tries == self.args['--retries']:
                 raise ValueError("Pod {} not Running".format(podname))
             tries += 1
-            print("Retrying {}/{}".format(
-                tries, self.args['--retries']))
+            print("Retrying {}/{} \r".format(
+                tries, self.args['--retries'])),
             time.sleep(1)
 
         # Get shell to the specified pod running in the user's namespace

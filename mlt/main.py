@@ -52,7 +52,7 @@ Options:
   --retries=<retries>       Number of times to retry while waiting for pods to
                             be running. Waits 1 second between retrying. Used
                             with interactive deploy and logs.
-                            [default: 10]
+                            [default: 120]
   --interactive             Rewrites container command to infinite sleep,
                             and then drops user into `kubectl exec` shell.
                             Adds a `debug=true` label for easy discovery

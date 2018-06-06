@@ -195,8 +195,9 @@ def test_logs_check_for_pods_readiness(process_helpers, sleep_mock):
     process_helpers.return_value.stdout.read.return_value = "\n".join(["random-pod1",
                                             "random-pod2",
                                             filter_tag+"-ps-"+run_id[3]+" 1/1  Running  0  16d",
-                                             filter_tag+"-worker1-"+run_id[3]+" 1/1  Running  0  16d",
-                                             filter_tag+"-worker2-"+run_id[3]+" 1/1  Running  0  16d"])
+                                            filter_tag+"-worker1-"+run_id[3]+" 1/1  Running  0  16d",
+                                            filter_tag+"-worker2-"+run_id[3]+" 1/1  Running  0  16d",
+                                            filter_tag+"-worker2-"+run_id[3]+" 1/1  Completed  0  16d"])
 
     with catch_stdout() as caught_output:
         found = check_for_pods_readiness(namespace='namespace', filter_tag=filter_tag, retries=5)

@@ -108,7 +108,7 @@ def check_for_pods_readiness(namespace, filter_tag, retries):
 
         if not pods:
             tries += 1
-            print("Retrying {}/{}".format(tries, retries))
+            print("Retrying {}/{} \r".format(tries, retries)),
             sleep(1)
             continue
         else:
@@ -116,7 +116,7 @@ def check_for_pods_readiness(namespace, filter_tag, retries):
                 if filter_tag in pod:
                     pods_found += 1
                     status = str(pod.split()[2].strip())
-                    if status == 'Running':
+                    if status in ['Running', 'Completed']:
                         pods_running += 1
 
         if pods_running == pods_found and pods_found > 0:
@@ -125,7 +125,7 @@ def check_for_pods_readiness(namespace, filter_tag, retries):
             pods_found = 0
             pods_running = 0
             tries += 1
-            print("Retrying {}/{}".format(tries, retries))
+            print("Retrying {}/{} \r".format(tries, retries)),
             sleep(1)
 
     return pods_running > 0

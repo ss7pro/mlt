@@ -142,8 +142,6 @@ Inspect created objects by running:
 $ kubectl get --namespace=my-app all
 
 Checking for pod(s) readiness
-Retrying 1/10
-Retrying 2/10
 Will tail 1 logs...
 my-app-09aa35f4-bdf8-4da8-8400-8728bf7afa33-sqzqg
 [my-app-09aa35f4-bdf8-4da8-8400-8728bf7afa33-sqzqg] 2018-05-17 22:28:34.578791: I tensorflow/core/platform/cpu_feature_guard.cc:140] Your CPU supports instructions that this TensorFlow binary was not compiled to use: AVX2 AVX512F FMA
@@ -163,8 +161,6 @@ Deploying localhost:5000/test:d6c9c06b-2b64-4038-a6a9-434bf90d6acc
 
 $ mlt logs
 Checking for pod(s) readiness
-Retrying 1/10
-Retrying 2/10
 Will tail 1 logs...
 my-app-09aa35f4-bdf8-4da8-8400-8728bf7afa33-sqzqg
 [my-app-09aa35f4-bdf8-4da8-8400-8728bf7afa33-sqzqg] 2018-05-17 22:28:34.578791: I tensorflow/core/platform/cpu_feature_guard.cc:140] Your CPU supports instructions that this TensorFlow binary was not compiled to use: AVX2 AVX512F FMA
