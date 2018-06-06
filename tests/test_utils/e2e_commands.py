@@ -214,7 +214,7 @@ class CommandTester(object):
         while pod_status is None:
             try:
                 pod_status = self._grab_latest_pod_or_tfjob()
-            except (ValueError, IndexError):
+            except (ValueError, IndexError, KeyError):
                 # if no pod is available, or pods is an empty dict, ignore
                 # for 1 min
                 time.sleep(1)
