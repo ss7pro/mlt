@@ -113,7 +113,7 @@ def check_for_pods_readiness(namespace, filter_tag, retries):
             continue
         else:
             for pod in pods:
-                if filter_tag in pod:
+                if filter_tag.encode('utf-8') in pod.encode('utf-8'):
                     pods_found += 1
                     status = str(pod.split()[2].strip())
                     if status in ['Running', 'Completed']:
