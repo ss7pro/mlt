@@ -203,6 +203,17 @@ class CommandTester(object):
             "kubectl get jobs --namespace={}".format(
                 self.namespace), shell=True).wait() == 0
 
+    def update_template(self):
+        update_cmd = ['mlt', 'update-template']
+        p = Popen(update_cmd, cwd=self.project_dir, stdout=PIPE)
+        output, err = p.communicate()
+        assert p.wait() == 0
+
+        # verify that we have no errors
+        assert output
+        assert err is None
+        return output.decode("utf-8")
+
     def _verify_pod_success(self, interactive_deploy):
         """verify that our latest job did indeed get deployed to k8s"""
         # TODO: probably refactor this function

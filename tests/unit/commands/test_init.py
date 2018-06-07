@@ -147,7 +147,7 @@ def test_template_params():
     init = InitCommand(init_dict)
     template_params = [{'name': 'num_ps', 'value': '1'},
                        {'name': 'num_workers', 'value': '2'}]
-    result = init._build_mlt_json(template_params)
+    result = init._build_mlt_json(template_params, None)
     assert constants.TEMPLATE_PARAMETERS in result
     result_params = result[constants.TEMPLATE_PARAMETERS]
     for param in template_params:
@@ -167,5 +167,5 @@ def test_no_template_params():
     }
     init = InitCommand(init_dict)
     template_params = None
-    result = init._build_mlt_json(template_params)
+    result = init._build_mlt_json(template_params, None)
     assert constants.TEMPLATE_PARAMETERS not in result

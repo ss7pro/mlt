@@ -48,6 +48,16 @@ def clone_repo(repo):
             shutil.rmtree(destination)
 
 
+def get_latest_sha(repo):
+    """ Returns latest git sha of given git repo directory. """
+    cwd = os.getcwd()
+    command = "git rev-list -1 HEAD -- {0}".format(repo)
+    os.chdir(repo)
+    git_sha = process_helpers.run(command.split(" "))
+    os.chdir(cwd)
+    return git_sha.strip()
+
+
 def is_git_repo(template_repo):
     """ Returns True if the template_repo looks like a git repository. """
     return template_repo.startswith("git@") or \
