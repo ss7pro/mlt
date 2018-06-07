@@ -46,6 +46,7 @@ def test_deploying_templates(template):
         finally:
             commands.undeploy()
             commands.status()
+            commands.teardown()
 
 
 def test_no_push_deploy():
@@ -61,6 +62,7 @@ def test_no_push_deploy():
         finally:
             commands.undeploy()
             commands.status()
+            commands.teardown()
 
 
 def test_interactive_deploy():
@@ -74,6 +76,7 @@ def test_interactive_deploy():
         finally:
             commands.undeploy()
             commands.status()
+            commands.teardown()
 
 
 def test_watch_build_and_deploy_no_push():
@@ -89,3 +92,4 @@ def test_watch_build_and_deploy_no_push():
         finally:
             commands.undeploy()
             commands.status()
+            commands.teardown()

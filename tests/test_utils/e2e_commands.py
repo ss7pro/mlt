@@ -240,3 +240,11 @@ class CommandTester(object):
             assert pod_status == 'Succeeded'
         else:
             assert pod_status == 'Running'
+
+    # tear down remaining resources/namespaces
+    def teardown(self):
+        try:
+            run(["kubectl", "delete", "ns", self.namespace])
+        except SystemExit:
+            # this means that the namespace and k8s resources are already deleted
+            pass
