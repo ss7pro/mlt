@@ -30,7 +30,7 @@ from termcolor import colored
 from mlt.commands import Command
 from mlt.utils import (build_helpers, config_helpers, files,
                        kubernetes_helpers, progress_bar,
-                       process_helpers, log_helpers)
+                       process_helpers, log_helpers, schema)
 
 
 class DeployCommand(Command):
@@ -40,6 +40,8 @@ class DeployCommand(Command):
         build_helpers.verify_build(self.args)
 
     def action(self):
+        schema.validate()
+
         skip_crd_check = self.args['--skip-crd-check']
         if not skip_crd_check:
             kubernetes_helpers.check_crds(exit_on_failure=True)

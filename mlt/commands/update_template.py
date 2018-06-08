@@ -57,7 +57,6 @@ class UpdateTemplateCommand(Command):
         orig_project_backup_dir = self._get_backup_dir_name(app_name)
         with git_helpers.clone_repo(self.template_repo) as temp_clone:
             application_dir = os.getcwd()
-            os.chdir(temp_clone)
             clone_template_dir = os.path.join(temp_clone,
                                               constants.TEMPLATES_DIR,
                                               template_name)
@@ -74,6 +73,7 @@ class UpdateTemplateCommand(Command):
             else:
                 print("Template is not up to date, updating template...")
                 copy_tree(application_dir, orig_project_backup_dir)
+                os.chdir(temp_clone)
 
                 # create temp-branch using git sha from which template
                 # was initiated and clean un-tracked files
@@ -103,4 +103,4 @@ class UpdateTemplateCommand(Command):
                 print("Backup directory path: {}".format(
                     os.path.abspath(orig_project_backup_dir)))
 
-            os.chdir(application_dir)
+                os.chdir(application_dir)

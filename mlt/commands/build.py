@@ -27,7 +27,8 @@ from watchdog.observers import Observer
 
 from mlt.commands import Command
 from mlt.event_handler import EventHandler
-from mlt.utils import config_helpers, files, progress_bar, process_helpers
+from mlt.utils import (config_helpers, files, progress_bar,
+                       process_helpers, schema)
 
 
 class BuildCommand(Command):
@@ -44,6 +45,8 @@ class BuildCommand(Command):
     def _build(self):
         last_build_duration = files.fetch_action_arg(
             'build', 'last_build_duration')
+
+        schema.validate()
 
         started_build_time = time.time()
 
