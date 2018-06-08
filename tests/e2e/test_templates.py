@@ -40,6 +40,7 @@ def test_templates():
 hello-world          A TensorFlow python HelloWorld example run through Kubernetes Jobs.
 pytorch              Sample distributed application taken from http://pytorch.org/tutorials/intermediate/dist_tuto.html
 pytorch-distributed  A distributed PyTorch MNIST example run using the pytorch-operator.
+tensorboard          A TensorBoard service in Kubernetes cluster.
 tf-dist-mnist        A distributed TensorFlow MNIST model which designates worker 0 as the chief.
 tf-distributed       A distributed TensorFlow matrix multiplication run through the TensorFlow Kubernetes Operator.
 """
@@ -72,6 +73,7 @@ def test_local_templates():
 hello-world          A TensorFlow python HelloWorld example run through Kubernetes Jobs.
 pytorch              Sample distributed application taken from http://pytorch.org/tutorials/intermediate/dist_tuto.html
 pytorch-distributed  A distributed PyTorch MNIST example run using the pytorch-operator.
+tensorboard          A TensorBoard service in Kubernetes cluster.
 test-local           New local template for testing
 tf-dist-mnist        A distributed TensorFlow MNIST model which designates worker 0 as the chief.
 tf-distributed       A distributed TensorFlow matrix multiplication run through the TensorFlow Kubernetes Operator.

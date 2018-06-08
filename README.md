@@ -37,6 +37,7 @@ Prerequisites:
 - [pip](https://pip.pypa.io/en/stable/installing/)
 - [TFJob operator](https://github.com/kubeflow/tf-operator#installing-the-tfjob-crd-and-operator-on-your-k8s-cluster) (for the distributed tensorflow templates)
 - [PyTorch operator](https://github.com/kubeflow/pytorch-operator) (for the pytorch-distributed template)
+- [Ingress](https://kubernetes.io/docs/concepts/services-networking/ingress/) (for the tensorboard template)
 
 
 ## Installation

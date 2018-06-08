@@ -1,0 +1,5 @@
+{
+  "template_parameters" : [
+    { "name": "logdir", "value": "path_to_tensorboard_logs" }
+  ]
+}
