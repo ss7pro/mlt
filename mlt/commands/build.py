@@ -53,20 +53,27 @@ class BuildCommand(Command):
         container_name = "{}:{}".format(self.config['name'], uuid.uuid4())
         print("Starting build {}".format(container_name))
 
-        # Add bar
-        build_process = process_helpers.run_popen(
-            "CONTAINER_NAME={} make build".format(container_name),
-            shell=True)
+        build_cmd = "CONTAINER_NAME={} make build".format(container_name)
 
-        progress_bar.duration_progress(
-            'Building', last_build_duration,
-            lambda: build_process.poll() is not None)
+        if self.args['--verbose']:
+            build_process = process_helpers.run_popen(build_cmd,
+                                                      shell=True,
+                                                      stdout=True,
+                                                      stderr=True)
+        else:
+            build_process = process_helpers.run_popen(build_cmd,
+                                                      shell=True)
+            progress_bar.duration_progress(
+                'Building', last_build_duration,
+                lambda: build_process.poll() is not None)
         if build_process.poll() != 0:
             # When we have an error, get the stdout and error output
             # and display them both with the error output in red.
             output, error_msg = build_process.communicate()
-            print(output.decode("utf-8"))
-            print(colored(error_msg.decode("utf-8"), 'red'))
+            if output:
+                print(output.decode("utf-8"))
+            if error_msg:
+                print(colored(error_msg.decode("utf-8"), 'red'))
             sys.exit(1)
 
         built_time = time.time()

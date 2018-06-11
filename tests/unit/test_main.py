@@ -42,9 +42,10 @@ def test_run_command(command):
 
 @pytest.mark.parametrize('args',
                          [{'<name>': 'Capitalized-Name',
-                           '-i': False, "-l": False, '--retries': '5'},
-                          {'-i': True, "-l": False, '<name>': 'foo', '--retries': '5'},
-                          {'-i': True, "-l": False, '<name>': 'foo', '--retries': '8'}])
+                           '-i': False, '-l': False, '-v': False, '--retries': '5'},
+                          {'-i': True, '-l': False, '-v': False, '<name>': 'foo', '--retries': '5'},
+                          {'-i': True, '-l': False, '-v': False, '<name>': 'foo', '--retries': '8'},
+                          {'-i': True, '-l': False, '-v': True, '<name>': 'foo', '--retries': '8'}])
 @patch('mlt.main.docopt')
 @patch('mlt.main.run_command')
 def test_main_various_args(run_command, docopt, args):
@@ -81,6 +82,7 @@ def test_main_invalid_namespace(docopt_mock):
         "--namespace": "foo_bar",
         "-i": False,
         "-l": False,
+        "-v": False,
         "--retries": 5
     }
     docopt_mock.return_value = args
@@ -101,6 +103,7 @@ def test_main_set_remove_name(docopt_mock, command):
         "<name>": "",
         "-i": False,
         "-l": False,
+        "-v": False,
         "--retries": 5
     }
     docopt_mock.return_value = args

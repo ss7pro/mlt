@@ -80,7 +80,7 @@ def test_logs_get_logs(json_mock, open_mock, verify_init, sleep_mock,
     log_value = '-'.join(['app', run_id])
     check_for_pods_readiness_mock.return_value = True
     process_helpers.return_value.stdout.readline.side_effect = [log_value, '']
-    process_helpers.return_value.poll.return_value = 1
+    process_helpers.return_value.poll.return_value = 0
     process_helpers.return_value.stderr.readline.return_value = ''
     with catch_stdout() as caught_output:
         logs_command.action()
@@ -160,7 +160,7 @@ def test_logs_command_not_found(json_mock, open_mock, sleep_mock, check_for_pods
     check_for_pods_readiness_mock.return_value = True
     command_not_found = '/bin/sh: kubetail: command not found'
     process_helpers.return_value.stdout.readline.return_value = ''
-    process_helpers.return_value.poll.return_value = 1
+    process_helpers.return_value.poll.return_value = 0
     process_helpers.return_value.\
         stderr.readline.side_effect = Exception(command_not_found)
     with catch_stdout() as caught_output:

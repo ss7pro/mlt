@@ -26,7 +26,7 @@ Usage:
       [--registry=<registry> --namespace=<namespace>]
       [--skip-crd-check] <name>
   mlt config (list | set <name> <value> | remove <name>)
-  mlt build [--watch]
+  mlt build [--watch] [-v | --verbose]
   mlt deploy [--no-push] [-i | --interactive] [-l | --logs]
       [--retries=<retries>] [--skip-crd-check]
       [--since=<duration>] [<kube_spec>]
@@ -50,10 +50,10 @@ Options:
                             use a namespace identical to username.
   --skip-crd-check          To avoid crd check during mlt init
                             [default: False].
-  --retries=<retries>       Number of times to retry while waiting for pods to
-                            be running. Waits 1 second between retrying. Used
-                            with interactive deploy and logs.
-                            [default: 120]
+  --watch                   Watch project directory and build on file changes
+  --verbose                 Prints build logs
+  --no-push                 Deploy your project to kubernetes using the same
+                            image from your last run.
   --interactive             Rewrites container command to infinite sleep,
                             and then drops user into `kubectl exec` shell.
                             Adds a `debug=true` label for easy discovery
@@ -61,12 +61,13 @@ Options:
                             specify which file you'd like to deploy
                             interactively as the `kube_spec`. `kube_spec` is
                             only used with this flag.
-  --logs                    Tail logs after deploying [default: False]
-  --watch                   Watch project directory and build on file changes
-  --no-push                 Deploy your project to kubernetes using the same
-                            image from your last run.
+  --retries=<retries>       Number of times to retry while waiting for pods to
+                            be running. Waits 1 second between retrying. Used
+                            with interactive deploy and logs.
+                            [default: 120]
   --since=<duration>        Returns logs newer than a relative
                             duration like 10s, 1m, or 2h [default: 1m].
+  --logs                    Tail logs after deploying [default: False]
 """
 import mlt
 
@@ -132,6 +133,10 @@ def sanitize_input(args, regex=None):
     # -l is an alias, so ensure that we only have to do logic on --logs
     if args["-l"]:
         args["--logs"] = True
+
+    # -v is an alias, so ensure that we only have to do logic on --verbose
+    if args["-v"]:
+        args["--verbose"] = True
 
     # docopt doesn't support type assignment:
     # https://github.com/docopt/docopt/issues/8

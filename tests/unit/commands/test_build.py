@@ -54,7 +54,9 @@ def test_simple_build(progress_bar_mock, popen_mock, open_mock, init_mock):
     progress_bar_mock.duration_progress.side_effect = \
         lambda x, y, z: print('Building')
 
-    build = BuildCommand({'build': True, '--watch': False})
+    build = BuildCommand({'build': True,
+                          '--watch': False,
+                          '--verbose': False})
     build.config = MagicMock()
 
     with catch_stdout() as caught_output:
@@ -80,7 +82,9 @@ def test_build_errors(popen_mock, progress_bar_mock, open_mock, init_mock):
     popen_mock.return_value.communicate.return_value = (build_output,
                                                         error_output)
 
-    build = BuildCommand({'build': True, '--watch': False})
+    build = BuildCommand({'build': True,
+                          '--watch': False,
+                          '--verbose': False})
     build.config = MagicMock()
 
     with catch_stdout() as caught_output:
@@ -100,8 +104,27 @@ def test_build_errors(popen_mock, progress_bar_mock, open_mock, init_mock):
 def test_watch_build(observer, sleep_mock, open_mock, init_mock):
     sleep_mock.side_effect = KeyboardInterrupt
 
-    build = BuildCommand({'build': True, '--watch': True})
+    build = BuildCommand({'build': True,
+                          '--watch': True,
+                          '--verbose': False})
     build.config = MagicMock()
 
     with patch('mlt.commands.build.EventHandler') as event_handler_patch:
         build.action()
+
+
+def test_build_verbose(popen_mock, open_mock, init_mock):
+    build = BuildCommand({'build': True,
+                          '--watch': False,
+                          '--verbose': True})
+    build.config = MagicMock()
+
+    with catch_stdout() as caught_output:
+        build.action()
+        output = caught_output.getvalue()
+
+    # assert that we started build, then did build process, then built
+    starting = output.find('Starting build')
+    built = output.find('Built')
+    assert all(var >= 0 for var in (starting, built))
+    assert starting < built
