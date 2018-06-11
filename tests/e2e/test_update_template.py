@@ -43,6 +43,8 @@ def test_invalid_update():
         assert desired_output_string in cmd_output
 
 
+@pytest.mark.skip(reason="Intermittently failing skipped, for now."
+                         "issue - https://github.com/IntelAI/mlt/issues/288 ")
 def test_valid_update():
     with create_work_dir() as workdir:
         commands = CommandTester(workdir)
