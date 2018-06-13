@@ -207,8 +207,10 @@ class CommandTester(object):
             "kubectl get jobs --namespace={}".format(
                 self.namespace), shell=True).wait() == 0
 
-    def update_template(self):
+    def update_template(self, template_repo=basedir()):
         update_cmd = ['mlt', 'update-template']
+        if template_repo:
+            update_cmd.append("--template-repo={}".format(template_repo))
         p = Popen(update_cmd, cwd=self.project_dir, stdout=PIPE)
         output, err = p.communicate()
         assert p.wait() == 0

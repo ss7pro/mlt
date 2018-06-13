@@ -33,7 +33,7 @@ Usage:
   mlt undeploy
   mlt status
   mlt (template | templates) list [--template-repo=<repo>]
-  mlt update-template
+  mlt update-template [--template-repo=<repo>]
   mlt (log | logs) [--since=<duration>] [--retries=<retries>]
   mlt events
 

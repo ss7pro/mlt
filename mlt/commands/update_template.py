@@ -19,8 +19,10 @@
 #
 
 import os
+import sys
 import random
 import string
+from subprocess import CalledProcessError
 from mlt.commands import Command
 from mlt.utils import (git_helpers, config_helpers, process_helpers)
 from mlt.utils import constants
@@ -94,8 +96,18 @@ class UpdateTemplateCommand(Command):
 
                 # merging latest template changes by pulling from master
                 # into temp-branch
-                process_helpers.run("git pull origin master".split(" "))
-
+                try:
+                    process_helpers.run("git pull origin master".split(" "),
+                                        raise_on_failure=True)
+                except CalledProcessError as e:
+                    # When auto merge failed do not error out,
+                    # let user review and fix conflicts
+                    # for other errors exit
+                    error_string = "Automatic merge failed; " \
+                                   "fix conflicts and then commit the result"
+                    if error_string not in e.output:
+                        print(e.output)
+                        sys.exit(1)
                 # copy content of clone template dir back to app dir
                 copy_tree(clone_template_dir, application_dir)
                 print("Latest template changes have merged using git, "

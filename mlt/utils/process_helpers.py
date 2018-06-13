@@ -22,10 +22,12 @@ import sys
 from subprocess import check_output, CalledProcessError, Popen, PIPE
 
 
-def run(command, cwd=None):
+def run(command, cwd=None, raise_on_failure=False):
     try:
         output = check_output(command, cwd=cwd).decode("utf-8")
     except CalledProcessError as e:
+        if raise_on_failure:
+            raise e
         print(e.output)
         sys.exit(1)
 
