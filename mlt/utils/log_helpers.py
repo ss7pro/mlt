@@ -20,7 +20,9 @@
 import json
 import os
 import sys
+import subprocess
 
+from termcolor import colored
 from time import sleep
 
 from mlt.utils import process_helpers
@@ -64,29 +66,25 @@ def _get_logs(prefix, since, namespace):
     """
     Fetches logs using kubetail
     """
-    log_cmd = "kubetail {} --since {} " \
-              "--namespace {}".format(prefix, since, namespace)
+    log_cmd = ["kubetail", prefix, "--since", since, "--namespace", namespace]
     try:
-        # TODO: remove shell=True. and make log_cmd as List.
-        logs = process_helpers.run_popen(log_cmd, shell=True)
+        logs = process_helpers.run_popen(log_cmd,
+                                         stdout=True,
+                                         stderr=subprocess.PIPE)
 
-        while True:
-            output = logs.stdout.readline()
-            if output == '' and logs.poll() is not None:
-                error = logs.stderr.readline()
-                if error:
-                    raise Exception(error)
-                break
-            if output:
-                if 'No pods exists that matches' not in output:
-                    print(output.strip())
-    except Exception as ex:
-        if 'command not found' in str(ex):
-            print("Please install `{}`. "
-                  "It is a prerequisite for `mlt logs` "
-                  "to work".format(str(ex).split()[1]))
-        else:
-            print("Exception: {}".format(ex))
+        output, error_msg = logs.communicate()
+        if output:
+            print(output)
+        if error_msg:
+            if 'command not found' in error_msg:
+                print(colored("Please install `{}`. "
+                      "It is a prerequisite "
+                              "for `mlt logs` to work"
+                              .format(error_msg.split()[1]), 'red'))
+            else:
+                print(colored(error_msg, 'red'))
+            sys.exit(1)
+    except KeyboardInterrupt:
         sys.exit()
 
 
@@ -100,32 +98,33 @@ def check_for_pods_readiness(namespace, filter_tag, retries):
         if tries == retries:
             print("Max retries Reached.")
             break
+        try:
+            kubectl_cmd = ["kubectl", "get", "pods", "--namespace", namespace]
+            pods = process_helpers.run_popen(kubectl_cmd)\
+                .stdout.read().strip().splitlines()
 
-        # TODO: Remove shell=True and make it to work.
-        pods = process_helpers.run_popen(
-            "kubectl get pods --namespace {} ".format(namespace), shell=True
-        ).stdout.read().strip().splitlines()
+            if not pods:
+                tries += 1
+                print("Retrying {}/{} \r".format(tries, retries)),
+                sleep(1)
+                continue
+            else:
+                for pod in pods:
+                    if filter_tag.encode('utf-8') in pod.encode('utf-8'):
+                        pods_found += 1
+                        status = str(pod.split()[2].strip())
+                        if status in ['Running', 'Completed']:
+                            pods_running += 1
 
-        if not pods:
-            tries += 1
-            print("Retrying {}/{} \r".format(tries, retries)),
-            sleep(1)
-            continue
-        else:
-            for pod in pods:
-                if filter_tag.encode('utf-8') in pod.encode('utf-8'):
-                    pods_found += 1
-                    status = str(pod.split()[2].strip())
-                    if status in ['Running', 'Completed']:
-                        pods_running += 1
-
-        if pods_running == pods_found and pods_found > 0:
-            break
-        else:
-            pods_found = 0
-            pods_running = 0
-            tries += 1
-            print("Retrying {}/{} \r".format(tries, retries)),
-            sleep(1)
+            if pods_running == pods_found and pods_found > 0:
+                break
+            else:
+                pods_found = 0
+                pods_running = 0
+                tries += 1
+                print("Retrying {}/{} \r".format(tries, retries)),
+                sleep(1)
+        except KeyboardInterrupt:
+            sys.exit()
 
     return pods_running > 0

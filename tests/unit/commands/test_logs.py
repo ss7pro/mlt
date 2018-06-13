@@ -77,15 +77,12 @@ def test_logs_get_logs(json_mock, open_mock, verify_init, sleep_mock,
     logs_command = LogsCommand({'logs': True, '--since': '1m', '--retries':5})
     logs_command.config = {'name': 'app', 'namespace': 'namespace'}
 
-    log_value = '-'.join(['app', run_id])
     check_for_pods_readiness_mock.return_value = True
-    process_helpers.return_value.stdout.readline.side_effect = [log_value, '']
     process_helpers.return_value.poll.return_value = 0
-    process_helpers.return_value.stderr.readline.return_value = ''
+    process_helpers.return_value.communicate.return_value = ('', '')
     with catch_stdout() as caught_output:
         logs_command.action()
         output = caught_output.getvalue()
-    assert log_value in output
 
 
 def test_logs_no_push_json_file(open_mock, verify_init, sleep_mock,
@@ -122,30 +119,6 @@ def test_logs_corrupted_app_run_id(json_mock, open_mock, sleep_mock,
     assert"Please re-deploy app again, something went wrong." in output
 
 
-def test_logs_exception(json_mock, open_mock, verify_init, sleep_mock,
-                        check_for_pods_readiness_mock,
-                        process_helpers, os_path_mock):
-    run_id = str(uuid.uuid4())
-    os_path_mock.exists.return_value = True
-    json_mock_data = {
-        'last_remote_container': 'gcr.io/app_name:container_id',
-        'last_push_duration': 0.18889,
-        'app_run_id': run_id}
-    check_for_pods_readiness_mock.return_value = True
-    json_mock.load.return_value = json_mock_data
-    logs_command = LogsCommand({'logs': True, '--since': '1m', '--retries':5})
-    logs_command.config = {'name': 'app', 'namespace': 'namespace'}
-
-    process_helpers.side_effect = OSError
-
-    with catch_stdout() as caught_output:
-        with pytest.raises(SystemExit):
-            logs_command.action()
-        output = caught_output.getvalue()
-
-    assert "Exception:" in output
-
-
 def test_logs_command_not_found(json_mock, open_mock, sleep_mock, check_for_pods_readiness_mock,
                                 verify_init, process_helpers, os_path_mock):
     run_id = str(uuid.uuid4())
@@ -158,11 +131,10 @@ def test_logs_command_not_found(json_mock, open_mock, sleep_mock, check_for_pods
     logs_command = LogsCommand({'logs': True, '--since': '1m', '--retries':5})
     logs_command.config = {'name': 'app', 'namespace': 'namespace'}
     check_for_pods_readiness_mock.return_value = True
-    command_not_found = '/bin/sh: kubetail: command not found'
-    process_helpers.return_value.stdout.readline.return_value = ''
-    process_helpers.return_value.poll.return_value = 0
-    process_helpers.return_value.\
-        stderr.readline.side_effect = Exception(command_not_found)
+    command_not_found = str('/bin/sh: kubetail: command not found')
+    process_helpers.return_value.poll.return_value = 1
+    process_helpers.return_value.communicate.return_value = (None,
+                                                             command_not_found)
     with catch_stdout() as caught_output:
         with pytest.raises(SystemExit):
             logs_command.action()
@@ -235,3 +207,23 @@ def test_logs_check_for_pods_readiness_max_retries_when_status_is_not_running(pr
 
     assert running == False
     assert "Max retries Reached." in output
+
+
+def test_logs_keyboardinterrupt(json_mock, open_mock, verify_init, sleep_mock,
+                       check_for_pods_readiness_mock,
+                       process_helpers, os_path_mock):
+    run_id = str(uuid.uuid4())
+    os_path_mock.exists.return_value = True
+    json_mock_data = {
+        'last_remote_container': 'gcr.io/app_name:container_id',
+        'last_push_duration': 0.18889,
+        'app_run_id': run_id}
+    json_mock.load.return_value = json_mock_data
+    logs_command = LogsCommand({'logs': True, '--since': '1m', '--retries':5})
+    logs_command.config = {'name': 'app', 'namespace': 'namespace'}
+
+    check_for_pods_readiness_mock.return_value = True
+    process_helpers.side_effect = KeyboardInterrupt
+    with catch_stdout() as caught_output:
+        with pytest.raises(SystemExit):
+            logs_command.action()
