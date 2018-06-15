@@ -69,6 +69,9 @@ Options:
                             duration like 10s, 1m, or 2h [default: 1m].
   --logs                    Tail logs after deploying [default: False]
 """
+
+# Note that new commands/flags should be documented in docs/features.md
+
 import mlt
 
 from docopt import docopt

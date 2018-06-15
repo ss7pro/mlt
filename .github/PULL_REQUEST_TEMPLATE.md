@@ -2,6 +2,7 @@ fixes #{issue_num_here_if_applicable}
 
 If you aren't done, please add the `wip` label until you're ready for review.
 
+If you are adding a new template or mlt command/flag ensure that is is documented in the [docs/features.md](https://github.com/IntelAI/mlt/tree/master/docs/features.md) file.
 
 ## Reviewer Checklist
 
