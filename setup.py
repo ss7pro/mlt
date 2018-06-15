@@ -42,7 +42,8 @@ setup(name='mlt',
           'tabulate>=0.8.2',
           'termcolor>=1.1.0',
           'PyYAML>=3.12',
-          'watchdog>=0.8.3'
+          'watchdog>=0.8.3',
+          'jsonschema==2.6.0'
       ],
       entry_points={
           'console_scripts': ['mlt=mlt.main:main']
