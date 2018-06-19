@@ -18,7 +18,6 @@
 # SPDX-License-Identifier: EPL-2.0
 #
 
-import os.path
 import tensorflow as tf
 
 
@@ -114,8 +113,7 @@ def define_model(input_tensor, use_upsampling=False, n_cl_out=1,
         conv6 = tf.keras.layers.Conv2D(
             name='conv6b', filters=128, **params)(conv6)
         up7 = tf.keras.layers.concatenate([tf.keras.layers.UpSampling2D(
-            name='up7', size=(2, 2))(conv6), conv3],
-                                          axis=concat_axis)
+            name='up7', size=(2, 2))(conv6), conv3], axis=concat_axis)
     else:
         conv6 = tf.keras.layers.Conv2D(
             name='conv6b', filters=256, **params)(conv6)
@@ -133,8 +131,7 @@ def define_model(input_tensor, use_upsampling=False, n_cl_out=1,
         conv7 = tf.keras.layers.Conv2D(
             name='conv7b', filters=64, **params)(conv7)
         up8 = tf.keras.layers.concatenate([tf.keras.layers.UpSampling2D(
-            name='up8', size=(2, 2))(conv7), conv2],
-                                          axis=concat_axis)
+            name='up8', size=(2, 2))(conv7), conv2], axis=concat_axis)
     else:
         conv7 = tf.keras.layers.Conv2D(
             name='conv7b', filters=128, **params)(conv7)
@@ -151,8 +148,7 @@ def define_model(input_tensor, use_upsampling=False, n_cl_out=1,
         conv8 = tf.keras.layers.Conv2D(
             name='conv8b', filters=32, **params)(conv8)
         up9 = tf.keras.layers.concatenate([tf.keras.layers.UpSampling2D(
-            name='up9', size=(2, 2))(conv8), conv1],
-                                          axis=concat_axis)
+            name='up9', size=(2, 2))(conv8), conv1], axis=concat_axis)
     else:
         conv8 = tf.keras.layers.Conv2D(
             name='conv8b', filters=64, **params)(conv8)

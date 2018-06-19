@@ -27,7 +27,7 @@ import json
 import os
 import time
 import uuid
-from subprocess import check_output, PIPE, Popen
+from subprocess import PIPE, Popen
 
 from mlt.utils.process_helpers import run, run_popen
 from project import basedir
@@ -182,8 +182,8 @@ class CommandTester(object):
                 deploy_data = json.loads(f.read())
                 assert 'last_push_duration' in deploy_data and \
                        'last_remote_container' in deploy_data
-        # setting interactive to True for tensorboard templates,
-        # because the pods stay alive (running) until the user kills the session.
+        # setting interactive to True for tensorboard templates, because
+        # the pods stay alive (running) until the user kills the session.
         if self.template == "tensorboard":
             interactive = True
 
@@ -263,5 +263,6 @@ class CommandTester(object):
         try:
             run(["kubectl", "delete", "ns", self.namespace])
         except SystemExit:
-            # this means that the namespace and k8s resources are already deleted
+            # this means that the namespace and k8s resources are already
+            # deleted
             pass

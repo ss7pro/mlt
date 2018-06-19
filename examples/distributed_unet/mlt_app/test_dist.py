@@ -140,8 +140,8 @@ def main(_):
         inter_op_parallelism_threads=num_inter_op_threads,
         intra_op_parallelism_threads=num_intra_op_threads)
 
-    run_options = tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
-    run_metadata = tf.RunMetadata()  # For Tensorflow trace
+    tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
+    tf.RunMetadata()  # For Tensorflow trace
 
     cluster = tf.train.ClusterSpec({"ps": ps_list, "worker": worker_list})
     server = tf.train.Server(cluster, job_name=job_name, task_index=task_index)
@@ -197,10 +197,10 @@ def main(_):
 
         if len(ps_list) > 0:
             setDevice = tf.train.replica_device_setter(
-                     worker_device="/job:worker/task:{}".format(task_index),
-                     ps_tasks=len(ps_hosts),
-                     ps_strategy=greedy,
-                     cluster=cluster)
+                worker_device="/job:worker/task:{}".format(task_index),
+                ps_tasks=len(ps_hosts),
+                ps_strategy=greedy,
+                cluster=cluster)
         else:
             # No parameter server so put variables on chief worker
             setDevice = "/cpu:0"
@@ -211,7 +211,7 @@ def main(_):
 
             # Load the data
             imgs_train, msks_train, imgs_test, msks_test = load_all_data()
-            train_length = imgs_train.shape[0]  # Number of train datasets
+            imgs_train.shape[0]  # Number of train datasets
             test_length = imgs_test.shape[0]   # Number of test datasets
 
             """
@@ -454,8 +454,8 @@ def main(_):
                                         desc="Calculating metrics on test "
                                              "dataset",
                                         leave=False):
-                            x_test = imgs_test[idx:(idx+batch_size)]
-                            y_test = msks_test[idx:(idx+batch_size)]
+                            x_test = imgs_test[idx:(idx + batch_size)]
+                            y_test = msks_test[idx:(idx + batch_size)]
 
                             feed_dict = {imgs: x_test, msks: y_test}
 
@@ -504,7 +504,7 @@ def main(_):
                 # Print the loss and dice metric in the progress bar.
                 progressbar.set_description(
                     "(loss={:.4f}, dice={:.4f})".format(loss_v, dice_v))
-                progressbar.update(step-last_step)
+                progressbar.update(step - last_step)
                 last_step = step
 
             # Perform the final test set metric
@@ -517,8 +517,8 @@ def main(_):
                                       batch_size),
                                 desc="Calculating metrics on test dataset",
                                 leave=False):
-                    x_test = imgs_test[idx:(idx+batch_size)]
-                    y_test = msks_test[idx:(idx+batch_size)]
+                    x_test = imgs_test[idx:(idx + batch_size)]
+                    y_test = msks_test[idx:(idx + batch_size)]
 
                     feed_dict = {imgs: x_test, msks: y_test}
 
@@ -575,9 +575,9 @@ def export_model(sess, input_tensor, output_tensor):
     tf.logging.info("Export model")
     # To view pb model file:  saved_model_cli show --dir saved_model --all
     sess.graph._unsafe_unfinalize()
-    import shutil
     MODEL_DIR = os.path.join(CHECKPOINT_DIRECTORY, "saved_model")
     tf.logging.info("model directory: {}".format(MODEL_DIR))
+    # import shutil
     # shutil.rmtree(MODEL_DIR, ignore_errors=True)  # Remove old saved model
     tf.logging.info("SavedModelBuilding({})".format(MODEL_DIR))
     builder = tf.saved_model.builder.SavedModelBuilder(MODEL_DIR)

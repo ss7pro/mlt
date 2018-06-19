@@ -26,27 +26,34 @@ import uuid
 from mlt.commands.events import EventsCommand
 from test_utils.io import catch_stdout
 
+
 @pytest.fixture
 def json_mock(patch):
     return patch('json')
+
 
 @pytest.fixture
 def open_mock(patch):
     return patch('open')
 
+
 @pytest.fixture
 def os_path_mock(patch):
     return patch('os.path')
+
 
 @pytest.fixture
 def process_helpers(patch):
     return patch('process_helpers.run_popen')
 
+
 @pytest.fixture
 def verify_init(patch):
     return patch('config_helpers.load_config')
 
-def test_events_get_events(json_mock, open_mock, verify_init, process_helpers, os_path_mock):
+
+def test_events_get_events(json_mock, open_mock, verify_init, process_helpers,
+                           os_path_mock):
     run_id = str(uuid.uuid4())
     os_path_mock.exists.return_value = True
     json_mock_data = {
@@ -58,9 +65,10 @@ def test_events_get_events(json_mock, open_mock, verify_init, process_helpers, o
     events_command = EventsCommand({'events': True})
     events_command.config = {'name': 'app', 'namespace': 'namespace'}
 
-    head_value ="LAST SEEN   FIRST SEEN   COUNT"
+    head_value = "LAST SEEN   FIRST SEEN   COUNT"
     event_value = '-'.join(['app', run_id])
-    process_helpers.return_value.stdout.readline.side_effect = [head_value, event_value, '']
+    process_helpers.return_value.stdout.readline.side_effect = \
+        [head_value, event_value, '']
     process_helpers.return_value.poll.return_value = 1
     process_helpers.return_value.stderr.readline.return_value = ''
     with catch_stdout() as caught_output:
@@ -69,8 +77,9 @@ def test_events_get_events(json_mock, open_mock, verify_init, process_helpers, o
     assert head_value in output
     assert event_value in output
 
-def test_events_no_push_json_file(open_mock, verify_init,
-                                process_helpers, os_path_mock):
+
+def test_events_no_push_json_file(open_mock, verify_init, process_helpers,
+                                  os_path_mock):
     os_path_mock.exists.return_value = False
     events_command = EventsCommand({'events': True})
     events_command.config = {'name': 'app', 'namespace': 'namespace'}
@@ -82,8 +91,9 @@ def test_events_no_push_json_file(open_mock, verify_init,
 
     assert "This app has not been deployed yet" in output
 
-def test_events_corrupted_app_run_id(json_mock, open_mock,
-                                   verify_init, process_helpers, os_path_mock):
+
+def test_events_corrupted_app_run_id(json_mock, open_mock, verify_init,
+                                     process_helpers, os_path_mock):
     run_id = '31dea6fc'
     os_path_mock.exists.return_value = True
     json_mock_data = {
@@ -102,8 +112,9 @@ def test_events_corrupted_app_run_id(json_mock, open_mock,
 
     assert"Please re-deploy app again, something went wrong." in output
 
+
 def test_events_no_resources_found(json_mock, open_mock, verify_init,
-                        process_helpers, os_path_mock):
+                                   process_helpers, os_path_mock):
     run_id = str(uuid.uuid4())
     os_path_mock.exists.return_value = True
     json_mock_data = {
@@ -124,8 +135,9 @@ def test_events_no_resources_found(json_mock, open_mock, verify_init,
 
     assert "No resources found" in output
 
+
 def test_events_no_events_to_display(json_mock, open_mock, verify_init,
-                        process_helpers, os_path_mock):
+                                     process_helpers, os_path_mock):
     run_id = str(uuid.uuid4())
     os_path_mock.exists.return_value = True
     json_mock_data = {
@@ -138,7 +150,8 @@ def test_events_no_events_to_display(json_mock, open_mock, verify_init,
     events_command.config = {'name': 'app', 'namespace': 'namespace'}
 
     head_value = "LAST SEEN   FIRST SEEN   COUNT"
-    process_helpers.return_value.stdout.readline.side_effect = [head_value, "current job events missing", '']
+    process_helpers.return_value.stdout.readline.side_effect = \
+        [head_value, "current job events missing", '']
     process_helpers.return_value.poll.return_value = 1
     process_helpers.return_value.stderr.readline.return_value = ''
     with catch_stdout() as caught_output:

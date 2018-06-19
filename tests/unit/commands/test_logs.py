@@ -74,21 +74,24 @@ def test_logs_get_logs(json_mock, open_mock, verify_init, sleep_mock,
         'last_push_duration': 0.18889,
         'app_run_id': run_id}
     json_mock.load.return_value = json_mock_data
-    logs_command = LogsCommand({'logs': True, '--since': '1m', '--retries':5})
+    logs_command = LogsCommand({'logs': True, '--since': '1m', '--retries': 5})
     logs_command.config = {'name': 'app', 'namespace': 'namespace'}
 
     check_for_pods_readiness_mock.return_value = True
     process_helpers.return_value.poll.return_value = 0
     process_helpers.return_value.communicate.return_value = ('', '')
+
     with catch_stdout() as caught_output:
         logs_command.action()
         output = caught_output.getvalue()
+
+    assert output == ''
 
 
 def test_logs_no_push_json_file(open_mock, verify_init, sleep_mock,
                                 process_helpers, os_path_mock):
     os_path_mock.exists.return_value = False
-    logs_command = LogsCommand({'logs': True, '--since': '1m', '--retries':5})
+    logs_command = LogsCommand({'logs': True, '--since': '1m', '--retries': 5})
     logs_command.config = {'name': 'app', 'namespace': 'namespace'}
 
     with catch_stdout() as caught_output:
@@ -108,7 +111,7 @@ def test_logs_corrupted_app_run_id(json_mock, open_mock, sleep_mock,
         'last_push_duration': 0.18889,
         'app_run_id': run_id}
     json_mock.load.return_value = json_mock_data
-    logs_command = LogsCommand({'logs': True, '--since': '1m', '--retries':5})
+    logs_command = LogsCommand({'logs': True, '--since': '1m', '--retries': 5})
     logs_command.config = {'name': 'app', 'namespace': 'namespace'}
 
     with catch_stdout() as caught_output:
@@ -119,8 +122,9 @@ def test_logs_corrupted_app_run_id(json_mock, open_mock, sleep_mock,
     assert"Please re-deploy app again, something went wrong." in output
 
 
-def test_logs_command_not_found(json_mock, open_mock, sleep_mock, check_for_pods_readiness_mock,
-                                verify_init, process_helpers, os_path_mock):
+def test_logs_command_not_found(json_mock, open_mock, sleep_mock,
+                                check_for_pods_readiness_mock, verify_init,
+                                process_helpers, os_path_mock):
     run_id = str(uuid.uuid4())
     os_path_mock.exists.return_value = True
     json_mock_data = {
@@ -128,7 +132,7 @@ def test_logs_command_not_found(json_mock, open_mock, sleep_mock, check_for_pods
         'last_push_duration': 0.18889,
         'app_run_id': run_id}
     json_mock.load.return_value = json_mock_data
-    logs_command = LogsCommand({'logs': True, '--since': '1m', '--retries':5})
+    logs_command = LogsCommand({'logs': True, '--since': '1m', '--retries': 5})
     logs_command.config = {'name': 'app', 'namespace': 'namespace'}
     check_for_pods_readiness_mock.return_value = True
     command_not_found = str('/bin/sh: kubetail: command not found')
@@ -143,16 +147,16 @@ def test_logs_command_not_found(json_mock, open_mock, sleep_mock, check_for_pods
     assert 'It is a prerequisite' in output
 
 
-def test_logs_no_logs_found(json_mock, open_mock, sleep_mock, check_for_pods_readiness_mock,
-                                verify_init, process_helpers, os_path_mock):
+def test_logs_no_logs_found(json_mock, open_mock, sleep_mock,
+                            check_for_pods_readiness_mock, verify_init,
+                            process_helpers, os_path_mock):
     run_id = str(uuid.uuid4())
     os_path_mock.exists.return_value = True
-    json_mock_data = {
-        'last_remote_container': 'gcr.io/app_name:container_id',
-        'last_push_duration': 0.18889,
-        'app_run_id': run_id}
+    json_mock_data = {'last_remote_container': 'gcr.io/app_name:container_id',
+                      'last_push_duration': 0.18889,
+                      'app_run_id': run_id}
     json_mock.load.return_value = json_mock_data
-    logs_command = LogsCommand({'logs': True, '--since': '1m', '--retries':5})
+    logs_command = LogsCommand({'logs': True, '--since': '1m', '--retries': 5})
     logs_command.config = {'name': 'app', 'namespace': 'namespace'}
     check_for_pods_readiness_mock.return_value = False
     with catch_stdout() as caught_output:
@@ -164,54 +168,62 @@ def test_logs_no_logs_found(json_mock, open_mock, sleep_mock, check_for_pods_rea
 def test_logs_check_for_pods_readiness(process_helpers, sleep_mock):
     run_id = str(uuid.uuid4()).split("-")
     filter_tag = "-".join(["app", run_id[0], run_id[1]])
-    process_helpers.return_value.stdout.read.return_value = "\n".join(["random-pod1",
-                                            "random-pod2",
-                                            filter_tag+"-ps-"+run_id[3]+" 1/1  Running  0  16d",
-                                            filter_tag+"-worker1-"+run_id[3]+" 1/1  Running  0  16d",
-                                            filter_tag+"-worker2-"+run_id[3]+" 1/1  Running  0  16d",
-                                            filter_tag+"-worker2-"+run_id[3]+" 1/1  Completed  0  16d"])
+    process_helpers.return_value.stdout.read.return_value = "\n".join(
+        ["random-pod1", "random-pod2",
+         filter_tag + "-ps-" + run_id[3] + " 1/1  Running  0  16d",
+         filter_tag + "-worker1-" + run_id[3] + " 1/1  Running  0  16d",
+         filter_tag + "-worker2-" + run_id[3] + " 1/1  Running  0  16d",
+         filter_tag + "-worker2-" + run_id[3] + " 1/1  Completed  0  16d"])
 
     with catch_stdout() as caught_output:
-        found = check_for_pods_readiness(namespace='namespace', filter_tag=filter_tag, retries=5)
+        found = check_for_pods_readiness(namespace='namespace',
+                                         filter_tag=filter_tag, retries=5)
         output = caught_output.getvalue()
 
-    assert found == True
+    assert found
     assert "Checking for pod(s) readiness" in output
 
 
-def test_logs_check_for_pods_readiness_max_retries_reached(process_helpers, sleep_mock):
+def test_logs_check_for_pods_readiness_max_retries_reached(process_helpers,
+                                                           sleep_mock):
     run_id = str(uuid.uuid4()).split("-")
     filter_tag = "-".join(["app", run_id[0], run_id[1]])
 
-    process_helpers.return_value.stdout.read.return_value = "\n".join(["random-pod1",
-                                                                      "random-pod2"])
+    process_helpers.return_value.stdout.read.return_value = "\n".join(
+        ["random-pod1", "random-pod2"])
     with catch_stdout() as caught_output:
-        found = check_for_pods_readiness(namespace='namespace', filter_tag=filter_tag, retries=5)
+        found = check_for_pods_readiness(namespace='namespace',
+                                         filter_tag=filter_tag, retries=5)
         output = caught_output.getvalue()
 
-    assert found == False
+    assert not found
     assert "Max retries Reached." in output
 
 
-def test_logs_check_for_pods_readiness_max_retries_when_status_is_not_running(process_helpers, sleep_mock):
+def test_logs_check_for_pods_readiness_max_retries_when_status_is_not_running(
+        process_helpers, sleep_mock):
     run_id = str(uuid.uuid4()).split("-")
     filter_tag = "-".join(["app", run_id[0], run_id[1]])
     process_helpers.return_value.stdout.read.return_value = "\n".join([
-        filter_tag+"-ps-"+run_id[3]+" 1/1  ContainerCreating  0  16d",
-        filter_tag+"-worker1-"+run_id[3]+" 1/1  ContainerCreating  0  16d",
-        filter_tag+"-worker2-"+run_id[3]+" 1/1  ContainerCreating  0  16d"])
+        filter_tag + "-ps-" + run_id[3] + " 1/1  ContainerCreating  0  16d",
+        filter_tag + "-worker1-" + run_id[3] + " 1/1  ContainerCreating  0  "
+                                               "16d",
+        filter_tag + "-worker2-" + run_id[3] + " 1/1  ContainerCreating  0  "
+                                               "16d"]
+    )
 
     with catch_stdout() as caught_output:
-        running = check_for_pods_readiness(namespace='namespace', filter_tag=filter_tag, retries=4)
+        running = check_for_pods_readiness(namespace='namespace',
+                                           filter_tag=filter_tag, retries=4)
         output = caught_output.getvalue()
 
-    assert running == False
+    assert not running
     assert "Max retries Reached." in output
 
 
 def test_logs_keyboardinterrupt(json_mock, open_mock, verify_init, sleep_mock,
-                       check_for_pods_readiness_mock,
-                       process_helpers, os_path_mock):
+                                check_for_pods_readiness_mock, process_helpers,
+                                os_path_mock):
     run_id = str(uuid.uuid4())
     os_path_mock.exists.return_value = True
     json_mock_data = {
@@ -219,11 +231,11 @@ def test_logs_keyboardinterrupt(json_mock, open_mock, verify_init, sleep_mock,
         'last_push_duration': 0.18889,
         'app_run_id': run_id}
     json_mock.load.return_value = json_mock_data
-    logs_command = LogsCommand({'logs': True, '--since': '1m', '--retries':5})
+    logs_command = LogsCommand({'logs': True, '--since': '1m', '--retries': 5})
     logs_command.config = {'name': 'app', 'namespace': 'namespace'}
 
     check_for_pods_readiness_mock.return_value = True
     process_helpers.side_effect = KeyboardInterrupt
-    with catch_stdout() as caught_output:
+    with catch_stdout():
         with pytest.raises(SystemExit):
             logs_command.action()

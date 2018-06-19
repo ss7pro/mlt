@@ -122,8 +122,8 @@ def main(_):
         inter_op_parallelism_threads=num_inter_op_threads,
         intra_op_parallelism_threads=num_intra_op_threads)
 
-    run_options = tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
-    run_metadata = tf.RunMetadata()  # For Tensorflow trace
+    tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
+    tf.RunMetadata()  # For Tensorflow trace
 
     cluster = tf.train.ClusterSpec(cluster_spec)
     server = tf.train.Server(cluster, job_name=job_name, task_index=task_index)
@@ -226,7 +226,7 @@ def main(_):
             values, indices = tf.nn.top_k(preds, 10)
             table = tf.contrib.lookup.index_to_string_table_from_tensor(
                 tf.constant([str(i) for i in range(10)]))
-            prediction_classes = table.lookup(tf.to_int64(indices))
+            table.lookup(tf.to_int64(indices))
 
             with tf.name_scope('accuracy'):
                 with tf.name_scope('correct_prediction'):
@@ -324,10 +324,8 @@ def main(_):
             # Start TensorBoard on the chief worker
             if is_chief:
                 cmd = 'tensorboard --logdir={}'.format(FLAGS.train_dir)
-                tensorboard_pid = subprocess.Popen(cmd,
-                                                   stdout=subprocess.PIPE,
-                                                   shell=True,
-                                                   preexec_fn=os.setsid)
+                subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True,
+                                 preexec_fn=os.setsid)
                 chief_ip = socket.gethostbyname(socket.gethostname())
                 logging.info("Chief node started TensorBoard http://{}:6006".
                              format(chief_ip))

@@ -18,10 +18,10 @@
 # SPDX-License-Identifier: EPL-2.0
 #
 
-'''
+"""
 This loads the trained model and runs it on the test set.
 Should provide a sanity check on the TensorFlow model.
-'''
+"""
 
 import tensorflow as tf
 from preprocess import load_data, update_channels
@@ -40,9 +40,9 @@ print("Loading trained TensorFlow model from directory {}".format(export_dir))
 def load_test_data():
 
     # Load test data
-    tf.logging.info('-'*38)
+    tf.logging.info('-' * 38)
     tf.logging.info('Loading and preprocessing test data...')
-    tf.logging.info('-'*38)
+    tf.logging.info('-' * 38)
     imgs_test, msks_test = load_data(settings_dist.OUT_PATH, "_test")
     imgs_test, msks_test = update_channels(imgs_test, msks_test,
                                            settings_dist.IN_CHANNEL_NO,
@@ -57,7 +57,7 @@ def calc_dice(a, b):
     a1 = np.ndarray.flatten(a)
     b1 = np.ndarray.flatten(b)
 
-    return 2.0*(np.sum(a1*b1)+1.0)/(np.sum(a1+b1)+1.0)
+    return 2.0 * (np.sum(a1 * b1) + 1.0) / (np.sum(a1 + b1) + 1.0)
 
 
 with tf.Session(graph=tf.Graph()) as sess:
@@ -73,8 +73,8 @@ with tf.Session(graph=tf.Graph()) as sess:
 
     for idx in tqdm(range(0, imgs_test.shape[0] - batch_size, batch_size),
                     desc="Calculating metrics on test dataset", leave=False):
-        x_test = imgs_test[idx:(idx+batch_size)]
-        y_test = msks_test[idx:(idx+batch_size)]
+        x_test = imgs_test[idx:(idx + batch_size)]
+        y_test = msks_test[idx:(idx + batch_size)]
 
         feed_dict = {imgs: x_test}
 
@@ -82,4 +82,4 @@ with tf.Session(graph=tf.Graph()) as sess:
         dice += calc_dice(y_test, p)
         i += 1
 
-tf.logging.info("Average Dice for Test Set = {}".format(dice/i))
+tf.logging.info("Average Dice for Test Set = {}".format(dice / i))

@@ -86,7 +86,7 @@ def test_list_config(init_mock):
 
 def test_list_empty_configs(init_mock):
     """
-    Tests calling the config list command when there are no configs. 
+    Tests calling the config list command when there are no configs.
     """
     init_mock.return_value = {}
     output = config(list=True)

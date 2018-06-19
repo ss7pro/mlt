@@ -20,11 +20,9 @@
 
 from __future__ import print_function
 
-import pytest
-import uuid
-
-from mock import patch, MagicMock
 from subprocess import CalledProcessError
+
+import pytest
 from test_utils.io import catch_stdout
 
 from mlt.commands.status import StatusCommand
@@ -38,6 +36,7 @@ def init_mock(patch):
 @pytest.fixture
 def isfile_mock(patch):
     return patch('os.path.isfile')
+
 
 @pytest.fixture
 def open_mock(patch):

@@ -80,10 +80,11 @@ def test_init_dir_exists():
         with catch_stdout() as caught_output:
             with pytest.raises(SystemExit) as bad_init:
                 InitCommand(init_dict).action()
-                assert caught_output.getvalue() == \
-                       "Directory '{}' already exists: delete ".format(
-                           new_dir) + "before trying to initialize new " + \
-                       "application"
+                assert \
+                    caught_output.getvalue() == "Directory '{}' already " \
+                                                "exists: delete ".format(
+                        new_dir) + "before trying to initialize new " \
+                                   "application"
                 assert bad_init.value.code == 1
     finally:
         os.rmdir(new_dir)
@@ -103,7 +104,8 @@ def test_init(open_mock, process_helpers, copytree_mock, check_output_mock,
         '--skip-crd-check': True,
         '<name>': new_dir
     }
-    config_helpers_mock.get_template_parameters_from_file.return_value = [{"name": "greeting", "value": "hello"}]
+    config_helpers_mock.get_template_parameters_from_file.return_value = \
+        [{"name": "greeting", "value": "hello"}]
     init = InitCommand(init_dict)
     init.action()
     assert init.app_name == new_dir

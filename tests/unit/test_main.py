@@ -40,12 +40,12 @@ def test_run_command(command):
         COMMAND_MAP[0][1].return_value.action.assert_called_once()
 
 
-@pytest.mark.parametrize('args',
-                         [{'<name>': 'Capitalized-Name',
-                           '-i': False, '-l': False, '-v': False, '--retries': '5'},
-                          {'-i': True, '-l': False, '-v': False, '<name>': 'foo', '--retries': '5'},
-                          {'-i': True, '-l': False, '-v': False, '<name>': 'foo', '--retries': '8'},
-                          {'-i': True, '-l': False, '-v': True, '<name>': 'foo', '--retries': '8'}])
+@pytest.mark.parametrize('args', [
+    {'<name>': 'Capitalized-Name',
+     '-i': False, '-l': False, '-v': False, '--retries': '5'},
+    {'-i': True, '-l': False, '-v': False, '<name>': 'foo', '--retries': '5'},
+    {'-i': True, '-l': False, '-v': False, '<name>': 'foo', '--retries': '8'},
+    {'-i': True, '-l': False, '-v': True, '<name>': 'foo', '--retries': '8'}])
 @patch('mlt.main.docopt')
 @patch('mlt.main.run_command')
 def test_main_various_args(run_command, docopt, args):
@@ -89,6 +89,7 @@ def test_main_invalid_namespace(docopt_mock):
     with pytest.raises(ValueError):
         main()
         run_command(args)
+
 
 @pytest.mark.parametrize("command", [
     "set",

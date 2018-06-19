@@ -19,7 +19,6 @@
 #
 
 import pytest
-from mock import patch, MagicMock
 
 from mlt.utils import git_helpers
 

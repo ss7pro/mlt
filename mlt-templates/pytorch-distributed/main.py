@@ -20,14 +20,14 @@
 # SPDX-License-Identifier: EPL-2.0
 #
 
-import os
+from math import ceil
+from random import Random
+
 import torch
 import torch.distributed as dist
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-from math import ceil
-from random import Random
 from torch.autograd import Variable
 from torchvision import datasets, transforms
 

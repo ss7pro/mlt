@@ -19,11 +19,11 @@
 #
 
 import pytest
-
-from mlt.commands.update_template import UpdateTemplateCommand
+from mock import MagicMock
 from test_utils import project
 from test_utils.io import catch_stdout
-from mock import MagicMock
+
+from mlt.commands.update_template import UpdateTemplateCommand
 
 
 @pytest.fixture
@@ -48,7 +48,8 @@ def verify_init(patch):
 
 @pytest.fixture
 def get_latest_sha(patch):
-    return patch('git_helpers.get_latest_sha', MagicMock(return_value="abcdefg"))
+    return patch('git_helpers.get_latest_sha',
+                 MagicMock(return_value="abcdefg"))
 
 
 @pytest.fixture
@@ -70,13 +71,15 @@ def test_invalid_config(verify_init, process_helpers, git_clone, ospath):
         update_template = UpdateTemplateCommand(args)
         update_template.config = {'template_git_sha': 'abcdefg',
                                   'name': 'testapp'}
-        error_string = "ERROR: mlt.json does not have either template_name or template_git_sha."
+        error_string = "ERROR: mlt.json does not have either template_name " \
+                       "or template_git_sha."
         with catch_stdout() as caught_output:
             update_template.action()
             assert error_string in caught_output.getvalue()
 
         update_template.config = {'template_name': 'test', 'name': 'testapp'}
-        error_string = "ERROR: mlt.json does not have either template_name or template_git_sha."
+        error_string = "ERROR: mlt.json does not have either template_name " \
+                       "or template_git_sha."
         with catch_stdout() as caught_output:
             update_template.action()
             assert error_string in caught_output.getvalue()
@@ -100,7 +103,7 @@ def test_no_update(verify_init, process_helpers, git_clone,
 
 
 def test_valid_case(verify_init, copy_tree_mock, process_helpers, git_clone,
-                   chdir, get_latest_sha, ospath):
+                    chdir, get_latest_sha, ospath):
     args = {
         'template': 'test',
         '--template-repo': project.basedir(),

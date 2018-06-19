@@ -27,15 +27,15 @@ import tensorflow as tf
 def load_all_data():
 
     # Load train data
-    tf.logging.info('-'*42)
+    tf.logging.info('-' * 42)
     tf.logging.info('Loading and preprocessing training data...')
-    tf.logging.info('-'*42)
+    tf.logging.info('-' * 42)
     imgs_train, msks_train = load_data(settings_dist.OUT_PATH, "_train")
 
     # Load test data
-    tf.logging.info('-'*38)
+    tf.logging.info('-' * 38)
     tf.logging.info('Loading and preprocessing test data...')
-    tf.logging.info('-'*38)
+    tf.logging.info('-' * 38)
     imgs_test, msks_test = load_data(settings_dist.OUT_PATH, "_test")
 
     # Update channels
@@ -65,7 +65,7 @@ def get_epoch(batch_size, imgs_train, msks_train):
     image_channels = imgs_train.shape[3]
 
     epoch_length = train_size - train_size % batch_size
-    batch_count = int(epoch_length/batch_size)
+    batch_count = int(epoch_length / batch_size)
 
     # Shuffle and truncate arrays to equal 1 epoch
     zipped = list(zip(imgs_train, msks_train))

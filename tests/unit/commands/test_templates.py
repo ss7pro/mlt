@@ -48,6 +48,7 @@ def test_template_list(valid_template_dir, copy_tree_mock):
         templates.action()
         assert caught_output.getvalue() is not None
 
+
 @pytest.mark.parametrize("invalid_template_dir", [
     "/tmp/invalid-mlt-dir",
     "git@github.com:1ntelA1/mlt.git",
@@ -69,4 +70,3 @@ def test_template_list_invalid_repo_dir(invalid_template_dir, copy_tree_mock):
     with catch_stdout() as caught_output:
         templates.action()
         assert caught_output.getvalue() is not None
-

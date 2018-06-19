@@ -109,7 +109,7 @@ def test_watch_build(observer, sleep_mock, open_mock, init_mock):
                           '--verbose': False})
     build.config = MagicMock()
 
-    with patch('mlt.commands.build.EventHandler') as event_handler_patch:
+    with patch('mlt.commands.build.EventHandler'):
         build.action()
 
 

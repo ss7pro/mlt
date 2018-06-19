@@ -103,7 +103,7 @@ def deploy(no_push, skip_crd_check, interactive, extra_config_args, retries=5):
         {'deploy': True, '--no-push': no_push,
          '--skip-crd-check': skip_crd_check,
          '--interactive': interactive, '--retries': retries,
-         '--logs':False})
+         '--logs': False})
     deploy.config = {'name': 'app', 'namespace': 'namespace'}
     deploy.config.update(extra_config_args)
 
@@ -163,7 +163,8 @@ def test_deploy_docker(walk_mock, progress_bar, popen_mock, open_mock,
 
 def test_deploy_without_push(walk_mock, progress_bar, popen_mock, open_mock,
                              template, kube_helpers, process_helpers,
-                             verify_build, verify_init, fetch_action_arg, json_mock):
+                             verify_build, verify_init, fetch_action_arg,
+                             json_mock):
     json_mock.load.return_value = {
         'last_remote_container': 'gcr.io/app_name:container_id',
         'last_push_duration': 0.18889}
@@ -223,7 +224,7 @@ def test_deploy_interactive_pod_not_run(walk_mock, progress_bar, popen_mock,
     yaml.return_value = {
         'template': {'foo': 'bar'}, 'containers': [{'foo': 'bar'}]}
     with pytest.raises(ValueError):
-        output = deploy(
+        deploy(
             no_push=False, skip_crd_check=True,
             interactive=True,
             extra_config_args={'registry': 'dockerhub', '<kube_spec>': 'r'})
@@ -242,8 +243,9 @@ def test_deploy_update_app_run_id(open_mock, json_mock):
 
 
 def test_image_push_error(walk_mock, progress_bar, popen_mock, open_mock,
-                    template, kube_helpers, process_helpers, verify_build,
-                    verify_init, fetch_action_arg, json_mock):
+                          template, kube_helpers, process_helpers,
+                          verify_build, verify_init, fetch_action_arg,
+                          json_mock):
     json_mock.load.return_value = {
         'last_remote_container': 'gcr.io/app_name:container_id',
         'last_push_duration': 0.18889}

@@ -18,7 +18,6 @@
 # SPDX-License-Identifier: EPL-2.0
 #
 
-import os
 import pytest
 from test_utils.e2e_commands import CommandTester
 from test_utils.files import create_work_dir
@@ -38,8 +37,9 @@ def test_invalid_update():
         new_config = "template_git_sha"
         commands.config(subcommand="remove", config_name=new_config)
         cmd_output = commands.update_template()
-        desired_output_string = 'ERROR: mlt.json does not have either template_name' \
-                                ' or template_git_sha. Template update is not possible.'
+        desired_output_string = "ERROR: mlt.json does not have either " \
+                                "template_name or template_git_sha. Template" \
+                                " update is not possible."
         assert desired_output_string in cmd_output
 
 
@@ -54,7 +54,6 @@ def test_valid_update():
         commands.config(subcommand="set", config_name=new_config,
                         config_value=new_value)
         cmd_output = commands.update_template()
-        desired_output_string = 'Latest template changes have merged using git, ' \
-                                'please review change'
+        desired_output_string = "Latest template changes have merged using " \
+                                "git, please review change"
         assert desired_output_string in cmd_output
-

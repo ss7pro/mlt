@@ -21,14 +21,16 @@
 """ To conver dicom images into images needed for keras"""
 
 from __future__ import print_function
+
 import os
-import numpy as np
-import SimpleITK as sitk
-import settings_dist
-import cv2
-import random
 import time
+
+import SimpleITK as sitk
+import cv2
+import numpy as np
 import tensorflow as tf
+
+import settings_dist
 
 
 def get_data_from_dir(data_dir):
@@ -130,7 +132,7 @@ def preprocessSITK(img, img_rows, img_cols, resize_factor=1):
     Output: sitk image
     """
     si_img = img.GetSize()
-    sp_img = img.GetSpacing()
+    img.GetSpacing()
 
     # crop to the desired size:
     low_boundary = [int((si_img[0] - img_rows) / 2),
@@ -176,7 +178,7 @@ def create_datasets_4(img_path, img_rows, img_cols, img_slices, slice_by=5,
     # training
     tr_n_cases = 273  # max number of cases in tcia
     tr_n_slices = slices_per_case * tr_n_cases
-    tr_label_counts = np.zeros(n_labels + 2)
+    np.zeros(n_labels + 2)
 
     tr_img_shape = (tr_n_slices, img_rows_ss, img_cols_ss, n_inputs)
     tr_msk_shape = (tr_n_slices, img_rows_ss, img_cols_ss, n_labels)
@@ -204,7 +206,6 @@ def create_datasets_4(img_path, img_rows, img_cols, img_slices, slice_by=5,
     slicesTe = 0
     curr_sl_tr = 0
     curr_sl_te = 0
-    curr_cs_te = 0
 
     for i, img_dir_fn in enumerate(img_list):
         data_dir = os.path.join(img_path, img_dir_fn)

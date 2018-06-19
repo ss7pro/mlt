@@ -17,6 +17,7 @@
 #
 # SPDX-License-Identifier: EPL-2.0
 #
+
 import re
 
 from test_utils.e2e_commands import CommandTester
@@ -64,7 +65,7 @@ def test_update_config():
 def test_add_remove_config():
     """
     Tests adding a new config, and then lists the configs to ensure that the
-    new config is listed.  Remove the config and then lists the configs to 
+    new config is listed.  Remove the config and then lists the configs to
     ensure that the config has been removed.
     """
     with create_work_dir() as workdir:
