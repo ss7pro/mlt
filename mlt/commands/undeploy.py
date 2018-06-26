@@ -17,9 +17,14 @@
 #
 # SPDX-License-Identifier: EPL-2.0
 #
+import json
+import os
+import subprocess
+import sys
 
 from mlt.commands import Command
-from mlt.utils import config_helpers, process_helpers
+from mlt.utils import (config_helpers,
+                       process_helpers, files)
 
 
 class UndeployCommand(Command):
@@ -30,5 +35,39 @@ class UndeployCommand(Command):
     def action(self):
         """deletes current kubernetes namespace"""
         namespace = self.config['namespace']
-        process_helpers.run(
-            ["kubectl", "--namespace", namespace, "delete", "-f", "k8s"])
+
+        if files.is_custom('undeploy:'):
+            self._custom_undeploy()
+        else:
+            process_helpers.run(
+                ["kubectl", "--namespace", namespace, "delete", "-f", "k8s"])
+
+    def _custom_undeploy(self):
+        """
+        Custom undeploy uses the make targets to perform operation.
+        """
+        if os.path.exists('.push.json'):
+            with open('.push.json', 'r') as f:
+                data = json.load(f)
+        else:
+            print("This app has not been deployed yet.")
+            sys.exit(1)
+
+        app_run_id = data.get('app_run_id', "")
+
+        if len(app_run_id) < 4:
+            print("Something went wrong,"
+                  "please delete folder and re-initiate app")
+            sys.exit(1)
+
+        job_name = "-".join([self.config['name'], app_run_id])
+        # Adding USER env because
+        # https://github.com/ksonnet/ksonnet/issues/298
+        user_env = dict(os.environ, JOB_NAME=job_name, USER='root')
+        try:
+            output = subprocess.check_output(["make", "undeploy"],
+                                             env=user_env,
+                                             stderr=subprocess.STDOUT)
+            print(output.decode("utf-8").strip())
+        except subprocess.CalledProcessError as e:
+            print("Error while undeploying app: {}".format(e.output))

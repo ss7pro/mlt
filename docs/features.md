@@ -8,6 +8,7 @@
 * [tensorboard](../mlt-templates/tensorboard): A TensorBoard service in Kubernetes cluster.
 * [tf-dist-mnist](../mlt-templates/tf-dist-mnist): A distributed TensorFlow MNIST model which designates worker 0 as the chief.
 * [tf-distributed](../mlt-templates/tf-distributed): A distributed TensorFlow matrix multiplication run through the TensorFlow Kubernetes Operator.
+* [horovod](../mlt-templates/horovod): A distributed model training using horovod and openmpi.
 
 ## Commands
 
@@ -187,7 +188,5 @@ user wants to revert back to their original code.
 
 ## Upcoming Features
 * Syncing code between your local system and a running pod for quicker developer iterations ([#155](https://github.com/IntelAI/mlt/issues/155))
-* [Horovod](https://github.com/uber/horovod) template ([#112](https://github.com/IntelAI/mlt/issues/112))
 * Hyperparameter [Experiments](https://github.com/IntelAI/experiments) template ([#183](https://github.com/IntelAI/mlt/issues/183))
-* Get external IP and port for [TensorBoard](https://github.com/tensorflow/tensorboard) launch in browser ([#227](https://github.com/IntelAI/mlt/issues/227))
-* Validation of yaml in templates ([#145](https://github.com/IntelAI/mlt/issues/145))
+* Launching Tensorboard in browser ([#227](https://github.com/IntelAI/mlt/issues/227))

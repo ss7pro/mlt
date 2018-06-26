@@ -28,3 +28,14 @@ def fetch_action_arg(action, arg):
     if os.path.isfile(action_json):
         with open(action_json) as f:
             return json.load(f).get(arg)
+
+
+def is_custom(target):
+    custom = False
+    if os.path.isfile('Makefile'):
+        with open('Makefile') as f:
+            for line in f:
+                if line.startswith(target):
+                    custom = True
+                    break
+    return custom

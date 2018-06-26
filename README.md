@@ -35,9 +35,11 @@ Prerequisites:
 - [git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
 - [python](https://www.python.org/downloads/)
 - [pip](https://pip.pypa.io/en/stable/installing/)
+- [ks](https://github.com/ksonnet/ksonnet#install)
 - [TFJob operator](https://github.com/kubeflow/tf-operator#installing-the-tfjob-crd-and-operator-on-your-k8s-cluster) (for the distributed tensorflow templates)
 - [PyTorch operator](https://github.com/kubeflow/pytorch-operator) (for the pytorch-distributed template)
 - [Ingress](https://kubernetes.io/docs/concepts/services-networking/ingress/) (for the tensorboard template)
+- [openssh-server] Please install version specific to your OS
 
 
 ## Installation

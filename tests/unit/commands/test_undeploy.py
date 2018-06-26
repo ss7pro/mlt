@@ -21,12 +21,57 @@
 from mock import patch
 
 from mlt.commands.undeploy import UndeployCommand
+import pytest
+
+
+@pytest.fixture
+def json_mock(patch):
+    return patch('json')
+
+
+@pytest.fixture
+def os_path_mock(patch):
+    return patch('os.path')
+
+
+@pytest.fixture
+def init_mock(patch):
+    return patch('config_helpers.load_config')
+
+
+@pytest.fixture
+def is_custom_mock(patch):
+    return patch('files.is_custom')
+
+
+@pytest.fixture
+def open_mock(patch):
+    return patch('open')
+
+
+@pytest.fixture
+def subprocess_mock(patch):
+    return patch('subprocess.check_output')
+
+
+def test_undeploy_custom_undeploy(json_mock, open_mock, init_mock,
+                                  subprocess_mock, is_custom_mock, os_path_mock
+                                  ):
+    """
+    Tests successful call to the undeploy command
+    """
+    undeploy = UndeployCommand({'undeploy': True})
+    undeploy.config = {'name': 'bar', 'namespace': 'foo', 'template': 'test'}
+    json_mock.load.return_value = {"app_run_id": "123-456-789"}
+    is_custom_mock.return_value = True
+    os_path_mock.return_value = True
+    undeploy.action()
 
 
 @patch('mlt.commands.undeploy.config_helpers.load_config')
 @patch('mlt.commands.undeploy.process_helpers')
 def test_undeploy(proc_helpers, load_config):
     undeploy = UndeployCommand({'undeploy': True})
-    undeploy.config = {'namespace': 'foo'}
+    undeploy.config = {'namespace': 'foo', 'template': 'test'}
     undeploy.action()
     proc_helpers.run.assert_called_once()

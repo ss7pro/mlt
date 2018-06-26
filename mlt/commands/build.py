@@ -53,7 +53,10 @@ class BuildCommand(Command):
         container_name = "{}:{}".format(self.config['name'], uuid.uuid4())
         print("Starting build {}".format(container_name))
 
-        build_cmd = "CONTAINER_NAME={} make build".format(container_name)
+        template_parameters = config_helpers.\
+            get_template_parameters(self.config)
+        build_cmd = "CONTAINER_NAME={} GPUS={} make build".format(
+            container_name, template_parameters.get('gpus', 0))
 
         if self.args['--verbose']:
             build_process = process_helpers.run_popen(build_cmd,
@@ -74,7 +77,7 @@ class BuildCommand(Command):
                 print(output.decode("utf-8"))
             if error_msg:
                 print(colored(error_msg.decode("utf-8"), 'red'))
-            sys.exit(1)
+                sys.exit(1)
 
         built_time = time.time()
 

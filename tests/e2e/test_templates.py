@@ -40,6 +40,7 @@ def test_templates():
 -----------------------------------------
 hello-world          A TensorFlow python HelloWorld example run through \
 Kubernetes Jobs.
+horovod              A distributed model training using horovod and openmpi.
 pytorch              Sample distributed application taken from \
 http://pytorch.org/tutorials/intermediate/dist_tuto.html
 pytorch-distributed  A distributed PyTorch MNIST example run using the \
@@ -50,6 +51,7 @@ worker 0 as the chief.
 tf-distributed       A distributed TensorFlow matrix multiplication run \
 through the TensorFlow Kubernetes Operator.
 """
+
     assert output == desired_template_output
 
 
@@ -79,6 +81,7 @@ def test_local_templates():
 -----------------------------------------
 hello-world          A TensorFlow python HelloWorld example run through \
 Kubernetes Jobs.
+horovod              A distributed model training using horovod and openmpi.
 pytorch              Sample distributed application taken from \
 http://pytorch.org/tutorials/intermediate/dist_tuto.html
 pytorch-distributed  A distributed PyTorch MNIST example run using the \

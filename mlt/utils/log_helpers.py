@@ -49,6 +49,7 @@ def call_logs(config, args):
         sys.exit(1)
 
     prefix = "-".join([config["name"], app_run_id[0], app_run_id[1]])
+
     namespace = config['namespace']
     retires = args["--retries"]
 

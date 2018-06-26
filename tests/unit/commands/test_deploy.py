@@ -89,6 +89,11 @@ def verify_init(patch):
 
 
 @pytest.fixture
+def subprocess_mock(patch):
+    return patch('subprocess.check_output')
+
+
+@pytest.fixture
 def walk_mock(patch):
     return patch('os.walk', MagicMock(return_value=['foo', 'bar']))
 
@@ -98,13 +103,23 @@ def yaml(patch):
     return patch('yaml.load')
 
 
-def deploy(no_push, skip_crd_check, interactive, extra_config_args, retries=5):
+@pytest.fixture
+def is_custom_mock(patch):
+    return patch('files.is_custom')
+
+
+def deploy(no_push, skip_crd_check,
+           interactive, extra_config_args,
+           retries=5, template='test'):
     deploy = DeployCommand(
         {'deploy': True, '--no-push': no_push,
          '--skip-crd-check': skip_crd_check,
          '--interactive': interactive, '--retries': retries,
          '--logs': False})
-    deploy.config = {'name': 'app', 'namespace': 'namespace'}
+    deploy.config = {'name': 'app',
+                     'namespace': 'namespace',
+                     'template': template}
+
     deploy.config.update(extra_config_args)
 
     with catch_stdout() as caught_output:
@@ -277,3 +292,59 @@ def test_image_push_error(walk_mock, progress_bar, popen_mock, open_mock,
     error_location = output.find(error_str)
     assert all(var >= 0 for var in (output_location, error_location))
     assert output_location < error_location
+
+
+def test_deploy_custom_deploy(walk_mock, progress_bar, popen_mock, open_mock,
+                              template, kube_helpers,
+                              process_helpers, subprocess_mock,
+                              verify_build, is_custom_mock,
+                              verify_init, fetch_action_arg, json_mock, ):
+    json_mock.load.return_value = {
+        'last_remote_container': 'gcr.io/app_name:container_id',
+        'last_push_duration': 0.18889}
+    expected_output = "Updating configmaps\n" \
+                      "Creating non-existent configmaps\n" \
+                      "Updating services\n" \
+                      "Creating non-existent services\n" \
+                      "Updating serviceaccounts\n" \
+                      "Creating non-existent serviceaccounts\n" \
+                      "Updating clusterrolebindings\n" \
+                      "Creating non-existent clusterrolebindings\n" \
+                      "Updating pods\n" \
+                      "Creating non-existent pods\n"
+    subprocess_mock.return_value.decode.return_value = expected_output
+    is_custom_mock.return_value = True
+    output = deploy(
+        no_push=False, skip_crd_check=True,
+        interactive=False,
+        extra_config_args={'gceProject': 'gcr://projectfoo',
+                           "template_parameters": {
+                               "gpus": 0,
+                               "num_workers": 1}})
+    verify_successful_deploy(output)
+    assert expected_output in output
+
+
+def test_deploy_custom_deploy_interactive(walk_mock, progress_bar, popen_mock,
+                                          open_mock, template, kube_helpers,
+                                          process_helpers, subprocess_mock,
+                                          verify_build, is_custom_mock,
+                                          verify_init, fetch_action_arg,
+                                          json_mock):
+    json_mock.load.return_value = {
+        'last_remote_container': 'gcr.io/app_name:container_id',
+        'last_push_duration': 0.18889}
+    is_custom_mock.return_value = True
+    process_helpers.return_value = u'horovod-test-master 1/1  Running'
+    json_mock.loads.return_value = {'status': {'phase': 'Running'}}
+    yaml.return_value = {
+        'template': {'foo': 'bar'}, 'containers': [{'foo': 'bar'}]}
+    output = deploy(
+        no_push=False, skip_crd_check=True,
+        interactive=True,
+        extra_config_args={'gceProject': 'gcr://projectfoo',
+                           "template_parameters": {
+                               "gpus": 0,
+                               "num_workers": 1}})
+    verify_successful_deploy(output)
+    assert 'Connecting to pod...' in output

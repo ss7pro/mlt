@@ -113,6 +113,7 @@ jobs:
           name: Run e2e tests
           command: |
             make test-e2e
+          no_output_timeout: 20m
 
       - run:
           name: cleanup cluster

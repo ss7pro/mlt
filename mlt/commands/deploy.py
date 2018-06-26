@@ -24,6 +24,7 @@ import time
 import uuid
 import yaml
 from string import Template
+import subprocess
 from subprocess import Popen, PIPE
 from termcolor import colored
 
@@ -135,12 +136,22 @@ class DeployCommand(Command):
 
         print("Deploying {}".format(remote_container_name))
         kubernetes_helpers.ensure_namespace_exists(self.namespace)
+        app_run_id = str(uuid.uuid4())
+        if files.is_custom("deploy:"):
+            self._custom_deploy(app_name=app_name,
+                                app_run_id=app_run_id,
+                                remote_container_name=remote_container_name)
+        else:
+            self._default_deploy(app_name=app_name,
+                                 app_run_id=app_run_id,
+                                 remote_container_name=remote_container_name)
 
+    def _default_deploy(self, app_name, app_run_id, remote_container_name):
         # do template substitution across everything in `k8s-templates` dir
         # replaces things with $ with the vars from template.substitute
         # also patches deployment if interactive mode is set
+
         self.interactive_deployment_found = False
-        app_run_id = str(uuid.uuid4())
         for path, dirs, filenames in os.walk("k8s-templates"):
             self.file_count = len(filenames)
             for filename in filenames:
@@ -158,7 +169,8 @@ class DeployCommand(Command):
                     interactive_podname = self._get_most_recent_podname()
 
             print("\nInspect created objects by running:\n"
-                  "$ kubectl get --namespace={} all\n".format(self.namespace))
+                  "$ kubectl get --namespace={} all\n"
+                  "or \n$ mlt status\n".format(self.namespace))
 
         self._update_app_run_id(app_run_id)
         # After everything is deployed we'll make a kubectl exec
@@ -303,9 +315,59 @@ class DeployCommand(Command):
             time.sleep(1)
 
         # Get shell to the specified pod running in the user's namespace
-        process_helpers.run_popen(
-            ["kubectl", "exec", "-it", podname, "--namespace", self.namespace,
-             "/bin/bash"], stdout=None, stderr=None).wait()
+        kubectl_exec = ["kubectl", "exec", "-it", podname,
+                        "--namespace", self.namespace,
+                        "--", "/bin/bash",
+                        "-c", "cd /src/app; bash"]
+
+        process_helpers.run_popen(kubectl_exec,
+                                  stdout=None, stderr=None).wait()
 
     def _tail_logs(self):
         log_helpers.call_logs(self.config, self.args)
+
+    def _custom_deploy(self, app_name, app_run_id, remote_container_name):
+        job_name = "-".join([app_name, app_run_id])
+        template_parameters = config_helpers.\
+            get_template_parameters(self.config)
+        template_parameters = \
+            {k.upper(): v for k, v in template_parameters.items()}
+        user_env = dict(os.environ,
+                        NAMESPACE=self.namespace,
+                        JOB_NAME=job_name,
+                        IMAGE=remote_container_name,
+                        **template_parameters)
+        try:
+            kubernetes_helpers.ensure_namespace_exists(self.namespace)
+
+            output = subprocess.check_output(["make", "deploy"],
+                                             env=user_env,
+                                             stderr=subprocess.STDOUT)
+            print(output.decode("utf-8").strip())
+            self._update_app_run_id(app_run_id)
+            print("\nInspect created objects by running:\n"
+                  "$ kubectl get --namespace={} all\n"
+                  "or \n$ mlt status\n".format(self.namespace))
+
+            if self.args["--interactive"]:
+                k8_label = ",".join(['app={}'.format(job_name), 'role=master'])
+
+                interactive_podname = \
+                    self._get_custom_deploy_pod_name(k8_label)
+                self._exec_into_pod(interactive_podname)
+
+        except subprocess.CalledProcessError as e:
+                print("Error while deploying app: {}".format(e.output))
+
+    def _get_custom_deploy_pod_name(self, k8_label):
+        pod = process_helpers.run_popen(
+            "kubectl get pod --namespace {} --selector {}".format(
+                self.namespace, k8_label), shell=True
+        ).stdout.read().decode('utf-8').strip().splitlines()
+        if pod:
+            # we want last pod listed, podname is always first
+            return pod[-1].split()[0]
+        else:
+            raise ValueError(
+                "No pods found in namespace: {}".format(
+                    self.namespace))
