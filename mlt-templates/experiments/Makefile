@@ -1,6 +1,3 @@
-#
-# -*- coding: utf-8 -*-
-#
 # Copyright (c) 2018 Intel Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,22 +15,15 @@
 # SPDX-License-Identifier: EPL-2.0
 #
 
-import pytest
+.PHONY: dependencies
 
-from mlt.utils import git_helpers
+all: main
 
+main: main.py
+	@echo "Should run linting and tests before submitting application"
 
-@pytest.mark.parametrize("template_repo,is_git", [
-    ("git@github.com:IntelAI/mlt.git", True),
-    ("https://github.com/IntelAI/mlt.git", True),
-    (".", False),
-    ("/home/user/mlt", False)
-])
-def test_is_git_repo(template_repo, is_git):
-    assert git_helpers.is_git_repo(template_repo) == is_git
+build:
+	docker build --build-arg HTTP_PROXY=${HTTP_PROXY} --build-arg HTTPS_PROXY=${HTTPS_PROXY} --build-arg http_proxy=${http_proxy} --build-arg https_proxy=${https_proxy} -t ${CONTAINER_NAME} .
 
-
-def test_get_experiments_version():
-    """ Ensure we get a non-empty experiments version """
-    version = git_helpers.get_experiments_version()
-    assert version
+status:
+	@./experiment_status.sh        

@@ -1,0 +1,23 @@
+apiVersion: "ml.intel.com/v1"
+kind: Experiment
+metadata:
+  name: $app-$run
+spec:
+  parameters:
+    "x": [true, false]
+    "y": [256, 512]
+  jobSpec:
+    template:
+      spec:
+        containers:
+        - name: $app
+          image: $image
+          imagePullPolicy: Always
+          command: ["./experiments/job.py"]
+          env:
+          - name: EXPERIMENT_NAMESPACE
+            value: $namespace
+          - name: JOB_NAME
+            value: $app-$run
+        restartPolicy: Never
+    backoffLimit: 4

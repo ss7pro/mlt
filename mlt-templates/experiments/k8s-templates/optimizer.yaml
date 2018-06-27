@@ -1,0 +1,14 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: $app-$run
+spec:
+  template:
+    spec:
+      containers:
+      - name: $app
+        image: $image
+        imagePullPolicy: Always
+        command: ["./experiments/optimizer.py", "--namespace", $namespace, "--experiment-name", $app-$run]
+      restartPolicy: Never
+

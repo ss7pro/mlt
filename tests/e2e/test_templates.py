@@ -38,6 +38,7 @@ def test_templates():
     desired_template_output = """Template             Description
 -------------------  ---------------------------------------------------------\
 -----------------------------------------
+experiments          Runs hyperparameter experiments for a demo job.
 hello-world          A TensorFlow python HelloWorld example run through \
 Kubernetes Jobs.
 horovod              A distributed model training using horovod and openmpi.
@@ -79,6 +80,7 @@ def test_local_templates():
         desired_template_output = """Template             Description
 -------------------  ---------------------------------------------------------\
 -----------------------------------------
+experiments          Runs hyperparameter experiments for a demo job.
 hello-world          A TensorFlow python HelloWorld example run through \
 Kubernetes Jobs.
 horovod              A distributed model training using horovod and openmpi.

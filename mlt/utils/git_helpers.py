@@ -62,3 +62,10 @@ def is_git_repo(template_repo):
     """ Returns True if the template_repo looks like a git repository. """
     return template_repo.startswith("git@") or \
         template_repo.startswith("https://")
+
+
+def get_experiments_version():
+    """ Returns the git version of the experiments repo to use """
+    with open("mlt-templates/experiments/EXPERIMENTS_VERSION.txt", "r") as fh:
+        experiments_version = fh.read()
+    return experiments_version

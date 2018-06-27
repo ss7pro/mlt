@@ -29,6 +29,7 @@ import time
 import uuid
 from subprocess import PIPE, Popen
 
+from mlt.utils.git_helpers import clone_repo, get_experiments_version
 from mlt.utils.process_helpers import run, run_popen
 from project import basedir
 
@@ -86,6 +87,45 @@ class CommandTester(object):
             raise ValueError("No pod(s) deployed to namespace {}".format(
                 self.namespace))
 
+    def _setup_experiments_sa(self):
+        """
+        Running the experiments template requires role/rolebindings setup
+        for the namespace.  This method will create the namespace, and then
+        set the roles/rolebindings that we get from the experiments repo.
+        """
+        experiments_repo = "https://github.com/IntelAI/experiments.git"
+        with clone_repo(experiments_repo) as temp_clone:
+            # get known version of experiments repo
+            command = ['git', 'checkout', get_experiments_version()]
+            p = Popen(command, cwd=temp_clone, stdout=PIPE)
+            assert p.wait() == 0
+
+            # get the sa.yaml file and then replace 'demo' with our namespace
+            example_dir = os.path.join(temp_clone, "examples/demo")
+            with open(os.path.join(example_dir, "sa.yaml"), 'r') as sa_file:
+                sa_yaml = sa_file.read()
+            sa_yaml = sa_yaml.replace("demo", self.namespace)
+
+            # write the yaml with the test namespace out to a new file
+            new_sa_file = os.path.join(temp_clone, example_dir,
+                                       "sa_{}.yaml".format(self.namespace))
+            with open(new_sa_file, 'w') as sa_file:
+                sa_file.write(sa_yaml)
+
+            # create namespace so that we can add roles
+            command = ['kubectl', 'create', 'ns', self.namespace]
+            p = Popen(command, cwd=self.project_dir, stdout=PIPE)
+            out, err = p.communicate()
+            assert p.wait() == 0
+            assert err is None
+
+            # create roles/rolebindings using kubectl command
+            command = ['kubectl', 'create', '-f', new_sa_file]
+            p = Popen(command, cwd=self.project_dir, stdout=PIPE)
+            out, err = p.communicate()
+            assert p.wait() == 0
+            assert err is None
+
     def init(self, template='hello-world', template_repo=basedir()):
         p = Popen(
             ['mlt', 'init', '--registry={}'.format(self.registry),
@@ -111,6 +151,10 @@ class CommandTester(object):
         assert "On branch master" in run(
             "git --git-dir={}/.git --work-tree={} status".format(
                 self.project_dir, self.project_dir).split())
+
+        # setup additional namespace configs for experiments
+        if template == 'experiments':
+            self._setup_experiments_sa()
 
     def config(self, subcommand="list", config_name=None, config_value=None):
         command = ['mlt', 'config', subcommand]
@@ -250,7 +294,8 @@ class CommandTester(object):
 
         # interactive pods are `sleep; infinity` so will still be running
         if not interactive_deploy:
-            while pod_status == 'Running':
+            # since new pods could come up, we might find another 'Pending' pod
+            while pod_status == 'Running' or pod_status == 'Pending':
                 time.sleep(1)
                 pod_status = self._grab_latest_pod_or_tfjob()
                 if time.time() - start >= 480:

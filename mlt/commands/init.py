@@ -60,7 +60,6 @@ class InitCommand(Command):
                                           constants.TEMPLATE_CONFIG)
                 template_params = config_helpers.\
                     get_template_parameters_from_file(param_file)
-
                 template_git_sha = git_helpers.get_latest_sha(os.path.join(
                     temp_clone, constants.TEMPLATES_DIR, template_name))
                 if not skip_crd_check:

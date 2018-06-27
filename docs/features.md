@@ -2,6 +2,7 @@
 
 ## Templates
 
+* [experiments](../mlt-templates/experiments): Runs hyperparameter experiments for a demo job.
 * [hello-world](../mlt-templates/hello-world): A TensorFlow python HelloWorld example run through Kubernetes Jobs.
 * [pytorch](../mlt-templates/pytorch): Sample distributed application taken from http://pytorch.org/tutorials/intermediate/dist_tuto.html
 * [pytorch-distributed](../mlt-templates/pytorch-distributed): A distributed PyTorch MNIST example run using the pytorch-operator.
@@ -188,5 +189,4 @@ user wants to revert back to their original code.
 
 ## Upcoming Features
 * Syncing code between your local system and a running pod for quicker developer iterations ([#155](https://github.com/IntelAI/mlt/issues/155))
-* Hyperparameter [Experiments](https://github.com/IntelAI/experiments) template ([#183](https://github.com/IntelAI/mlt/issues/183))
 * Launching Tensorboard in browser ([#227](https://github.com/IntelAI/mlt/issues/227))

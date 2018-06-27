@@ -110,6 +110,17 @@ jobs:
             ./scripts/kubeflow_install.sh
 
       - run:
+          name: Install experiments CRDs
+          command: |
+            git clone https://github.com/IntelAI/experiments.git
+            cd experiments
+            EXPERIMENTS_VERISON=`cat ../mlt-templates/experiments/EXPERIMENTS_VERSION.txt`
+            git checkout ${EXPERIMENTS_VERISON}
+            kubectl create -f resources/crds/experiment-crd.yaml
+            kubectl create -f resources/crds/result-crd.yaml
+            cd ..
+
+      - run:
           name: Run e2e tests
           command: |
             make test-e2e

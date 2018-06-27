@@ -159,7 +159,7 @@ class DeployCommand(Command):
                     template = Template(f.read())
                 out = template.substitute(
                     image=remote_container_name,
-                    app=app_name, run=app_run_id,
+                    app=app_name, run=app_run_id, namespace=self.namespace,
                     **config_helpers.get_template_parameters(self.config))
 
                 interactive, out = self._check_for_interactive_deployment(
