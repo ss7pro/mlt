@@ -2,7 +2,7 @@
 
 A distributed model training using horovod and openmpi.
 
-This template deploys horovod model on kubernetes using [kubeflow openmpi] (https://github.com/kubeflow/kubeflow/blob/master/kubeflow/openmpi/README.md).
+This template deploys horovod model on kubernetes using [kubeflow openmpi](https://github.com/kubeflow/kubeflow/blob/master/kubeflow/openmpi/README.md).
 
 Template structure as follows:
 
