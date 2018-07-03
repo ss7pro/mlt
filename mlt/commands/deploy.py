@@ -68,8 +68,19 @@ class DeployCommand(Command):
         # based on config
         if 'gceProject' in self.config:
             self._push_gke()
-        else:
+        elif 'registry' in self.config:
             self._push_docker()
+        else:
+            # User didn't provide any container registry info
+            print(colored("Unable to push image, because no container registry"
+                          " has been specified in this project's config.  Use "
+                          "one of the following commands to set a container "
+                          "registry.\n\n"
+                          "For Google Container Registry:\n"
+                          "\tmlt config set gceProject <google_project_name>\n"
+                          "\nFor a Docker Registry:\n"
+                          "\tmlt config set registry <registry_name>", 'red'))
+            sys.exit(1)
 
         progress_bar.duration_progress(
             'Pushing ', last_push_duration,

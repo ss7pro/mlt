@@ -171,3 +171,29 @@ def test_no_template_params():
     template_params = None
     result = init._build_mlt_json(template_params, None)
     assert constants.TEMPLATE_PARAMETERS not in result
+
+
+def test_no_gcloud_or_registry(open_mock, process_helpers, copytree_mock,
+                               check_output_mock, config_helpers_mock,
+                               copy_tree_mock):
+    # "No such file or directory" OSError to simulate gcloud not found
+    check_output_mock.side_effect = OSError("No such file or directory")
+    new_dir = str(uuid.uuid4())
+    init_dict = {
+        'init': True,
+        '--template': 'tf-dist-mnist',
+        '--template-repo': project.basedir(),
+        '--namespace': 'test-namespace',
+        '<name>': new_dir,
+        '--registry': False,
+        '--skip-crd-check': False
+    }
+    init = InitCommand(init_dict)
+
+    with catch_stdout() as caught_output:
+        init.action()
+        output = caught_output.getvalue()
+
+    assert "No registry name was provided and gcloud was not found.  " \
+           "Please set your container registry name" in output
+    assert init.app_name == new_dir

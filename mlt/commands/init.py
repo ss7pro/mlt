@@ -25,6 +25,7 @@ import sys
 import traceback
 from shutil import copytree, ignore_patterns
 from subprocess import check_output
+from termcolor import colored
 
 from mlt.commands import Command
 from mlt.utils import (config_helpers, constants, git_helpers,
@@ -87,11 +88,29 @@ class InitCommand(Command):
                 'template_git_sha': template_git_sha
                 }
         if not self.args["--registry"]:
-            raw_project_bytes = check_output(
-                ["gcloud", "config", "list", "--format",
-                 "value(core.project)"])
-            project = raw_project_bytes.decode("utf-8").strip()
-            data['gceProject'] = project
+            try:
+                raw_project_bytes = check_output(
+                    ["gcloud", "config", "list", "--format",
+                     "value(core.project)"])
+                project = raw_project_bytes.decode("utf-8").strip()
+                data['gceProject'] = project
+            except OSError as e:
+                if "No such file or directory" in str(e):
+                    # When the user did not provide a --registry, and gcloud
+                    # was not found, warn them that they'll need to set a
+                    # registry in the config.
+                    print(colored("No registry name was provided and gcloud "
+                                  "was not found.  Please set your container "
+                                  "registry name in your mlt project using one"
+                                  " of the following commands. \n\n"
+                                  "For Google Container Registry:\n"
+                                  "\tmlt config set gceProject "
+                                  "<google_project_name>\n"
+                                  "\nFor a Docker Registry:\n"
+                                  "\tmlt config set registry "
+                                  "<registry_name>\n", 'yellow'))
+                else:
+                    raise
         else:
             data['registry'] = self.args["--registry"]
         if not self.args["--namespace"]:

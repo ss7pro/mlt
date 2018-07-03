@@ -294,6 +294,22 @@ def test_image_push_error(walk_mock, progress_bar, popen_mock, open_mock,
     assert output_location < error_location
 
 
+def test_deploy_no_registry(walk_mock, progress_bar, popen_mock, open_mock,
+                            template, kube_helpers, process_helpers,
+                            verify_build, verify_init, fetch_action_arg,
+                            json_mock):
+    json_mock.load.return_value = {
+        'last_remote_container': 'gcr.io/app_name:container_id',
+        'last_push_duration': 0.18889}
+
+    with pytest.raises(SystemExit):
+        output = deploy(
+            no_push=False, skip_crd_check=True,
+            interactive=False, extra_config_args={})
+        assert ("Unable to push image, because no container "
+                "registry has been specified") in output
+
+
 def test_deploy_custom_deploy(walk_mock, progress_bar, popen_mock, open_mock,
                               template, kube_helpers,
                               process_helpers, subprocess_mock,
