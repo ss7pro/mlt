@@ -18,10 +18,9 @@
 # SPDX-License-Identifier: EPL-2.0
 #
 
+import json
 import os
 import sys
-import json
-
 from subprocess import call
 
 from mlt.utils import process_helpers
@@ -65,7 +64,6 @@ def checking_crds_on_k8(crd_set):
     """
     Check if given crd list installed on K8 or not.
     """
-
     try:
         current_crds_json = process_helpers.run_popen(
             "kubectl get crd -o json", shell=True

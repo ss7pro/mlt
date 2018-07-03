@@ -58,6 +58,11 @@ def default_status_mock(patch):
     return patch('StatusCommand._default_status')
 
 
+@pytest.fixture()
+def get_sync_spec_mock(patch):
+    return patch('sync_helpers.get_sync_spec')
+
+
 def status():
     status_cmd = StatusCommand({})
     status_cmd.config = {'name': 'app', 'namespace': 'namespace'}
@@ -70,7 +75,7 @@ def status():
 
 def test_uninitialized_status():
     """
-    Tests calling the status command before the app has been initialized.
+    Tests calling the status command before this app has been initialized.
     """
     with catch_stdout() as caught_output:
         with pytest.raises(SystemExit):
@@ -83,7 +88,7 @@ def test_uninitialized_status():
 
 def test_status_no_deploy(init_mock, open_mock, isfile_mock):
     """
-    Tests calling the status command before the app has been deployed.
+    Tests calling the status command before this app has been deployed.
     """
     isfile_mock.return_value = False
     status = StatusCommand({})
@@ -92,25 +97,43 @@ def test_status_no_deploy(init_mock, open_mock, isfile_mock):
         with pytest.raises(SystemExit):
             status.action()
         output = caught_output.getvalue()
-        expected_output = "This application has not been deployed yet."
+        expected_output = "This app has not been deployed yet"
         assert expected_output in output
 
 
-def test_successful_status(init_mock, open_mock, isfile_mock,
-                           json_mock, subprocess_mock):
+def test_successful_status_no_sync(init_mock, open_mock, isfile_mock,
+                                   json_mock, subprocess_mock,
+                                   get_sync_spec_mock):
     """
     Tests successful call to the status command.
     """
     isfile_mock.return_value = True
     json_mock.load.return_value = {"app_run_id": "123-456-789"}
+    get_sync_spec_mock.return_value = None
     expected_output = "Job and pod status"
     subprocess_mock.return_value.decode.return_value = expected_output
     status_output = status()
     assert expected_output in status_output
 
 
-def test_status_not_in_makefile(init_mock, open_mock,
-                                isfile_mock, json_mock, subprocess_mock):
+def test_successful_status_after_sync(init_mock, open_mock, isfile_mock,
+                                      json_mock, subprocess_mock,
+                                      get_sync_spec_mock):
+    """
+    Tests successful call to the status command.
+    """
+    isfile_mock.return_value = True
+    json_mock.load.return_value = {"app_run_id": "123-456-789",
+                                   "sync_spec": "hello-world"}
+    get_sync_spec_mock.return_value = 'hello-world'
+    expected_output = "Watched by sync"
+    subprocess_mock.return_value.decode.return_value = expected_output
+    status_output = status()
+    assert expected_output in status_output
+
+
+def test_status_not_in_makefile(init_mock, open_mock, isfile_mock, json_mock,
+                                subprocess_mock):
     """
     Tests use case where status target is not in the Makefile.
     """

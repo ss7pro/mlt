@@ -49,6 +49,24 @@ def test_deploying_templates(template):
             commands.teardown()
 
 
+def test_deploy_enable_sync():
+    with create_work_dir() as workdir:
+        commands = CommandTester(workdir)
+        commands.init(enable_sync=True)
+        commands.build()
+        try:
+            commands.deploy(sync=True)
+            commands.sync(create=True)
+            commands.status()
+            commands.sync(reload=True)
+            commands.status()
+            commands.sync(delete=True)
+        finally:
+            commands.undeploy()
+            commands.status()
+            commands.teardown()
+
+
 def test_no_push_deploy():
     with create_work_dir() as workdir:
         commands = CommandTester(workdir)

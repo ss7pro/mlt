@@ -18,15 +18,26 @@
 # SPDX-License-Identifier: EPL-2.0
 #
 
-from mlt.commands.base import Command  # noqa
-from mlt.commands.build import BuildCommand  # noqa
-from mlt.commands.config import ConfigCommand  # noqa
-from mlt.commands.deploy import DeployCommand  # noqa
-from mlt.commands.init import InitCommand  # noqa
-from mlt.commands.status import StatusCommand  # noqa
-from mlt.commands.sync import SyncCommand  # noqa
-from mlt.commands.templates import TemplatesCommand  # noqa
-from mlt.commands.update_template import UpdateTemplateCommand  # noqa
-from mlt.commands.undeploy import UndeployCommand  # noqa
-from mlt.commands.logs import LogsCommand # noqa
-from mlt.commands.events import EventsCommand  # noqa
+import os
+
+
+def binary_path(binary="docker"):
+    """
+    checks if executable 'binary' exists in PATH
+    :param binary: executable name to be searched for
+    :return: full path to 'binary' or None if not in PATH
+    """
+    def is_exe(fpath):
+        return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
+
+    fpath, fname = os.path.split(binary)
+    if fpath:
+        if is_exe(binary):
+            return binary
+    else:
+        for path in os.environ["PATH"].split(os.pathsep):
+            exe_file = os.path.join(path, binary)
+            if is_exe(exe_file):
+                return exe_file
+
+    return None

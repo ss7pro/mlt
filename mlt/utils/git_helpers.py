@@ -44,8 +44,10 @@ def clone_repo(repo):
     finally:
         # This is really a bug in 'shutil' as described here:
         # https://bugs.python.org/issue29699
+        # Also the option ignore_errors is set to True mainly for Unit tests:
+        # https://stackoverflow.com/questions/303200/how-do-i-remove-delete-a-folder-that-is-not-empty-with-python
         if os.path.exists(destination):
-            shutil.rmtree(destination)
+            shutil.rmtree(destination, ignore_errors=True)
 
 
 def get_latest_sha(repo):

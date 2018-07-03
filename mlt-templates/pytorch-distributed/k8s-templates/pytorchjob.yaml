@@ -16,6 +16,10 @@ spec:
           - image: $image
             imagePullPolicy: IfNotPresent
             name: pytorch
+#           ### BEGIN KSYNC SECTION
+#           command: ['/bin/sh']
+#           args: ['-c', 'python main.py; tail -f /dev/null']
+#           ### END KSYNC SECTION
           restartPolicy: OnFailure
     - replicas: $num_workers
       replicaType: WORKER
@@ -25,4 +29,8 @@ spec:
           - image: $image
             imagePullPolicy: IfNotPresent
             name: pytorch
+#           ### BEGIN KSYNC SECTION
+#           command: ['/bin/sh']
+#           args: ['-c', 'python main.py; tail -f /dev/null']
+#           ### END KSYNC SECTION
           restartPolicy: OnFailure

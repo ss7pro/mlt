@@ -29,18 +29,21 @@ From here, it is a quick step to redeploy the Kubernetes objects, through `mlt d
 ## Build
 
 Prerequisites:
+- Python (2.7 or newer) development environment. This usually consists of `build-essential`, `libssl-dev`, `libffi-dev` and `python-dev`
 - [Docker](https://docs.docker.com/install/)
 - [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/)
-- [kubetail](https://github.com/johanhaleby/kubetail)
 - [git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
 - [python](https://www.python.org/downloads/)
 - [pip](https://pip.pypa.io/en/stable/installing/)
-- [ks](https://github.com/ksonnet/ksonnet#install)
-- [TFJob operator](https://github.com/kubeflow/tf-operator#installing-the-tfjob-crd-and-operator-on-your-k8s-cluster) (for the distributed tensorflow templates)
-- [PyTorch operator](https://github.com/kubeflow/pytorch-operator) (for the pytorch-distributed template)
-- [Ingress](https://kubernetes.io/docs/concepts/services-networking/ingress/) (for the tensorboard template)
-- [openssh-server] Please install version specific to your OS
 
+Optional prerequisites:
+- [kubetail](https://github.com/johanhaleby/kubetail) (for `mlt logs` command)
+- [Ksync](https://github.com/vapor-ware/ksync) (for `mlt sync` commands)
+- [ks](https://github.com/ksonnet/ksonnet#install) (for the `horovod` template)
+- [TFJob operator](https://github.com/kubeflow/tf-operator#installing-the-tfjob-crd-and-operator-on-your-k8s-cluster) (for the `distributed tensorflow` templates)
+- [PyTorch operator](https://github.com/kubeflow/pytorch-operator) (for the `pytorch-distributed` template)
+- [Ingress](https://kubernetes.io/docs/concepts/services-networking/ingress/) (for the `tensorboard` template)
+- [openssh-server](https://www.openssh.com/) (for the `horovod` template)
 
 ## Installation
 

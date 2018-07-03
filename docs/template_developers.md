@@ -38,3 +38,19 @@ in to the `k8s-templates` directory when the app is deployed.
 parameter with `mlt templates list` and `mlt init` in order
 to specify the git url for  template repo (otherwise, this defaults to
 `https://github.com/IntelAI/mlt`).
+
+6. For templates supporting `mlt sync`, a few assumptions have been made:
+- The Pods for job should either remain running after the job has finished, or the `Job` spec
+under `k8s-templates` should contain commented lines describing how to keep the containers running
+after the job has finished.
+For example here is an snippet from [tf-distributed](../mlt-templates/tf-distributed/k8s-templates/tfjob.yaml)
+```aidl
+          containers:
+            - image: $image
+              name: tensorflow
+#             ### BEGIN KSYNC SECTION
+#             command: ['/bin/sh']
+#             args: ['-c', 'python main.py; tail -f /dev/null']
+#             ### END KSYNC SECTION
+          restartPolicy: OnFailure
+```

@@ -126,13 +126,15 @@ class CommandTester(object):
             assert p.wait() == 0
             assert err is None
 
-    def init(self, template='hello-world', template_repo=basedir()):
-        p = Popen(
-            ['mlt', 'init', '--registry={}'.format(self.registry),
-             '--template-repo={}'.format(template_repo),
-             '--namespace={}'.format(self.namespace),
-             '--template={}'.format(template), self.app_name],
-            cwd=self.workdir)
+    def init(self, template='hello-world', template_repo=basedir(),
+             enable_sync=False):
+        init_options = ['mlt', 'init', '--registry={}'.format(self.registry),
+                        '--template-repo={}'.format(template_repo),
+                        '--namespace={}'.format(self.namespace),
+                        '--template={}'.format(template), self.app_name]
+        if enable_sync:
+            init_options.append('--enable-sync')
+        p = Popen(init_options, cwd=self.workdir)
         # keep track of template we created so we can check if it's a TFJob
         # that terminates pods after completion so we need to check the crd
         # for status on if job was successful
@@ -210,7 +212,7 @@ class CommandTester(object):
                 shell=True, stdout=None, stderr=None
             ).wait() == 0
 
-    def deploy(self, no_push=False, interactive=False):
+    def deploy(self, no_push=False, interactive=False, sync=False):
         deploy_cmd = ['mlt', 'deploy']
         if no_push:
             deploy_cmd.append('--no-push')
@@ -232,7 +234,19 @@ class CommandTester(object):
         if self.template == "tensorboard":
             interactive = True
 
-        self._verify_pod_success(interactive)
+        self._verify_pod_success(interactive, sync)
+
+    def sync(self, create=False, reload=False, delete=False):
+        sync_cmd = ['mlt', 'sync']
+        if create:
+            sync_cmd.append('create')
+        if reload:
+            sync_cmd.append('reload')
+        if delete:
+            sync_cmd.append('delete')
+        p = Popen(sync_cmd, cwd=self.project_dir)
+        out, err = p.communicate()
+        assert p.wait() == 0
 
     def status(self):
         status_cmd = ['mlt', 'status']
@@ -265,7 +279,7 @@ class CommandTester(object):
         assert err is None
         return output.decode("utf-8")
 
-    def _verify_pod_success(self, interactive_deploy):
+    def _verify_pod_success(self, interactive_deploy, sync_deploy):
         """verify that our latest job did indeed get deployed to k8s"""
         # TODO: probably refactor this function
         # allow for 60 seconds for the pod to start creating;
@@ -293,7 +307,7 @@ class CommandTester(object):
                 break
 
         # interactive pods are `sleep; infinity` so will still be running
-        if not interactive_deploy:
+        if not interactive_deploy and not sync_deploy:
             # since new pods could come up, we might find another 'Pending' pod
             while pod_status == 'Running' or pod_status == 'Pending':
                 time.sleep(1)

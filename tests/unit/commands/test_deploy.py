@@ -104,13 +104,17 @@ def yaml(patch):
 
 
 @pytest.fixture
+def get_sync_spec_mock(patch):
+    return patch('sync_helpers.get_sync_spec')
+
+
+@pytest.fixture
 def is_custom_mock(patch):
     return patch('files.is_custom')
 
 
-def deploy(no_push, skip_crd_check,
-           interactive, extra_config_args,
-           retries=5, template='test'):
+def deploy(no_push, skip_crd_check, interactive, extra_config_args, retries=5,
+           template='test'):
     deploy = DeployCommand(
         {'deploy': True, '--no-push': no_push,
          '--skip-crd-check': skip_crd_check,
@@ -150,9 +154,15 @@ def verify_successful_deploy(output, did_push=True, interactive=False):
         assert pod_connect > inspecting
 
 
+@pytest.mark.parametrize("sync_spec", [
+    None,
+    'hello-world',
+])
 def test_deploy_gce(walk_mock, progress_bar, popen_mock, open_mock,
                     template, kube_helpers, process_helpers, verify_build,
-                    verify_init, fetch_action_arg, json_mock):
+                    verify_init, fetch_action_arg, json_mock,
+                    get_sync_spec_mock, sync_spec):
+    get_sync_spec_mock.return_value = sync_spec
     json_mock.load.return_value = {
         'last_remote_container': 'gcr.io/app_name:container_id',
         'last_push_duration': 0.18889}

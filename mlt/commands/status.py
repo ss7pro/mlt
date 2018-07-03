@@ -24,7 +24,7 @@ import subprocess
 import sys
 
 from mlt.commands import Command
-from mlt.utils import config_helpers
+from mlt.utils import config_helpers, sync_helpers
 
 
 class StatusCommand(Command):
@@ -38,7 +38,7 @@ class StatusCommand(Command):
             with open(push_file, 'r') as f:
                 data = json.load(f)
         else:
-            print("This application has not been deployed yet.")
+            print("This app has not been deployed yet")
             sys.exit(1)
 
         app_run_id = data.get('app_run_id', "")
@@ -51,6 +51,11 @@ class StatusCommand(Command):
                                              env=user_env,
                                              stderr=subprocess.STDOUT)
             print(output.decode("utf-8").strip())
+            if sync_helpers.get_sync_spec() is not None:
+                # format the string before passing it print so that the string
+                # is evaluated correctly
+                print("\nSYNC STATUS\n{}".format(
+                    'This app is being watched by sync'))
         except subprocess.CalledProcessError as e:
             if "No rule to make target `status'" in str(e.output):
                 # TODO: when we have a template updating capability, add a

@@ -81,6 +81,8 @@ test-e2e: env-up
 	docker-compose exec test bash -c "docker login -u _json_key --password-stdin https://gcr.io < mltkey.json"
 	docker-compose exec test bash -c "./google-cloud-sdk/bin/gcloud auth activate-service-account mltjson@intelai-mlt.iam.gserviceaccount.com --key-file=mltkey.json"
 	docker-compose exec test bash -c "ln -sf /usr/share/mlt/google-cloud-sdk/bin/gcloud /usr/local/bin/gcloud"
+	docker-compose exec test bash -c "/usr/share/mlt/scripts/ksync_install.sh"
+	docker-compose exec test bash -c "ln -sf /root/.ksync/bin/ksync /usr/local/bin/ksync"
 	docker-compose exec test env MLT_REGISTRY=gcr.io/intelai-mlt tox -e py2-e2e -e py3-e2e
 
 # EXTRA_ARGS enables usage of other docker registries for testing

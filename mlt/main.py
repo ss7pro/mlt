@@ -18,18 +18,20 @@
 # SPDX-License-Identifier: EPL-2.0
 #
 
+
 """mlt.
 Usage:
   mlt (-h | --help)
   mlt --version
   mlt init [--template=<template> --template-repo=<repo>]
       [--registry=<registry> --namespace=<namespace>]
-      [--skip-crd-check] <name>
+      [--skip-crd-check] [--enable-sync] <name>
   mlt config (list | set <name> <value> | remove <name>)
   mlt build [--watch] [-v | --verbose]
   mlt deploy [--no-push] [-i | --interactive] [-l | --logs]
       [--retries=<retries>] [--skip-crd-check]
       [--since=<duration>] [<kube_spec>]
+  mlt sync (create | reload | delete)
   mlt undeploy
   mlt status
   mlt (template | templates) list [--template-repo=<repo>]
@@ -49,6 +51,26 @@ Options:
                             If none is set, will attempt to create or
                             use a namespace identical to username.
   --skip-crd-check          To avoid crd check during mlt init
+                            [default: False].
+  --enable-sync             Without initializing templates with this option
+                            'sync' and its subcommands 'create', 'reload' and
+                            'delete' have no effect.
+                            Use this option to initialize a template for
+                            future sync capability.
+                            'mlt sync create' should be called after user's
+                            app is deployed to setup syncing local changes to
+                            the running pods which in turn restarts the
+                            containers every time changes are made to local
+                            template code. This command only needs to run once.
+                            'mlt sync reload' - to wake up the 'sync' agent
+                            after a local system reboot or long inactivity
+                            (default is 1 hour) or any other activity that
+                            causes 'sync' agent to die.
+                            'mlt sync delete' - to teardown syncing setup and
+                            stop syncing local code changes with remote pods.
+                            This command only need to run once.
+                            To ignore files and folders from syncing, add them
+                            to '.stignore' file.
                             [default: False].
   --watch                   Watch project directory and build on file changes
   --verbose                 Prints build logs
@@ -72,14 +94,13 @@ Options:
 
 # Note that new commands/flags should be documented in docs/features.md
 
-import mlt
-
 from docopt import docopt
 
+import mlt
 from mlt.commands import (BuildCommand, ConfigCommand, DeployCommand,
-                          EventsCommand, InitCommand, StatusCommand,
-                          TemplatesCommand, UndeployCommand, LogsCommand,
-                          UpdateTemplateCommand)
+                          EventsCommand, InitCommand, LogsCommand,
+                          StatusCommand, SyncCommand, TemplatesCommand,
+                          UndeployCommand, UpdateTemplateCommand)
 from mlt.utils import regex_checks
 
 
@@ -90,6 +111,7 @@ COMMAND_MAP = (
     ('deploy', DeployCommand),
     ('init', InitCommand),
     ('status', StatusCommand),
+    ('sync', SyncCommand),
     ('template', TemplatesCommand),
     ('templates', TemplatesCommand),
     ('update-template', UpdateTemplateCommand),
@@ -150,8 +172,8 @@ def sanitize_input(args, regex=None):
             args['--namespace'], "namespace"):
         raise ValueError("Namespace {} not valid. See "
                          "https://kubernetes.io/docs/concepts/overview"
-                         "/working-with-objects/names/#names".format(
-                             args['--namespace']))
+                         "/working-with-objects/names/#names"
+                         .format(args['--namespace']))
 
     # Set and Unset config commands require the name arg
     if (args.get('set') or args.get('remove')) and not args.get('<name>'):

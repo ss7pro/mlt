@@ -17,14 +17,16 @@
 #
 # SPDX-License-Identifier: EPL-2.0
 #
+
 import json
 import os
 import subprocess
 import sys
 
+from termcolor import colored
+
 from mlt.commands import Command
-from mlt.utils import (config_helpers,
-                       process_helpers, files)
+from mlt.utils import config_helpers, process_helpers, files, sync_helpers
 
 
 class UndeployCommand(Command):
@@ -34,6 +36,12 @@ class UndeployCommand(Command):
 
     def action(self):
         """deletes current kubernetes namespace"""
+
+        if sync_helpers.get_sync_spec() is not None:
+            print(colored("This app is currently being synced, please run "
+                          "`mlt sync delete` to unsync first", 'red'))
+            sys.exit(1)
+
         namespace = self.config['namespace']
 
         if files.is_custom('undeploy:'):

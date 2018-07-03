@@ -31,7 +31,8 @@ from termcolor import colored
 from mlt.commands import Command
 from mlt.utils import (build_helpers, config_helpers, files,
                        kubernetes_helpers, progress_bar,
-                       process_helpers, log_helpers, schema)
+                       process_helpers, log_helpers, schema,
+                       sync_helpers)
 
 
 class DeployCommand(Command):
@@ -42,6 +43,11 @@ class DeployCommand(Command):
 
     def action(self):
         schema.validate()
+        if sync_helpers.get_sync_spec() is not None:
+            print(colored("This folder is currently being synced, please run "
+                          "`mlt sync delete {}` to delete sync spec "
+                          "manually".format(sync_helpers.get_sync_spec()),
+                          'yellow'))
 
         skip_crd_check = self.args['--skip-crd-check']
         if not skip_crd_check:

@@ -7,6 +7,10 @@ spec:
     spec:
       containers:
       - name: $app
+#       ### BEGIN KSYNC SECTION
+#       command: ['/bin/sh']
+#       args: ['-c', 'python main.py; tail -f /dev/null']
+#       ### END KSYNC SECTION
         image: $image
         env:
         - name: GREETING

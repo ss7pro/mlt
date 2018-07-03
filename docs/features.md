@@ -23,6 +23,7 @@
 * [mlt events (alpha)](#mlt-events-alpha)
 * [mlt undeploy](#mlt-undeploy)
 * [mlt update-template (alpha)](#mlt-update-template-alpha)
+* [mlt sync](#mlt-sync)
 
 ### mlt templates
 
@@ -44,7 +45,7 @@ description.
 ```
   mlt init [--template=<template> --template-repo=<repo>]
       [--registry=<registry> --namespace=<namespace>]
-      [--skip-crd-check] <name>
+      [--skip-crd-check] [--enable-sync] <name>
 ```
 
 The `mlt init` command is used for initializing a new application based
@@ -60,6 +61,7 @@ deploy the application.
 | `--registry=<registry>` | Container registry to use.  | Attempt to use gcloud |
 | `--namespace=<namespace>` | Kubernetes namespace to use. | Use namespace identical to username |
 | `--skip-crd-check` | Skip checking for the cluster for CRDs required by the template | False |
+| `--enable-sync` | Enable future syncing capability for the app/template code| False |
 
 | Positional Argument | Description |
 |---------------------|-------------|
@@ -186,7 +188,23 @@ there were any conflicts that need to be manually resolved.  A backup of
 the original project directory is saved before the update, in case the
 user wants to revert back to their original code.
 
+### mlt sync
+
+```
+   mlt sync (create | reload | delete)
+```
+
+This command is used for syncing local file/folder changes with the deployed app.
+`mlt sync` and it's subcommands are only available only if the app is initialized with `--enable-sync`.<br/>
+Once the app is deployed, calling `mlt sync create` sets up the local directory to be synced with the
+pods of running app which in turn restarts the containers every time changes are made to local files/folders
+of the app code. This command only needs to run once.<br/>
+`mlt sync reload` restarts the `sync` agent after a local system reboot or long inactivity
+(default is 1 hour) or any other activity that causes `sync` agent to die.<br/>
+`mlt sync delete` tears down syncing setup and stops syncing local code changes with remote pods.
+This command only need to run once.<br/>
+To ignore files and folders from syncing, they should be added to `.stignore` file.
+
 
 ## Upcoming Features
-* Syncing code between your local system and a running pod for quicker developer iterations ([#155](https://github.com/IntelAI/mlt/issues/155))
 * Launching Tensorboard in browser ([#227](https://github.com/IntelAI/mlt/issues/227))

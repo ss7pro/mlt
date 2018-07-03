@@ -20,16 +20,18 @@
 
 import getpass
 import json
+import fnmatch
 import os
 import sys
 import traceback
-from shutil import copytree, ignore_patterns
+from copy import deepcopy
+from shutil import copytree, copyfile, ignore_patterns
 from subprocess import check_output
 from termcolor import colored
 
 from mlt.commands import Command
 from mlt.utils import (config_helpers, constants, git_helpers,
-                       kubernetes_helpers, process_helpers)
+                       kubernetes_helpers, localhost_helpers, process_helpers)
 
 
 class InitCommand(Command):
@@ -51,7 +53,7 @@ class InitCommand(Command):
 
             try:
                 # The template configs get pulled into the mlt.json file, so
-                # don't grab a copy of that in the app directory
+                # don't grab a copy of that in this app's directory
                 copytree(templates_directory, self.app_name,
                          ignore=ignore_patterns(constants.TEMPLATE_CONFIG))
 
@@ -65,6 +67,27 @@ class InitCommand(Command):
                     temp_clone, constants.TEMPLATES_DIR, template_name))
                 if not skip_crd_check:
                     kubernetes_helpers.check_crds(app_name=self.app_name)
+
+                if self.args["--enable-sync"]:
+                    if localhost_helpers.binary_path('ksync'):
+                        # Syncthing uses '.stignore' to ignore files during
+                        # sync we also don't want to upload unneeded local data
+                        app_ignore_file = os.path.join(self.app_name,
+                                                       ".gitignore")
+                        ksync_ignore_file = os.path.join(self.app_name,
+                                                         ".stignore")
+                        if self._check_update_yaml_for_sync():
+                            copyfile(app_ignore_file, ksync_ignore_file)
+                            with open(ksync_ignore_file, 'a+') as f:
+                                f.write("\n.git/**")
+                        else:
+                            print(colored("This app doesn't support syncing",
+                                          'yellow'))
+                    else:
+                        print(colored("ksync is not installed on localhost.",
+                              'red'))
+                        sys.exit(1)
+
                 data = self._build_mlt_json(template_params, template_git_sha)
                 with open(os.path.join(self.app_name,
                                        constants.MLT_CONFIG), 'w') as f:
@@ -72,13 +95,63 @@ class InitCommand(Command):
                 self._init_git_repo()
             except OSError as exc:
                 if exc.errno == 17:
-                    print(
-                        "Directory '{}' already exists: delete before trying "
-                        "to initialize new application".format(self.app_name))
+                    print(colored("Directory '{}' already exists: delete "
+                                  "before trying to initialize new "
+                                  "application".format(self.app_name), 'red'))
                 else:
                     traceback.print_exc()
-
                 sys.exit(1)
+
+    def _check_update_yaml_for_sync(self):
+        # update k8s-template job spec, to keep the containers
+        # running so that we can update code locally and have ksync
+        # upload it to the running containers
+        k8s_template_dir = os.path.join(self.app_name,
+                                        "k8s-templates")
+        if not os.path.exists(k8s_template_dir):
+            return False
+
+        k8s_template_specs = []
+        for filename in os.listdir(k8s_template_dir):
+            if fnmatch.fnmatch(filename, '*.yaml'):
+                k8s_template_specs.append(os.path.join(
+                    k8s_template_dir, filename))
+
+        return_val_list = []
+        for filename in k8s_template_specs:
+            with open(filename, 'r+') as f:
+                orig_filedata = f.readlines()
+                # find matching begin and end commented sections for KSYNC and
+                # exit with error if those sections are not properly matching
+                begin_comment_indices = \
+                    [i for i, x in enumerate(orig_filedata) if
+                     "### BEGIN KSYNC SECTION" in x]
+                end_comment_indices = \
+                    [i for i, x in enumerate(orig_filedata) if
+                     "### END KSYNC SECTION" in x]
+                if len(begin_comment_indices) != len(end_comment_indices):
+                    print(colored("KSYNC comment section in file {} is "
+                                  "malformed".format(filename), 'red'))
+                    sys.exit(1)
+
+                final_filedata = deepcopy(orig_filedata)
+                # using matched begin and end pairs for KSYNC comments, create
+                # new lines to be written to the file
+                for (begin, end) in zip(begin_comment_indices,
+                                        end_comment_indices):
+                    for k in range(begin, end + 1):
+                        final_filedata[k] = orig_filedata[k].replace(
+                            '#  ', '   ')
+                        if final_filedata[k] != orig_filedata[k]:
+                            return_val_list.append(True)
+
+                if True in return_val_list[:-1]:
+                    f.seek(0)
+                    for line in final_filedata:
+                        f.write(line)
+                    f.truncate()
+
+        return True in return_val_list
 
     def _build_mlt_json(self, template_parameters, template_git_sha):
         """generates the data to write to mlt.json"""
@@ -134,3 +207,22 @@ class InitCommand(Command):
         process_helpers.run(["git", "add", "."], cwd=self.app_name)
         print(process_helpers.run(
             ["git", "commit", "-m", "Initial commit."], cwd=self.app_name))
+        if os.path.exists(os.path.join(self.app_name, ".stignore")):
+            msg = "Once your application is built and deployed try the "\
+                  "following mlt commands:\n"\
+                  "{} - to setup syncing local changes to the running pods "\
+                  "which in turn restarts the containers every time changes "\
+                  "are made to local template code.\n"\
+                  "This command only needs to run once.\n"\
+                  "{} - to wake up the 'sync' agent after a local system "\
+                  "reboot or long inactivity (default is 1 hour) or any other"\
+                  " activity that causes 'sync' agent to die.\n"\
+                  "{} - to teardown syncing setup and stop syncing local "\
+                  "changes with remote pods.\n"\
+                  "This command only need to run once.\n\n"\
+                  "To ignore files and folders from syncing, add them to "\
+                  "{} file."
+            print(msg.format(colored("mlt sync create", attrs=['bold']),
+                             colored("mlt sync reload", attrs=['bold']),
+                             colored("mlt sync delete", attrs=['bold']),
+                             colored(".stignore", attrs=['bold'])))

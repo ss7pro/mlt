@@ -17,6 +17,7 @@
 #
 # SPDX-License-Identifier: EPL-2.0
 #
+
 from __future__ import print_function
 
 import os
@@ -44,6 +45,31 @@ def open_mock(patch):
 @pytest.fixture
 def copytree_mock(patch):
     return patch('copytree')
+
+
+@pytest.fixture()
+def copyfile_mock(patch):
+    return patch('copyfile')
+
+
+@pytest.fixture()
+def binary_path_mock(patch):
+    return patch('localhost_helpers.binary_path')
+
+
+@pytest.fixture()
+def listdir_mock(patch):
+    return patch('os.listdir')
+
+
+@pytest.fixture()
+def update_yaml_for_sync_mock(patch):
+    return patch('InitCommand._check_update_yaml_for_sync')
+
+
+@pytest.fixture()
+def init_git_repo_mock(patch):
+    return patch('InitCommand._init_git_repo')
 
 
 @pytest.fixture
@@ -102,8 +128,90 @@ def test_init(open_mock, process_helpers, copytree_mock, check_output_mock,
         '--registry': None,
         '--namespace': None,
         '--skip-crd-check': True,
+        '--enable-sync': False,
         '<name>': new_dir
     }
+    config_helpers_mock.get_template_parameters_from_file.return_value = \
+        [{"name": "greeting", "value": "hello"}]
+    init = InitCommand(init_dict)
+    init.action()
+    assert init.app_name == new_dir
+
+
+def test_init_enable_sync(open_mock, process_helpers, copytree_mock,
+                          check_output_mock, config_helpers_mock,
+                          copy_tree_mock, copyfile_mock, listdir_mock,
+                          binary_path_mock):
+    check_output_mock.return_value.decode.return_value = 'bar'
+    new_dir = str(uuid.uuid4())
+
+    init_dict = {
+        'init': True,
+        '--template': 'hello-world',
+        '--template-repo': project.basedir(),
+        '--registry': None,
+        '--namespace': None,
+        '--skip-crd-check': True,
+        '--enable-sync': True,
+        '<name>': new_dir
+    }
+    binary_path_mock.return_value = True
+    config_helpers_mock.get_template_parameters_from_file.return_value = \
+        [{"name": "greeting", "value": "hello"}]
+    init = InitCommand(init_dict)
+    init.action()
+    assert init.app_name == new_dir
+
+
+def test_init_ksync_missing(open_mock, process_helpers, copytree_mock,
+                            check_output_mock, config_helpers_mock,
+                            copy_tree_mock, copyfile_mock, listdir_mock,
+                            binary_path_mock):
+    check_output_mock.return_value.decode.return_value = 'bar'
+    new_dir = str(uuid.uuid4())
+
+    init_dict = {
+        'init': True,
+        '--template': 'hello-world',
+        '--template-repo': project.basedir(),
+        '--registry': None,
+        '--namespace': None,
+        '--skip-crd-check': True,
+        '--enable-sync': True,
+        '<name>': new_dir
+    }
+    binary_path_mock.return_value = False
+    config_helpers_mock.get_template_parameters_from_file.return_value = \
+        [{"name": "greeting", "value": "hello"}]
+    with catch_stdout() as caught_output:
+        with pytest.raises(SystemExit) as bad_init:
+            InitCommand(init_dict).action()
+            assert \
+                caught_output.getvalue() == "ksync is not installed on " \
+                                            "localhost"
+            assert bad_init.value.code == 1
+
+
+def test_init_sync_not_supported(open_mock, process_helpers, copytree_mock,
+                                 check_output_mock, config_helpers_mock,
+                                 copy_tree_mock, copyfile_mock, listdir_mock,
+                                 binary_path_mock, update_yaml_for_sync_mock,
+                                 init_git_repo_mock):
+    check_output_mock.return_value.decode.return_value = 'bar'
+    new_dir = str(uuid.uuid4())
+
+    init_dict = {
+        'init': True,
+        '--template': 'hello-world',
+        '--template-repo': project.basedir(),
+        '--registry': None,
+        '--namespace': None,
+        '--skip-crd-check': True,
+        '--enable-sync': True,
+        '<name>': new_dir
+    }
+    update_yaml_for_sync_mock.rerun_value = False
+    init_git_repo_mock.return_value = False
     config_helpers_mock.get_template_parameters_from_file.return_value = \
         [{"name": "greeting", "value": "hello"}]
     init = InitCommand(init_dict)
@@ -121,6 +229,7 @@ def test_init_crd_check(checking_crds_mock, process_helpers, check_output_mock,
         '--registry': True,
         '--namespace': None,
         '--skip-crd-check': False,
+        '--enable-sync': False,
         '<name>': new_dir
     }
     checking_crds_mock.return_value = {'tfjobs.kubeflow.org'}
@@ -186,7 +295,8 @@ def test_no_gcloud_or_registry(open_mock, process_helpers, copytree_mock,
         '--namespace': 'test-namespace',
         '<name>': new_dir,
         '--registry': False,
-        '--skip-crd-check': False
+        '--skip-crd-check': False,
+        '--enable-sync': False
     }
     init = InitCommand(init_dict)
 
