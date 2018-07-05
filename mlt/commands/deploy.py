@@ -154,7 +154,15 @@ class DeployCommand(Command):
         print("Deploying {}".format(remote_container_name))
         kubernetes_helpers.ensure_namespace_exists(self.namespace)
         app_run_id = str(uuid.uuid4())
+
         if files.is_custom("deploy:"):
+            # this checks if we use yaml files in K8s deployments in custom
+            # deploy case and do the template parameters substitutions.
+            if os.path.isdir("k8s-templates"):
+                self._default_deploy(app_name=app_name,
+                                     app_run_id=app_run_id,
+                                     remote_container_name=remote_container_name)
+            # execute the custom deploy code
             self._custom_deploy(app_name=app_name,
                                 app_run_id=app_run_id,
                                 remote_container_name=remote_container_name)
