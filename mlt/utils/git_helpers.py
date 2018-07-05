@@ -70,4 +70,4 @@ def get_experiments_version():
     """ Returns the git version of the experiments repo to use """
     with open("mlt-templates/experiments/EXPERIMENTS_VERSION.txt", "r") as fh:
         experiments_version = fh.read()
-    return experiments_version
+    return experiments_version.strip()
