@@ -79,7 +79,7 @@ class InitCommand(Command):
                         if self._check_update_yaml_for_sync():
                             copyfile(app_ignore_file, ksync_ignore_file)
                             with open(ksync_ignore_file, 'a+') as f:
-                                f.write("\n.git/**")
+                                f.write(".git/**")
                         else:
                             print(colored("This app doesn't support syncing",
                                           'yellow'))

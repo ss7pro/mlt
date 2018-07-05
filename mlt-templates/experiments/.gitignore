@@ -6,3 +6,5 @@ mlt.json
 .push.log
 .build.log
 .DS_Store
+.sync.json
+.stignore

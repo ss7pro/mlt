@@ -5,3 +5,5 @@ mlt.json
 *.swp
 .push.log
 .build.log
+.sync.json
+.stignore
