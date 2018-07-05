@@ -67,12 +67,8 @@ In this example, the user need to modify k8s-templates/tbjob.yaml to add the pre
 ```
 
 4. Deploy TensorBoard service.
-`mlt deploy` 
-
-5. Get the service `EXTERNAL-IP`.
-`mlt status`
-
-6. Open TensorBoard: launch browser with `http://<EXTERNAL-IP>:6006`.
+`mlt deploy`,
+which deploys the TensorBoard service and launches the local browser with `http://<EXTERNAL-IP>:6006`.
 
 7. Finally, when done, a user can delete the running TensorBoard service
 `mlt undeploy`.
