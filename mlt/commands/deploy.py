@@ -159,9 +159,10 @@ class DeployCommand(Command):
             # this checks if we use yaml files in K8s deployments in custom
             # deploy case and do the template parameters substitutions.
             if os.path.isdir("k8s-templates"):
-                self._default_deploy(app_name=app_name,
-                                     app_run_id=app_run_id,
-                                     remote_container_name=remote_container_name)
+                self._default_deploy(
+                    app_name=app_name,
+                    app_run_id=app_run_id,
+                    remote_container_name=remote_container_name)
             # execute the custom deploy code
             self._custom_deploy(app_name=app_name,
                                 app_run_id=app_run_id,
