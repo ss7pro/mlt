@@ -33,12 +33,12 @@ jobs:
       - run:
           name: lint tests
           command: |
-            make lint
+            make lint-all
 
       - run:
           name: Run unit tests
           command: |
-            make test
+            make test-all
 
       - run:
           name: Run make dist and test the wheels and versions
@@ -131,7 +131,7 @@ jobs:
       - run:
           name: Run e2e tests
           command: |
-            make test-e2e
+            make test-e2e-all
           no_output_timeout: 20m
 
       - run:
