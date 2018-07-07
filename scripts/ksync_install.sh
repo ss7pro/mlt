@@ -1,4 +1,4 @@
-#! /bin/bash
+#!/bin/bash
 #
 # Copyright (c) 2018 Intel Corporation
 #
@@ -37,10 +37,16 @@ get_latest_release() {
 wget --quiet https://github.com/vapor-ware/ksync/releases/download/$(get_latest_release vapor-ware/ksync)/ksync_${HOST_OS}_${HOST_ARCH} \
     -O $TARGET_INSTALL_PATH/ksync
 
-export KSYNC=$HOME/.ksync/bin/ksync
+export KSYNC="$HOME/.ksync/bin/ksync"
 chmod +x $KSYNC
 
-grep -q -F 'export PATH=$PATH:$HOME/.ksync/bin' "$HOME/.bashrc" || echo 'export PATH=$PATH:$HOME/.ksync/bin' >> "$HOME/.bashrc"
+USER_SHELL=$(echo ${SHELL##*/})
+if [[ $USER_SHELL = *"bash"* ]]; then
+    grep -q -F 'export PATH=$PATH:$HOME/.ksync/bin' "$HOME/.bashrc" || echo 'export PATH=$PATH:$HOME/.ksync/bin' >> "$HOME/.bashrc"
+    source $HOME/.bashrc
+else
+    echo "ksync is installed at $KSYNC. Please update your PATH accordingly."
+fi
 
 # Initialize Ksync and run the ksync watch and doctor
 $KSYNC init
@@ -66,6 +72,4 @@ done
 
 echo "Ksync failed to be installed or user does not have proper permissions to check the installation"
 exit 1
-
-source $HOME/.bashrc
 
