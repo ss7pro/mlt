@@ -16,7 +16,8 @@
 #
 
 SHELL=bash
-PY := $(shell python --version 2>&1  | cut -c8)
+# Set PY to 2 or 3 to test with Python2 or Python3 versions
+PY ?= $(shell python --version 2>&1  | cut -c8)
 VIRTUALENV_DIR=$(if $(subst 2,,$(PY)),.venv3,.venv)
 ACTIVATE="$(VIRTUALENV_DIR)/bin/activate"
 
