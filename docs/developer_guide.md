@@ -9,6 +9,9 @@ To get set up, please run the following command:
 `make dev-env`
 
 This command will create an editable install of your `mlt` repository.
+To install specifically with `Python3` version, set `PY` variable and run the command as follows:
+
+`PY=3 make dev-env`
 
 You can then set up an alias to `mlt` as below, so you don't have to activate your .venv/.venv3 if you don't want to.
 

@@ -15,9 +15,14 @@
 # SPDX-License-Identifier: EPL-2.0
 #
 
-.PHONY: dependencies
-
 SHELL := /bin/bash
+
+.PHONY: \
+	build \
+	deploy \
+	main \
+	status \
+	undeploy
 
 all: main
 

@@ -15,7 +15,7 @@
 # SPDX-License-Identifier: EPL-2.0
 #
 
-FROM python:3
+FROM python:3.6
 
 ADD requirements.txt /src/deps/requirements.txt
 RUN pip install -r /src/deps/requirements.txt

@@ -15,7 +15,16 @@
 # SPDX-License-Identifier: EPL-2.0
 #
 
-.PHONY: dependencies
+SHELL := /bin/bash
+
+.PHONY: \
+       build \
+       ksync-watch \
+       main \
+       status \
+       sync-create \
+       sync-delete \
+       sync-reload
 
 all: main
 
@@ -35,9 +44,6 @@ status:
 # targets starting with 'ksync' are not meant to be exposed by mlt directly
 ksync-watch:
 	@if ! pgrep -x "ksync" > /dev/null; then echo `ksync watch -d`; sleep 5; fi
-
-ksync-doctor: ksync-watch
-	@ksync doctor
 
 sync-create: ksync-watch
 	@ksync create --name ${SYNC_SPEC} -n ${NAMESPACE} --selector=tf_job_name=${JOB_NAME} `pwd` /src/app

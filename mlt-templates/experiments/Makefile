@@ -15,7 +15,12 @@
 # SPDX-License-Identifier: EPL-2.0
 #
 
-.PHONY: dependencies
+SHELL := /bin/bash
+
+.PHONY: \
+	build \
+	main \
+	status
 
 all: main
 
@@ -26,4 +31,4 @@ build:
 	docker build --build-arg HTTP_PROXY=${HTTP_PROXY} --build-arg HTTPS_PROXY=${HTTPS_PROXY} --build-arg http_proxy=${http_proxy} --build-arg https_proxy=${https_proxy} -t ${CONTAINER_NAME} .
 
 status:
-	@./experiment_status.sh        
+	@./experiment_status.sh
