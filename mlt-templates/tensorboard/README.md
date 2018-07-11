@@ -9,7 +9,7 @@ The command below shows how to update the log directory value in `k8s-templates/
 
 TensorBoard template works with different storage sources, and it's the user responsibility to allow the TensorBoard service to access the logs location.
 
-This template assumes that Ingress controller is enabled in the Kubernetes cluster. 
+This template assumes that Ingress controller is enabled in the Kubernetes cluster, and also that `jq` is installed. `jq` is used while launching TensorBoard to get the service IP address.
 
 
 

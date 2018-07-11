@@ -21,21 +21,21 @@
 if [ ! -z "$( kubectl get service ${JOB_NAME} --namespace ${NAMESPACE} )" ]
 then
   ip_address='none'
-  # loop until the ip address is assigned to the service
-  while [ 1 ]
+  timer=0
+  # loop until the ip address is assigned to the service or the timer is done.
+  while (( timer < 120))
   do
-    ip_address=$( kubectl get service ${JOB_NAME} --namespace ${NAMESPACE} no -o json | jq -r '.items[0].status.loadBalancer.ingress[].ip' )
-    if [[ -z ${ip_address} ]]
+    ip_address=$( kubectl get service ${JOB_NAME} --namespace ${NAMESPACE} -o json | jq -r '.status.loadBalancer.ingress[]?.ip' )
+    if [[ ! -z ${ip_address} ]]
     then
-        echo "Reading the service address..."
-    else
         echo "Launching TensorBoard in your local browser..."
         # open TB in the default browser
         open http://${ip_address}:6006
         exit
     fi
+    timer=$[$timer+1]
     sleep 5
   done
 else
-  echo "Cannot open TensorBoard in your local browser, please try mlt status to check if the service is running."
+  echo "Cannot open TensorBoard in your local browser, please try 'mlt status' to check if the service is running."
 fi
