@@ -43,6 +43,7 @@ Optional prerequisites:
 - [TFJob operator](https://github.com/kubeflow/tf-operator#installing-the-tfjob-crd-and-operator-on-your-k8s-cluster) (for the `distributed tensorflow` templates)
 - [PyTorch operator](https://github.com/kubeflow/pytorch-operator) (for the `pytorch-distributed` template)
 - [Ingress](https://kubernetes.io/docs/concepts/services-networking/ingress/) (for the `tensorboard` template)
+- [jq](http://macappstore.org/jq/) (for the `tensorboard` template)
 - [openssh-server](https://www.openssh.com/) (for the `horovod` template)
 
 ## Installation

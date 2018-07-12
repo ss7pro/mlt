@@ -22,6 +22,8 @@ SHELL := /bin/bash
 	main \
 	status
 
+SHELL := /bin/bash
+
 all: main
 
 main: main.py
@@ -29,6 +31,10 @@ main: main.py
 
 build:
 	docker build --build-arg HTTP_PROXY=${HTTP_PROXY} --build-arg HTTPS_PROXY=${HTTPS_PROXY} --build-arg http_proxy=${http_proxy} --build-arg https_proxy=${https_proxy} -t ${CONTAINER_NAME} .
+
+deploy:
+	@chmod +x deploy.sh
+	@./deploy.sh
 
 status:
 	@echo "TB Service:"
