@@ -207,4 +207,4 @@ To ignore files and folders from syncing, they should be added to `.stignore` fi
 
 
 ## Upcoming Features
-* Launching Tensorboard in browser ([#227](https://github.com/IntelAI/mlt/issues/227))
+* TBD
