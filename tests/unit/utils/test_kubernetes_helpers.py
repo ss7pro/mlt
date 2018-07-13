@@ -17,28 +17,47 @@
 #
 # SPDX-License-Identifier: EPL-2.0
 #
-
+import json
+import pytest
 import uuid
-from mock import patch
 
-from mlt.utils.kubernetes_helpers import ensure_namespace_exists
+from mlt.utils.kubernetes_helpers import (ensure_namespace_exists,
+                                          checking_crds_on_k8)
 
 
-@patch('mlt.utils.kubernetes_helpers.call')
-@patch('mlt.utils.kubernetes_helpers.open')
-@patch('mlt.utils.kubernetes_helpers.process_helpers')
-def test_ensure_namespace_no_exist(proc_helpers, open_mock, call):
-    call.return_value = 0
+@pytest.fixture
+def proc_helpers(patch):
+    return patch('process_helpers')
+
+
+@pytest.fixture
+def open_mock(patch):
+    return patch('open')
+
+
+@pytest.fixture
+def call_mock(patch):
+    return patch('call')
+
+
+def test_ensure_namespace_no_exist(proc_helpers, open_mock, call_mock):
+    call_mock.return_value = 0
 
     ensure_namespace_exists(str(uuid.uuid4()))
     proc_helpers.run.assert_not_called()
 
 
-@patch('mlt.utils.kubernetes_helpers.call')
-@patch('mlt.utils.kubernetes_helpers.open')
-@patch('mlt.utils.kubernetes_helpers.process_helpers')
-def test_ensure_namespace_already_exists(proc_helpers, open_mock, call):
-    call.return_value = 1
+def test_ensure_namespace_already_exists(proc_helpers, open_mock, call_mock):
+    call_mock.return_value = 1
 
     ensure_namespace_exists(str(uuid.uuid4()))
     proc_helpers.run.assert_called_once()
+
+
+def test_checking_crds_on_k8(proc_helpers):
+    proc_helpers.run_popen.return_value.stdout.read.return_value.decode.\
+        return_value = json.dumps({'items': [
+                                   {'metadata': {'name': 'tfjob'}}]})
+    crd_set = {'tfjob', 'pytorchjob'}
+    missing_crds = checking_crds_on_k8(crd_set)
+    assert missing_crds == {'pytorchjob'}
