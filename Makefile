@@ -125,6 +125,7 @@ test-e2e-setup: env-up
 	docker-compose exec test bash -c "docker login -u _json_key --password-stdin https://gcr.io < mltkey.json"
 	docker-compose exec test bash -c "./google-cloud-sdk/bin/gcloud auth activate-service-account mltjson@intelai-mlt.iam.gserviceaccount.com --key-file=mltkey.json"
 	docker-compose exec test bash -c "ln -sf /usr/share/mlt/google-cloud-sdk/bin/gcloud /usr/local/bin/gcloud"
+	docker-compose exec test bash -c "/usr/share/mlt/scripts/ksonnet_install_linux.sh"
 	docker-compose exec test bash -c "/usr/share/mlt/scripts/ksync_install.sh"
 	docker-compose exec test bash -c "ln -sf /root/.ksync/bin/ksync /usr/local/bin/ksync"
 

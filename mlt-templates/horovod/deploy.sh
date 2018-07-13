@@ -24,19 +24,10 @@ SECRET=openmpi-secret
 export USER=root
 
 {
-pushd .
-mkdir -p /tmp/ksonnet
-cd /tmp/ksonnet
-curl -LO https://github.com/ksonnet/ksonnet/releases/download/v0.9.2/ks_0.9.2_linux_amd64.tar.gz
-tar -xvf ks_0.9.2_linux_amd64.tar.gz
-mv ./ks_0.9.2_linux_amd64/ks /usr/local/bin/ks
-popd
-rm -rf /tmp/ksonnet
-
 # Generate one-time ssh keys used by Open MPI.
 SECRET=openmpi-secret
 mkdir -p .tmp
-yes 2>/dev/null | ssh-keygen -N "" -f .tmp/id_rsa
+echo "y" | ssh-keygen -N "" -f .tmp/id_rsa
 kubectl delete secret ${SECRET} -n ${NAMESPACE} || true
 kubectl create secret generic ${SECRET} -n ${NAMESPACE} --from-file=id_rsa=.tmp/id_rsa --from-file=id_rsa.pub=.tmp/id_rsa.pub --from-file=authorized_keys=.tmp/id_rsa.pub
 rm -rf .tmp

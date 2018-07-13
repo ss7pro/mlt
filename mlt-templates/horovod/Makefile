@@ -37,7 +37,6 @@ build:
 	fi;
 
 deploy:
-	@chmod +x deploy.sh
 	@GITHUB_TOKEN=${GITHUB_TOKEN} ./deploy.sh
 
 undeploy:
