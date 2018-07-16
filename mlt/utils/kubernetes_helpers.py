@@ -27,8 +27,9 @@ from mlt.utils import process_helpers
 
 
 def ensure_namespace_exists(ns):
-    exit_code = call(["kubectl", "get", "namespace", ns], stdout=open(
-        os.devnull, 'wb'), stderr=open(os.devnull, 'wb'))
+    with open(os.devnull, 'wb') as devnull:
+        exit_code = call(["kubectl", "get", "namespace", ns], stdout=devnull,
+                         stderr=devnull)
     if exit_code is not 0:
         process_helpers.run(["kubectl", "create", "namespace", ns])
 

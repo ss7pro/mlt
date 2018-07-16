@@ -111,7 +111,7 @@ $ cd my-app
 $ mlt config list
 Parameter Name                Value
 ----------------------------  ----------------------
-gceProject                    my-project-12345
+registry                      my-project-12345
 namespace                     my-app
 name                          my-app
 template_parameters.greeting  Hello
@@ -123,7 +123,7 @@ $ mlt config set template_parameters.greeting Hi
 $ mlt config list
 Parameter Name                Value
 ----------------------------  ----------------------
-gceProject                    constant-cubist-173123
+registry                      constant-cubist-173123
 namespace                     dmsuehir
 name                          dmsuehir
 template_parameters.greeting  Hi

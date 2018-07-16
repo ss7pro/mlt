@@ -21,7 +21,9 @@
 import inspect
 import os
 import pytest
+import shutil
 import sys
+import tempfile
 from mock import MagicMock
 
 # enable test_utils to be used in tests via `from test_utils... import ...
@@ -80,3 +82,12 @@ def patch(monkeypatch):
         return m
 
     return wrapper
+
+
+# each test that calls `mlt init` will create app dir inside of this temp dir
+def pytest_sessionstart(session):
+    pytest.workdir = tempfile.mkdtemp()
+
+
+def pytest_sessionfinish(session, exitstatus):
+    shutil.rmtree(pytest.workdir)

@@ -3,9 +3,11 @@ jobs:
   build:
     docker:
       - image: circleci/python:2.7-stretch
+    resource_class: xlarge
     environment:
       KUBECONFIG: /home/circleci/.kube/config
       MLT_TEST_CLUSTER_ENV_FILE: /tmp/mlt_test_cluster
+      MAX_NUMBER_OF_THREADS_E2E: 8
     working_directory: ~/repo
     steps:
       - checkout
@@ -38,7 +40,7 @@ jobs:
       - run:
           name: Run unit tests
           command: |
-            make test-all
+            make -e test-all-circleci
 
       - run:
           name: Run make dist and test the wheels and versions
@@ -131,7 +133,7 @@ jobs:
       - run:
           name: Run e2e tests
           command: |
-            make test-e2e-all
+            make -e test-e2e-all-circleci
           no_output_timeout: 20m
 
       - run:

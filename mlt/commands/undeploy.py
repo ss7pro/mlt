@@ -47,8 +47,11 @@ class UndeployCommand(Command):
         if files.is_custom('undeploy:'):
             self._custom_undeploy()
         else:
+            # don't delete namespace here because we could be using a
+            # user-provided namespace
             process_helpers.run(
-                ["kubectl", "--namespace", namespace, "delete", "-f", "k8s"])
+                ["kubectl", "--namespace", namespace, "delete", "-f", "k8s"],
+                raise_on_failure=True)
 
     def _custom_undeploy(self):
         """

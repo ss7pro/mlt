@@ -21,6 +21,32 @@ PY ?= $(shell python --version 2>&1  | cut -c8)
 VIRTUALENV_DIR=$(if $(subst 2,,$(PY)),.venv3,.venv)
 ACTIVATE="$(VIRTUALENV_DIR)/bin/activate"
 
+# we don't have that many e2e tests, if we go over this amount then we don't get speedup
+# as threads get allocated and then sit there with nothing to do
+# this var will get overwritten in our circleci config
+MAX_NUMBER_OF_THREADS_E2E ?= 12
+
+# these control test options and attribute filters
+OS := $(shell uname)
+
+# used to parallelize tests
+ifeq ($(OS), Darwin)
+	NUMBER_OF_THREADS := $(shell sysctl -n hw.ncpu)
+else
+	NUMBER_OF_THREADS := $(shell nproc --all)
+endif
+
+# we want to leave a core per job for docker commands and things
+# but we always want at least 1 thread
+NUMBER_OF_THREADS_E2E := `expr $(NUMBER_OF_THREADS) / 2`
+ifeq ($(shell test $(NUMBER_OF_THREADS) -le 1; echo $$?),0)
+	NUMBER_OF_THREADS_E2E := 1
+endif
+
+ifeq ($(shell test $(NUMBER_OF_THREADS) -gt $(MAX_NUMBER_OF_THREADS_E2E); echo $$?),0)
+	NUMBER_OF_THREADS_E2E = $(MAX_NUMBER_OF_THREADS_E2E)
+endif
+
 .PHONY: \
        clean \
        coverage \
@@ -67,11 +93,15 @@ dev-env-all:
 
 test:
 	@echo "Running Python${PY} unit tests..."
-	@tox -e py${PY}-unit
+	@NUMBER_OF_THREADS=${NUMBER_OF_THREADS} tox -e py${PY}-unit
 
 test-all:
 	@echo "Running unit tests across Python2 and Python3..."
-	@tox -e py2-unit -e py3-unit
+	@NUMBER_OF_THREADS=${NUMBER_OF_THREADS} tox -e py2-unit -e py3-unit
+
+test-all-circleci:
+	@echo "Running Python unit tests on circleci..."
+	@NUMBER_OF_THREADS=8 tox -e py2-unit -e py3-unit
 
 lint:
 	@echo "Running Linting with flake8 for Python${PY}..."
@@ -118,7 +148,7 @@ env-reset: env-down env-up
 # kubeflow is needed for the TFJob and PytorchJob operators (our templates use this)
 # we get the mltkey.json from the circleci setup
 # we then need to alias our gcloud setup to just `gcloud` for mlt
-test-e2e-setup: env-up
+test-e2e-setup-circleci: env-up
 	docker-compose exec test pip install tox
 	docker cp /home/circleci/.kube/config mlt:/root/.gcloudkube/config
 	docker-compose exec test sed -i "s/cmd-path: \/home\/circleci\/repo\/google-cloud-sdk/cmd-path: \/usr\/share\/mlt\/google-cloud-sdk/" /root/.gcloudkube/config
@@ -129,11 +159,13 @@ test-e2e-setup: env-up
 	docker-compose exec test bash -c "/usr/share/mlt/scripts/ksync_install.sh"
 	docker-compose exec test bash -c "ln -sf /root/.ksync/bin/ksync /usr/local/bin/ksync"
 
-test-e2e: test-e2e-setup
-	docker-compose exec test env MLT_REGISTRY=gcr.io/intelai-mlt tox -e py${PY}-e2e
+test-e2e-circleci: test-e2e-setup-circleci
+	docker-compose exec test env MLT_REGISTRY=gcr.io/intelai-mlt env NUMBER_OF_THREADS=${MAX_NUMBER_OF_THREADS_E2E} tox -e py${PY}-e2e
 
-test-e2e-all: test-e2e-setup
-	docker-compose exec test env MLT_REGISTRY=gcr.io/intelai-mlt tox -e py2-e2e -e py3-e2e
+# NOTE: if we're on a circleci machine, for now we've got 8 cores so we'll cap at 8
+# check for core count isn't valid because we have a subset of cores available on a large host node
+test-e2e-all-circleci: test-e2e-setup-circleci
+	docker-compose exec test env MLT_REGISTRY=gcr.io/intelai-mlt env NUMBER_OF_THREADS=${MAX_NUMBER_OF_THREADS_E2E} tox -e py2-e2e -e py3-e2e
 
 # EXTRA_ARGS enables usage of other docker registries for testing
 # ex: EXTRA_ARGS=`$MLT_REGISTRY_AUTH_COMMAND` make test-e2e-no-docker
@@ -144,10 +176,10 @@ test-e2e-no-docker-setup:
 		GITHUB_TOKEN=${GITHUB_TOKEN} ./scripts/kubeflow_install.sh
 
 test-e2e-no-docker: test-e2e-no-docker-setup
-	@${EXTRA_ARGS:} tox -e py${PY}-e2e
+	@${EXTRA_ARGS:} NUMBER_OF_THREADS=${NUMBER_OF_THREADS_E2E} tox -e py${PY}-e2e
 
 test-e2e-no-docker-all: test-e2e-no-docker-setup
-	@${EXTRA_ARGS:} tox -e py2-e2e -e py3-e2e
+	@${EXTRA_ARGS:} NUMBER_OF_THREADS=${NUMBER_OF_THREADS_E2E} tox -e py2-e2e -e py3-e2e
 
 clean:
 	rm -rf .venv .venv3

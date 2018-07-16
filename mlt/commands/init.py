@@ -85,7 +85,7 @@ class InitCommand(Command):
                                           'yellow'))
                     else:
                         print(colored("ksync is not installed on localhost.",
-                              'red'))
+                                      'red'))
                         sys.exit(1)
 
                 data = self._build_mlt_json(template_params, template_git_sha)
@@ -166,7 +166,7 @@ class InitCommand(Command):
                     ["gcloud", "config", "list", "--format",
                      "value(core.project)"])
                 project = raw_project_bytes.decode("utf-8").strip()
-                data['gceProject'] = project
+                data['registry'] = 'gcr.io/' + project
             except OSError as e:
                 if "No such file or directory" in str(e):
                     # When the user did not provide a --registry, and gcloud
@@ -177,7 +177,7 @@ class InitCommand(Command):
                                   "registry name in your mlt project using one"
                                   " of the following commands. \n\n"
                                   "For Google Container Registry:\n"
-                                  "\tmlt config set gceProject "
+                                  "\tmlt config set registry "
                                   "<google_project_name>\n"
                                   "\nFor a Docker Registry:\n"
                                   "\tmlt config set registry "

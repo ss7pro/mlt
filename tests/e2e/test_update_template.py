@@ -20,40 +20,31 @@
 
 import pytest
 from test_utils.e2e_commands import CommandTester
-from test_utils.files import create_work_dir
 
 
-def test_no_update():
-    with create_work_dir() as workdir:
-        commands = CommandTester(workdir)
-        commands.init('hello-world')
-        commands.update_template()
+class UpdateTemplate(CommandTester):
+    def test_no_update(self):
+        self.init('hello-world')
+        # TODO: assert something here
+        self.update_template()
 
-
-def test_invalid_update():
-    with create_work_dir() as workdir:
-        commands = CommandTester(workdir)
-        commands.init('hello-world')
-        new_config = "template_git_sha"
-        commands.config(subcommand="remove", config_name=new_config)
-        cmd_output = commands.update_template()
+    def test_invalid_update(self):
+        self.init('hello-world')
+        self.config(subcommand="remove", config_name="template_git_sha")
+        cmd_output = self.update_template()
         desired_output_string = "ERROR: mlt.json does not have either " \
                                 "template_name or template_git_sha. Template" \
                                 " update is not possible."
         assert desired_output_string in cmd_output
 
-
-@pytest.mark.skip(reason="Intermittently failing skipped, for now."
-                         "issue - https://github.com/IntelAI/mlt/issues/288 ")
-def test_valid_update():
-    with create_work_dir() as workdir:
-        commands = CommandTester(workdir)
-        commands.init('hello-world')
-        new_config = "template_git_sha"
-        new_value = "6a5a156196a1cc372bb13dc402fc933a0bb0c5ae"
-        commands.config(subcommand="set", config_name=new_config,
-                        config_value=new_value)
-        cmd_output = commands.update_template()
+    @pytest.mark.skip(
+        reason="Intermittently failing skipped, for now. Issue - "
+               "https://github.com/IntelAI/mlt/issues/288 ")
+    def test_valid_update(self):
+        self.init('hello-world')
+        self.config(subcommand="set", config_name="template_git_sha",
+                    config_value="6a5a156196a1cc372bb13dc402fc933a0bb0c5ae")
+        cmd_output = self.update_template()
         desired_output_string = "Latest template changes have merged using " \
                                 "git, please review change"
         assert desired_output_string in cmd_output

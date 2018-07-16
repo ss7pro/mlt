@@ -25,9 +25,11 @@ e2e scenarios in the future with the least amount of code duplication.
 import getpass
 import json
 import os
+import pytest
 import time
 import uuid
-from subprocess import PIPE, Popen
+from termcolor import colored
+from subprocess import PIPE
 
 from mlt.utils.git_helpers import clone_repo, get_experiments_version
 from mlt.utils.process_helpers import run, run_popen
@@ -35,38 +37,30 @@ from project import basedir
 
 
 class CommandTester(object):
-    def __init__(self, workdir):
+    @classmethod
+    @pytest.fixture(scope='class', autouse=True)
+    def setup(self):
         # just in case tests fail, want a clean namespace always
-        self.workdir = workdir
         self.registry = os.getenv('MLT_REGISTRY', 'localhost:5000')
-        self.registry_catalog_call = self._fetch_registry_catalog_call()
-        # putting an `a` here because PytorchJob requires a letter in front
-        # it tries to create a service based on image name
-        self.app_name = 'a' + str(uuid.uuid4())[:8]
-        self.namespace = getpass.getuser() + '-' + self.app_name
-
-        self.project_dir = os.path.join(self.workdir, self.app_name)
-        self.mlt_json = os.path.join(self.project_dir, 'mlt.json')
-        self.build_json = os.path.join(self.project_dir, '.build.json')
-        self.deploy_json = os.path.join(self.project_dir, '.push.json')
-        self.train_file = os.path.join(self.project_dir, 'main.py')
 
         # ANY NEW TFJOBS NEED TO HAVE THEIR TEMPLATE NAMES LISTED HERE
         # TFJob terminates pods after completion so can't check old pods
         # for status of job completion
         self.tfjob_templates = ('tf-dist-mnist', 'tf-distributed')
 
-    def _fetch_registry_catalog_call(self):
-        """returns either a local registry curl call or one for gcr"""
-        if 'gcr' in self.registry:
-            gcr_token = run_popen("gcloud auth print-access-token",
-                                  shell=True).stdout.read().decode(
-                "utf-8").strip()
-            catalog_call = 'curl -v -u _token:{} '.format(
-                gcr_token) + '"https://gcr.io/v2/_catalog"'
-        else:
-            catalog_call = 'curl --noproxy \"*\" registry:5000/v2/_catalog'
-        return catalog_call
+    def _set_new_mlt_project_vars(self, template):
+        """init calls this function to reset a new project's test vars"""
+        # putting an `a` here because PytorchJob requires a letter in front
+        # it tries to create a service based on image name
+        # using template name to better id the job that's running for debugging
+        self.app_name = 'a' + template[:4] + str(uuid.uuid4())[:4]
+        self.namespace = getpass.getuser() + '-' + self.app_name
+
+        self.project_dir = os.path.join(pytest.workdir, self.app_name)
+        self.mlt_json = os.path.join(self.project_dir, 'mlt.json')
+        self.build_json = os.path.join(self.project_dir, '.build.json')
+        self.deploy_json = os.path.join(self.project_dir, '.push.json')
+        self.train_file = os.path.join(self.project_dir, 'main.py')
 
     def _grab_latest_pod_or_tfjob(self):
         """grabs latest pod by startTime"""
@@ -77,7 +71,8 @@ class CommandTester(object):
         else:
             obj_string = "kubectl get pods -a --namespace {}".format(
                 self.namespace) + " --sort-by=.status.startTime -o json"
-        objs = run_popen(obj_string, shell=True).stdout.read().decode('utf-8')
+        objs, _ = self._launch_popen_call(obj_string, shell=True,
+                                          return_output=True)
         if objs:
             objs = json.loads(objs).get('items')[-1]['status']
             # tfjob is special and puts the `Succeeded` status on the `state`
@@ -97,8 +92,7 @@ class CommandTester(object):
         with clone_repo(experiments_repo) as temp_clone:
             # get known version of experiments repo
             command = ['git', 'checkout', get_experiments_version()]
-            p = Popen(command, cwd=temp_clone, stdout=PIPE)
-            assert p.wait() == 0
+            self._launch_popen_call(command, cwd=temp_clone)
 
             # get the sa.yaml file and then replace 'demo' with our namespace
             example_dir = os.path.join(temp_clone, "examples/demo")
@@ -114,32 +108,27 @@ class CommandTester(object):
 
             # create namespace so that we can add roles
             command = ['kubectl', 'create', 'ns', self.namespace]
-            p = Popen(command, cwd=self.project_dir, stdout=PIPE)
-            out, err = p.communicate()
-            assert p.wait() == 0
-            assert err is None
+            self._launch_popen_call(command, stderr_is_not_okay=True)
 
             # create roles/rolebindings using kubectl command
             command = ['kubectl', 'create', '-f', new_sa_file]
-            p = Popen(command, cwd=self.project_dir, stdout=PIPE)
-            out, err = p.communicate()
-            assert p.wait() == 0
-            assert err is None
+            self._launch_popen_call(command, stderr_is_not_okay=True)
 
     def init(self, template='hello-world', template_repo=basedir(),
              enable_sync=False):
+        self._set_new_mlt_project_vars(template)
         init_options = ['mlt', 'init', '--registry={}'.format(self.registry),
                         '--template-repo={}'.format(template_repo),
                         '--namespace={}'.format(self.namespace),
                         '--template={}'.format(template), self.app_name]
         if enable_sync:
             init_options.append('--enable-sync')
-        p = Popen(init_options, cwd=self.workdir)
+        self._launch_popen_call(init_options, cwd=pytest.workdir)
+
         # keep track of template we created so we can check if it's a TFJob
         # that terminates pods after completion so we need to check the crd
         # for status on if job was successful
         self.template = template
-        assert p.wait() == 0
         assert os.path.isfile(self.mlt_json)
         with open(self.mlt_json) as f:
             standard_configs = {
@@ -167,39 +156,41 @@ class CommandTester(object):
         if config_value:
             command.append(config_value)
 
-        p = Popen(command, cwd=self.project_dir, stdout=PIPE)
-        output, err = p.communicate()
-        assert p.wait() == 0
+        output, err = self._launch_popen_call(
+            command, return_output=True, stderr_is_not_okay=True)
 
         if subcommand == "list":
             assert output
 
-        assert err is None
         return output, err
 
     def build(self, watch=False):
         build_cmd = ['mlt', 'build']
+        call_args = {'command': build_cmd}
         if watch:
             build_cmd.append('--watch')
-
-        build_proc = Popen(build_cmd, cwd=self.project_dir)
+            # we don't want to wait for the popen call to finish
+            # because it'll go until we kill it
+            call_args['wait'] = True
 
         if watch:
+            build_proc = self._launch_popen_call(**call_args)
             # ensure that `mlt build --watch` has started
-            time.sleep(1)
+            time.sleep(3)
             # we need to simulate our training file changing
-            run_popen("echo \"print('hello')\" >> {}".format(
-                self.train_file), shell=True).wait()
-            # wait for 30 seconds (for timeout) or until we've built our image
+            self._launch_popen_call("echo \"print('hello')\" >> {}".format(
+                self.train_file), shell=True)
+            # wait for 6 mins (for timeout) or until we've built our image
             # then kill the build proc or it won't terminate
+            # we could be building TF which takes awhile
             start = time.time()
             while not os.path.exists(self.build_json):
                 time.sleep(1)
-                if time.time() - start >= 30:
+                if time.time() - start >= 360:
                     break
             build_proc.kill()
         else:
-            assert build_proc.wait() == 0
+            self._launch_popen_call(**call_args)
 
         assert os.path.isfile(self.build_json)
         with open(self.build_json) as f:
@@ -207,20 +198,18 @@ class CommandTester(object):
             assert 'last_container' in build_data and \
                    'last_build_duration' in build_data
             # verify that we created a docker image
-            assert run_popen(
+            self._launch_popen_call(
                 "docker image inspect {}".format(build_data['last_container']),
-                shell=True, stdout=None, stderr=None
-            ).wait() == 0
+                shell=True, stdout=None, stderr=None)
 
-    def deploy(self, no_push=False, interactive=False, sync=False):
-        deploy_cmd = ['mlt', 'deploy']
+    def deploy(self, no_push=False, interactive=False, retries=10,
+               sync=False):
+        deploy_cmd = ['mlt', 'deploy', '--retries', str(retries)]
         if no_push:
             deploy_cmd.append('--no-push')
         if interactive:
             deploy_cmd.append('--interactive')
-        p = Popen(deploy_cmd, cwd=self.project_dir)
-        out, err = p.communicate()
-        assert p.wait() == 0
+        self._launch_popen_call(deploy_cmd)
 
         if not no_push:
             assert os.path.isfile(self.deploy_json)
@@ -244,45 +233,84 @@ class CommandTester(object):
             sync_cmd.append('reload')
         if delete:
             sync_cmd.append('delete')
-        p = Popen(sync_cmd, cwd=self.project_dir)
-        out, err = p.communicate()
-        assert p.wait() == 0
+        self._launch_popen_call(sync_cmd)
 
     def status(self):
-        status_cmd = ['mlt', 'status']
-        p = Popen(status_cmd, cwd=self.project_dir, stdout=PIPE)
-        output, err = p.communicate()
-        assert p.wait() == 0
+        output, err = self._launch_popen_call(
+            ['mlt', 'status'], return_output=True, stderr_is_not_okay=True)
 
-        # verify that we have some output, and no errors
+        # verify that we have some output
         assert output
-        assert err is None
 
     def undeploy(self):
-        p = Popen(['mlt', 'undeploy'], cwd=self.project_dir)
-        assert p.wait() == 0
+        self._launch_popen_call(['mlt', 'undeploy'])
         # verify no more deployment job
-        assert run_popen(
+        # TODO: this will always return a 0 exit code...
+        self._launch_popen_call(
             "kubectl get jobs --namespace={}".format(
-                self.namespace), shell=True).wait() == 0
+                self.namespace), shell=True)
 
     def update_template(self, template_repo=basedir()):
         update_cmd = ['mlt', 'update-template']
         if template_repo:
             update_cmd.append("--template-repo={}".format(template_repo))
-        p = Popen(update_cmd, cwd=self.project_dir, stdout=PIPE)
-        output, err = p.communicate()
-        assert p.wait() == 0
+        output, err = self._launch_popen_call(
+            update_cmd, return_output=True, stderr_is_not_okay=True)
 
-        # verify that we have no errors
+        # verify that we have some output
         assert output
-        assert err is None
         return output.decode("utf-8")
+
+    def _launch_popen_call(self, command, cwd=None,
+                           return_output=False, shell=False, stdout=PIPE,
+                           stderr=PIPE, stderr_is_not_okay=False,
+                           wait=False):
+        """Lightweight wrapper that launches run_popen and handles dumping
+           output if there was an error
+           cwd: where to launch popen call from
+           return_output: whether to return the process itself or the output
+                          and error instead. Need 2 options for things like
+                          `--watch` flag, where we kill the proc later
+           shell: whether to shell out the popen call, NOTE: if True,
+                  the command needs to be a string. This is helpful for things
+                  like `|` in the command.
+           stderr_is_not_okay: some commands like `git checkout` or progressbar
+                           dump their output to stderr so we need to allow it
+                           THEORY: stderr is unbuffered so dynamic progressbars
+                           might want to dump to stderr. This is for those
+                           commands that actually don't want any stderr.
+           wait: for the build watch command, we don't want to call `.wait()`
+                    on it because we need to check when we edit watched file
+        """
+        if cwd is None:
+            # default to project dir if that's defined, otherwise just use /tmp
+            cwd = getattr(self, 'project_dir', '/tmp')
+        p = run_popen(command, stdout=stdout,
+                      stderr=stderr, shell=shell, cwd=cwd)
+        if not wait:
+            out, err = p.communicate()
+
+            error_msg = "Popen call failed:\nSTDOUT:{}\n\nSTDERR:{}".format(
+                str(out), colored(str(err), 'red'))
+            # TODO: doesn't p.wait() check error code? Can you have `err` and
+            # exit code of 0?
+            assert p.wait() == 0, error_msg
+
+            if stderr_is_not_okay is True:
+                assert not err, error_msg
+
+            if return_output:
+                out = out.decode('utf-8').strip()
+                return out, err
+            else:
+                return p
+        else:
+            return p
 
     def _verify_pod_success(self, interactive_deploy, sync_deploy):
         """verify that our latest job did indeed get deployed to k8s"""
         # TODO: probably refactor this function
-        # allow for 60 seconds for the pod to start creating;
+        # allow for 2 min for the pod to start creating;
         # pytorch operator causes pods to fail for a bit before success
         # which is out of our hands
         start = time.time()
@@ -292,37 +320,28 @@ class CommandTester(object):
                 pod_status = self._grab_latest_pod_or_tfjob()
             except (ValueError, IndexError, KeyError):
                 # if no pod is available, or pods is an empty dict, ignore
-                # for 1 min
+                # for 2 mins
                 time.sleep(1)
-                if time.time() - start >= 60:
+                if time.time() - start >= 120:
                     break
 
-        # wait for pod to finish, up to 3 min for pending and 5 for running
+        # wait for pod to finish, up to 5 min for pending and 5 for running
         # not counting interactive that will always be running
         start = time.time()
-        while pod_status == 'Pending':
+        while pod_status == "Pending":
             time.sleep(1)
             pod_status = self._grab_latest_pod_or_tfjob()
-            if time.time() - start >= 180:
+            if time.time() - start >= 300:
                 break
 
         # interactive pods are `sleep; infinity` so will still be running
         if not interactive_deploy and not sync_deploy:
             # since new pods could come up, we might find another 'Pending' pod
-            while pod_status == 'Running' or pod_status == 'Pending':
+            while pod_status == "Running" or pod_status == "Pending":
                 time.sleep(1)
                 pod_status = self._grab_latest_pod_or_tfjob()
-                if time.time() - start >= 480:
+                if time.time() - start >= 600:
                     break
-            assert pod_status == 'Succeeded'
+            assert pod_status == "Succeeded", pod_status
         else:
-            assert pod_status == 'Running'
-
-    # tear down remaining resources/namespaces
-    def teardown(self):
-        try:
-            run(["kubectl", "delete", "ns", self.namespace])
-        except SystemExit:
-            # this means that the namespace and k8s resources are already
-            # deleted
-            pass
+            assert pod_status == "Running", pod_status

@@ -34,10 +34,11 @@ def run(command, cwd=None, raise_on_failure=False):
     return output
 
 
-def run_popen(command, shell=False, stdout=PIPE, stderr=PIPE):
+def run_popen(command, shell=False, stdout=PIPE, stderr=PIPE, cwd=None):
     """to suppress output, pass False to stdout or stderr
        None is a valid option that we want to allow"""
     with open(os.devnull, 'w') as quiet:
         stdout = quiet if stdout is False else stdout
         stderr = quiet if stderr is False else stderr
-        return Popen(command, stdout=stdout, stderr=stderr, shell=shell)
+        return Popen(command, stdout=stdout, stderr=stderr, shell=shell,
+                     cwd=cwd)

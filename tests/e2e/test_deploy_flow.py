@@ -20,94 +20,80 @@
 import os
 import pytest
 
+
+from mlt.utils.process_helpers import run
 from test_utils.e2e_commands import CommandTester
-from test_utils.files import create_work_dir
 
 
 # NOTE: you need to deploy first before you deploy with --no-push
 # otherwise you have no image to use to make new container from
 
-# NOTE: adding try:finally to clean up if something takes too long to deploy
-# to free up resources before the test finishes
-# probably should handle that as a decorator perhaps?
 
-@pytest.mark.parametrize('template',
-                         filter(lambda x: os.path.isdir(
-                             os.path.join('mlt-templates', x)),
-                             os.listdir('mlt-templates')))
-def test_deploying_templates(template):
-    with create_work_dir() as workdir:
-        commands = CommandTester(workdir)
-        commands.init(template)
-        commands.build()
+class TestDeployFlow(CommandTester):
+    @pytest.fixture(autouse=True, scope='function')
+    def teardown(self):
+        """Allow normal deployment, then undeploy and check status at end of
+           every test. Also delete the namespace because undeploy doesn't
+           do that.
+           NOTE: is there a better way to write this? :joy:
+        """
         try:
-            commands.deploy()
-            commands.status()
+            # normal test execution
+            yield
         finally:
-            commands.undeploy()
-            commands.status()
-            commands.teardown()
+            # no matter what, undeploy and check status
+            try:
+                self.undeploy()
+                self.status()
+            finally:
+                # tear down namespace at end of test
+                try:
+                    run(["kubectl", "delete", "ns", self.namespace])
+                except SystemExit:
+                    # this means that the namespace and k8s resources are
+                    # already deleted or were never created
+                    pass
 
+    @pytest.mark.parametrize('template',
+                             filter(lambda x: os.path.isdir(
+                                 os.path.join('mlt-templates', x)),
+                                 os.listdir('mlt-templates')))
+    def test_deploying_templates(self, template):
+        self.init(template)
+        self.build()
+        self.deploy()
+        self.status()
 
-def test_deploy_enable_sync():
-    with create_work_dir() as workdir:
-        commands = CommandTester(workdir)
-        commands.init(enable_sync=True)
-        commands.build()
-        try:
-            commands.deploy(sync=True)
-            commands.sync(create=True)
-            commands.status()
-            commands.sync(reload=True)
-            commands.status()
-            commands.sync(delete=True)
-        finally:
-            commands.undeploy()
-            commands.status()
-            commands.teardown()
+    def test_deploy_enable_sync(self):
+        self.init(enable_sync=True)
+        self.build()
+        self.deploy(sync=True)
+        self.sync(create=True)
+        self.status()
+        self.sync(reload=True)
+        self.status()
+        self.sync(delete=True)
 
+    def test_no_push_deploy(self):
+        self.init()
+        self.build()
+        self.deploy()
+        self.status()
+        self.deploy(no_push=True)
+        self.status()
 
-def test_no_push_deploy():
-    with create_work_dir() as workdir:
-        commands = CommandTester(workdir)
-        commands.init()
-        commands.build()
-        try:
-            commands.deploy()
-            commands.status()
-            commands.deploy(no_push=True)
-            commands.status()
-        finally:
-            commands.undeploy()
-            commands.status()
-            commands.teardown()
+    def test_interactive_deploy(self):
+        self.init()
+        self.build()
+        self.deploy()
+        self.status()
+        self.deploy(interactive=True, no_push=True, retries=60)
+        self.status()
 
-
-def test_interactive_deploy():
-    with create_work_dir() as workdir:
-        commands = CommandTester(workdir)
-        commands.init()
-        commands.build()
-        try:
-            commands.deploy(interactive=True)
-            commands.status()
-        finally:
-            commands.undeploy()
-            commands.status()
-            commands.teardown()
-
-
-def test_watch_build_and_deploy_no_push():
-    with create_work_dir() as workdir:
-        commands = CommandTester(workdir)
-        commands.init()
-        commands.build(watch=True)
-        try:
-            commands.deploy()
-            commands.status()
-            commands.deploy(no_push=True)
-            commands.status()
-        finally:
-            commands.undeploy()
-            commands.status()
-            commands.teardown()
+    def test_watch_build_and_deploy_no_push(self):
+        self.init()
+        self.build(watch=True)
+        self.deploy()
+        self.status()
+        self.deploy(no_push=True)
+        self.status()

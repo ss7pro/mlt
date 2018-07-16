@@ -17,7 +17,7 @@
 # SPDX-License-Identifier: EPL-2.0
 #
 
-# This is script should run only after a kubectl context has been stablished
+# This is script should run only after a kubectl context has been established
 export TARGET_INSTALL_PATH=$HOME/.ksync/bin
 if [ ! -d ${TARGET_INSTALL_PATH} ]; then
     mkdir -p ${TARGET_INSTALL_PATH}

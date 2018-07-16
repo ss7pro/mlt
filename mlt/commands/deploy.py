@@ -24,8 +24,7 @@ import time
 import uuid
 import yaml
 from string import Template
-import subprocess
-from subprocess import Popen, PIPE
+from subprocess import CalledProcessError, check_output, Popen, PIPE, STDOUT
 from termcolor import colored
 
 from mlt.commands import Command
@@ -70,26 +69,10 @@ class DeployCommand(Command):
             'build', 'last_container')
 
         self.started_push_time = time.time()
-        # TODO: unify these commands by factoring out docker command
-        # based on config
-        if 'gceProject' in self.config:
-            self._push_gke()
-        elif 'registry' in self.config:
-            self._push_docker()
-        else:
-            # User didn't provide any container registry info
-            print(colored("Unable to push image, because no container registry"
-                          " has been specified in this project's config.  Use "
-                          "one of the following commands to set a container "
-                          "registry.\n\n"
-                          "For Google Container Registry:\n"
-                          "\tmlt config set gceProject <google_project_name>\n"
-                          "\nFor a Docker Registry:\n"
-                          "\tmlt config set registry <registry_name>", 'red'))
-            sys.exit(1)
+        self._push_docker()
 
         progress_bar.duration_progress(
-            'Pushing ', last_push_duration,
+            'Pushing {}'.format(self.config["name"]), last_push_duration,
             lambda: self.push_process.poll() is not None)
 
         # If the push fails, get the stdout and error message and display them
@@ -106,15 +89,8 @@ class DeployCommand(Command):
                 "last_push_duration": time.time() - self.started_push_time
             }))
 
-        print("Pushed to {}".format(self.remote_container_name))
-
-    def _push_gke(self):
-        self.remote_container_name = "gcr.io/{}/{}".format(
-            self.config['gceProject'], self.container_name)
-        self._tag()
-        self.push_process = Popen(["gcloud", "docker", "--", "push",
-                                   self.remote_container_name],
-                                  stdout=PIPE, stderr=PIPE)
+        print("Pushed {} to {}".format(
+            self.config["name"], self.remote_container_name))
 
     def _push_docker(self):
         self.remote_container_name = "{}/{}".format(
@@ -231,6 +207,7 @@ class DeployCommand(Command):
         """take k8s-template data and create deployment in k8s dir"""
         with open(os.path.join('k8s', filename), 'w') as f:
             f.write(out)
+
         process_helpers.run(
             ["kubectl", "--namespace", self.namespace,
              "apply", "-R", "-f", "k8s"])
@@ -366,9 +343,8 @@ class DeployCommand(Command):
         try:
             kubernetes_helpers.ensure_namespace_exists(self.namespace)
 
-            output = subprocess.check_output(["make", "deploy"],
-                                             env=user_env,
-                                             stderr=subprocess.STDOUT)
+            output = check_output(["make", "deploy"],
+                                  env=user_env, stderr=STDOUT)
             print(output.decode("utf-8").strip())
             self._update_app_run_id(app_run_id)
             print("\nInspect created objects by running:\n"
@@ -382,8 +358,8 @@ class DeployCommand(Command):
                     self._get_custom_deploy_pod_name(k8_label)
                 self._exec_into_pod(interactive_podname)
 
-        except subprocess.CalledProcessError as e:
-                print("Error while deploying app: {}".format(e.output))
+        except CalledProcessError as e:
+            print("Error while deploying app: {}".format(e.output))
 
     def _get_custom_deploy_pod_name(self, k8_label):
         pod = process_helpers.run_popen(

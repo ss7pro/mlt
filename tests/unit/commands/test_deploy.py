@@ -90,7 +90,7 @@ def verify_init(patch):
 
 @pytest.fixture
 def subprocess_mock(patch):
-    return patch('subprocess.check_output')
+    return patch('check_output')
 
 
 @pytest.fixture
@@ -138,7 +138,7 @@ def verify_successful_deploy(output, did_push=True, interactive=False):
     push_skip = output.find('Skipping image push')
     deploying = output.find('Deploying ')
     inspecting = output.find('Inspect created objects by running:\n')
-    pushed = output.find('Pushed to ')
+    pushed = output.find('Pushed app to ')
     pod_connect = output.find('Connecting to pod...')
 
     if did_push:
@@ -156,12 +156,16 @@ def verify_successful_deploy(output, did_push=True, interactive=False):
 
 @pytest.mark.parametrize("sync_spec", [
     None,
-    'hello-world',
+    'hello-world'
 ])
-def test_deploy_gce(walk_mock, progress_bar, popen_mock, open_mock,
-                    template, kube_helpers, process_helpers, verify_build,
-                    verify_init, fetch_action_arg, json_mock,
-                    get_sync_spec_mock, sync_spec):
+@pytest.mark.parametrize("registry", [
+    'gcr://projectfoo',
+    'dockerhub'
+])
+def test_deploy(walk_mock, progress_bar, popen_mock, open_mock,
+                template, kube_helpers, process_helpers, verify_build,
+                verify_init, fetch_action_arg, json_mock,
+                get_sync_spec_mock, sync_spec, registry):
     get_sync_spec_mock.return_value = sync_spec
     json_mock.load.return_value = {
         'last_remote_container': 'gcr.io/app_name:container_id',
@@ -169,20 +173,7 @@ def test_deploy_gce(walk_mock, progress_bar, popen_mock, open_mock,
     output = deploy(
         no_push=False, skip_crd_check=True,
         interactive=False,
-        extra_config_args={'gceProject': 'gcr://projectfoo'})
-    verify_successful_deploy(output)
-
-
-def test_deploy_docker(walk_mock, progress_bar, popen_mock, open_mock,
-                       template, kube_helpers, process_helpers, verify_build,
-                       verify_init, fetch_action_arg, json_mock):
-    json_mock.load.return_value = {
-        'last_remote_container': 'gcr.io/app_name:container_id',
-        'last_push_duration': 0.18889}
-    output = deploy(
-        no_push=False, skip_crd_check=True,
-        interactive=False,
-        extra_config_args={'registry': 'dockerhub'})
+        extra_config_args={'registry': registry})
     verify_successful_deploy(output)
 
 
@@ -196,7 +187,7 @@ def test_deploy_without_push(walk_mock, progress_bar, popen_mock, open_mock,
     output = deploy(
         no_push=True, skip_crd_check=True,
         interactive=False,
-        extra_config_args={'gceProject': 'gcr://projectfoo'})
+        extra_config_args={'registry': 'gcr://projectfoo'})
     verify_successful_deploy(output, did_push=False)
 
 
@@ -290,7 +281,7 @@ def test_image_push_error(walk_mock, progress_bar, popen_mock, open_mock,
                                 '--skip-crd-check': True,
                                 '--no-push': False})
     deploy_cmd.config = {'name': 'app', 'namespace': 'namespace'}
-    deploy_cmd.config.update({'gceProject': 'gcr://projectfoo'})
+    deploy_cmd.config.update({'registry': 'gcr://projectfoo'})
 
     with catch_stdout() as caught_output:
         with pytest.raises(SystemExit):
@@ -302,22 +293,6 @@ def test_image_push_error(walk_mock, progress_bar, popen_mock, open_mock,
     error_location = output.find(error_str)
     assert all(var >= 0 for var in (output_location, error_location))
     assert output_location < error_location
-
-
-def test_deploy_no_registry(walk_mock, progress_bar, popen_mock, open_mock,
-                            template, kube_helpers, process_helpers,
-                            verify_build, verify_init, fetch_action_arg,
-                            json_mock):
-    json_mock.load.return_value = {
-        'last_remote_container': 'gcr.io/app_name:container_id',
-        'last_push_duration': 0.18889}
-
-    with pytest.raises(SystemExit):
-        output = deploy(
-            no_push=False, skip_crd_check=True,
-            interactive=False, extra_config_args={})
-        assert ("Unable to push image, because no container "
-                "registry has been specified") in output
 
 
 def test_deploy_custom_deploy(walk_mock, progress_bar, popen_mock, open_mock,
@@ -343,7 +318,7 @@ def test_deploy_custom_deploy(walk_mock, progress_bar, popen_mock, open_mock,
     output = deploy(
         no_push=False, skip_crd_check=True,
         interactive=False,
-        extra_config_args={'gceProject': 'gcr://projectfoo',
+        extra_config_args={'registry': 'gcr://projectfoo',
                            "template_parameters": {
                                "gpus": 0,
                                "num_workers": 1}})
@@ -368,7 +343,7 @@ def test_deploy_custom_deploy_interactive(walk_mock, progress_bar, popen_mock,
     output = deploy(
         no_push=False, skip_crd_check=True,
         interactive=True,
-        extra_config_args={'gceProject': 'gcr://projectfoo',
+        extra_config_args={'registry': 'gcr://projectfoo',
                            "template_parameters": {
                                "gpus": 0,
                                "num_workers": 1}})

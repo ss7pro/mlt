@@ -24,18 +24,17 @@ from test_utils import project
 
 from mlt.utils import constants, git_helpers
 from test_utils.e2e_commands import CommandTester
-from test_utils.files import create_work_dir
 
 
-def call_template_list(template_repo):
-    return check_output(['mlt', 'templates', 'list',
-                         '--template-repo={}'.format(template_repo)]
-                        ).decode("utf-8")
+class TestTemplates(CommandTester):
+    def _call_template_list(self, template_repo):
+        return check_output(['mlt', 'templates', 'list',
+                             '--template-repo={}'.format(template_repo)]
+                            ).decode("utf-8")
 
-
-def test_templates():
-    output = call_template_list(project.basedir())
-    desired_template_output = """Template             Description
+    def test_templates(self):
+        output = self._call_template_list(project.basedir())
+        desired_template_output = """Template             Description
 -------------------  ---------------------------------------------------------\
 -----------------------------------------
 experiments          Runs hyperparameter experiments for a demo job.
@@ -53,31 +52,34 @@ tf-distributed       A distributed TensorFlow matrix multiplication run \
 through the TensorFlow Kubernetes Operator.
 """
 
-    assert output == desired_template_output
+        assert output == desired_template_output
 
+    def test_local_templates(self):
+        """
+        Tests creating a new template in a clone of mlt.  Verifies that we can
+        specify the template-repo for mlt template list and see new template in
+        the list.  Then uses mlt init to create an app with new template and
+        verifies that the app directory exists.
+        """
+        # Create a git clone of mlt to use as a local template diretory
+        with git_helpers.clone_repo(project.basedir()) as temp_clone:
+            # Add a new test template to the local mlt template directory
+            templates_directory = os.path.join(
+                temp_clone, constants.TEMPLATES_DIR)
+            new_template_name = "test-local"
+            new_template_directory = os.path.join(templates_directory,
+                                                  new_template_name)
+            os.mkdir(new_template_directory)
+            new_template_file = os.path.join(
+                new_template_directory, "README.md")
+            with open(new_template_file, "w") as f:
+                f.write("New local template for testing")
 
-def test_local_templates():
-    """ Tests creating a new template in a clone of mlt.  Verifies that we can
-    specify the template-repo for mlt template list and see the new template in
-    the list.  Then uses mlt init to create an app with our new template and
-    verifies that the app directory exists. """
-    # Create a git clone of mlt to use as a local template diretory
-    with git_helpers.clone_repo(project.basedir()) as temp_clone:
-        # Add a new test template to the local mlt template directory
-        templates_directory = os.path.join(temp_clone, constants.TEMPLATES_DIR)
-        new_template_name = "test-local"
-        new_template_directory = os.path.join(templates_directory,
-                                              new_template_name)
-        os.mkdir(new_template_directory)
-        new_template_file = os.path.join(new_template_directory, "README.md")
-        with open(new_template_file, "w") as f:
-            f.write("New local template for testing")
+            # call mlt template list and then check the output
+            output = self._call_template_list(temp_clone)
 
-        # call mlt template list and then check the output
-        output = call_template_list(temp_clone)
-
-        # template list should include our new test-local template
-        desired_template_output = """Template             Description
+            # template list should include our new test-local template
+            desired_template_output = """Template             Description
 -------------------  ---------------------------------------------------------\
 -----------------------------------------
 experiments          Runs hyperparameter experiments for a demo job.
@@ -95,12 +97,10 @@ worker 0 as the chief.
 tf-distributed       A distributed TensorFlow matrix multiplication run \
 through the TensorFlow Kubernetes Operator.
 """
-        assert output == desired_template_output
+            assert output == desired_template_output
 
-        # init an app with this new template and verify that the app exists
-        with create_work_dir() as workdir:
-            commands = CommandTester(workdir)
-            commands.init(template=new_template_name, template_repo=temp_clone)
-            app_directory = os.path.join(workdir, commands.app_name)
-            assert os.path.isdir(app_directory)
-            assert os.path.isfile(os.path.join(app_directory, "README.md"))
+            # init an app with this new template and verify that the app exists
+            self.init(template=new_template_name, template_repo=temp_clone)
+            assert os.path.isdir(self.project_dir)
+            assert os.path.isfile(os.path.join(
+                self.project_dir, "README.md"))

@@ -67,7 +67,7 @@ class BuildCommand(Command):
             build_process = process_helpers.run_popen(build_cmd,
                                                       shell=True)
             progress_bar.duration_progress(
-                'Building', last_build_duration,
+                'Building {}'.format(self.config["name"]), last_build_duration,
                 lambda: build_process.poll() is not None)
         if build_process.poll() != 0:
             # When we have an error, get the stdout and error output
