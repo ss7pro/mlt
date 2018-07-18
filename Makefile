@@ -15,7 +15,10 @@
 # SPDX-License-Identifier: EPL-2.0
 #
 
-SHELL=bash
+SHELL := bash
+EXES := python tox docker
+OK := $(foreach exec,$(EXES), $(if $(shell which $(exec)),,$(error "No $(exec) found in PATH")))
+
 # Set PY to 2 or 3 to test with Python2 or Python3 versions
 PY ?= $(shell python --version 2>&1  | cut -c8)
 VIRTUALENV_DIR=$(if $(subst 2,,$(PY)),.venv3,.venv)
@@ -172,8 +175,12 @@ test-e2e-all-circleci: test-e2e-setup-circleci
 # if you'd like to use something other than localhost:5000, also set
 # MLT_REGISTRY env var and that'll be respected by tox
 test-e2e-no-docker-setup:
-	@[ `kubectl get crd | grep -E 'tfjobs\.kubeflow\.org|pytorchjobs\.kubeflow\.org' -c` -eq "2" ] || \
-		GITHUB_TOKEN=${GITHUB_TOKEN} ./scripts/kubeflow_install.sh
+	@ if [ -x "$(command -v kubectl version)" ]; then \
+        [ `kubectl1 get crd | grep -E 'tfjobs\.kubeflow\.org|pytorchjobs\.kubeflow\.org' -c` -eq "2" ] || \
+		GITHUB_TOKEN=${GITHUB_TOKEN} ./scripts/kubeflow_install.sh; \
+	else \
+		$(error Please install kubectl); \
+   fi
 
 test-e2e-no-docker: test-e2e-no-docker-setup
 	@${EXTRA_ARGS:} NUMBER_OF_THREADS=${NUMBER_OF_THREADS_E2E} tox -e py${PY}-e2e
