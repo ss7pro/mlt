@@ -1,0 +1,44 @@
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: $app-$run
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        mlt-app-name: $app
+    spec:
+      containers:
+        - image: $image
+          name: tensorflow
+          command : ["/bin/sh"]
+          args : ["-c", "tensorboard --logdir $logdir"]
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: $app-$run
+spec:
+  ports:
+     -  port: 6006
+        protocol: TCP
+        targetPort: 6006
+  selector:
+    mlt-app-name: $app
+  type: ClusterIP
+
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: $app-$run
+spec:
+  rules:
+  - host: $run-$app.$domain
+    http:
+      paths:
+      - backend:
+          serviceName: $app-$run
+          servicePort: 6006

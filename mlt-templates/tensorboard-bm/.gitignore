@@ -1,0 +1,9 @@
+k8s/**
+.build.json
+.push.json
+mlt.json
+*.swp
+.push.log
+.build.log
+.sync.json
+.stignore
