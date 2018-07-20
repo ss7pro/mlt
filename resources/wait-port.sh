@@ -17,6 +17,8 @@
 # SPDX-License-Identifier: EPL-2.0
 #
 
+# NOTE: UNUSED BUT KEEPING AROUND FOR FUTURE LOCAL CLUSTER CREATION
+
 if [ $# -ne 2 ]
 then
 	echo "usage: wait-port <ip> <port>" 1>&2

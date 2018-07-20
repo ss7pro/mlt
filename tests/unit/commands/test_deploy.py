@@ -132,14 +132,18 @@ def deploy(no_push, skip_crd_check, interactive, extra_config_args, retries=5,
     return output
 
 
-def verify_successful_deploy(output, did_push=True, interactive=False):
+def verify_successful_deploy(output, did_push=True, interactive=False,
+                             pod_count=2):
     """assert pushing, deploying, then objs created, then pushed"""
     pushing = output.find('Pushing ')
     push_skip = output.find('Skipping image push')
     deploying = output.find('Deploying ')
     inspecting = output.find('Inspect created objects by running:\n')
     pushed = output.find('Pushed app to ')
-    pod_connect = output.find('Connecting to pod...')
+    if pod_count == 1:
+        pod_connect = output.find('Connecting to pod...')
+    else:
+        pod_connect = output.find('watch until pods are `Running`')
 
     if did_push:
         assert all(var >= 0 for var in (
@@ -204,7 +208,7 @@ def test_deploy_interactive_one_file(walk_mock, progress_bar, popen_mock,
         no_push=False, skip_crd_check=True,
         interactive=True,
         extra_config_args={'registry': 'dockerhub'})
-    verify_successful_deploy(output, interactive=True)
+    verify_successful_deploy(output, interactive=True, pod_count=1)
 
     # verify that kubectl commands are specifying namespace
     for call_args in process_helpers.run_popen.call_args_list:
@@ -227,7 +231,7 @@ def test_deploy_interactive_two_files(walk_mock, progress_bar, popen_mock,
     output = deploy(
         no_push=False, skip_crd_check=True,
         interactive=True,
-        extra_config_args={'registry': 'dockerhub', '<kube_spec>': 'r'})
+        extra_config_args={'registry': 'dockerhub'})
     verify_successful_deploy(output, interactive=True)
 
 
@@ -237,13 +241,15 @@ def test_deploy_interactive_pod_not_run(walk_mock, progress_bar, popen_mock,
                                         verify_init, fetch_action_arg, sleep,
                                         yaml, json_mock):
     json_mock.loads.return_value = {'status': {'phase': 'Error'}}
+    # want to test that the kubectl apply failed
+    process_helpers.run.side_effect = SystemExit
     yaml.return_value = {
         'template': {'foo': 'bar'}, 'containers': [{'foo': 'bar'}]}
-    with pytest.raises(ValueError):
+    with pytest.raises(SystemExit):
         deploy(
             no_push=False, skip_crd_check=True,
             interactive=True,
-            extra_config_args={'registry': 'dockerhub', '<kube_spec>': 'r'})
+            extra_config_args={'registry': 'dockerhub'})
 
 
 def test_deploy_update_app_run_id(open_mock, json_mock):
@@ -331,7 +337,7 @@ def test_deploy_custom_deploy_interactive(walk_mock, progress_bar, popen_mock,
                                           process_helpers, subprocess_mock,
                                           verify_build, is_custom_mock,
                                           verify_init, fetch_action_arg,
-                                          json_mock):
+                                          json_mock, yaml):
     json_mock.load.return_value = {
         'last_remote_container': 'gcr.io/app_name:container_id',
         'last_push_duration': 0.18889}
@@ -347,5 +353,4 @@ def test_deploy_custom_deploy_interactive(walk_mock, progress_bar, popen_mock,
                            "template_parameters": {
                                "gpus": 0,
                                "num_workers": 1}})
-    verify_successful_deploy(output)
-    assert 'Connecting to pod...' in output
+    verify_successful_deploy(output, interactive=True)
