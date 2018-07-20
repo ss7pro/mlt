@@ -1,6 +1,6 @@
-# TensorBoard MLT Application for Bare-Metal Clusters
+# TensorBoard MLT Application for Bare Metal Clusters
 
-A TensorBoard service in Kubernetes Bare-metal cluster.
+A TensorBoard service in Kubernetes Bare Metal cluster.
 
 This template requires the path to the TensorFlow job logs and the user domain to be configured.
 The command below shows how to update the log directory value in `k8s-templates/tbjob.yaml`.
@@ -15,7 +15,7 @@ This template assumes that `jq` is installed. `jq` is used while launching Tenso
 ### Steps to launch TensorBoard service using TensorBoard MLT template:
 
 1. Create a TensorBoard application using the TensorBoard MLT template.
-`mlt init tensorboard-app --template=tensorboard-bm`
+`mlt init tensorboard-app --template=tensorboard-bm --namespace=<value> --registry-<value>`
 
 From inside the application `cd tensorboard-app` :
 
