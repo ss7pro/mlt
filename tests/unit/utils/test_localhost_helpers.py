@@ -29,18 +29,29 @@ def isfile_mock(patch):
 
 
 @pytest.fixture
+def ospath_split_mock(patch):
+    return patch('os.path.split')
+
+
+@pytest.fixture
 def access_mock(patch):
     return patch('os.access')
 
 
-@pytest.fixture
-def binary_path_mock(patch):
-    return patch('binary_path')
-
-
-def test_binary_path_exists(isfile_mock, access_mock, binary_path_mock):
+def test_binary_path_exists(isfile_mock, access_mock, ospath_split_mock):
     """
     Tests if binary is in path
+    """
+    isfile_mock.return_value = True
+    access_mock.return_value = True
+    ospath_split_mock.return_value = ('path', 'name')
+    output = binary_path('python')
+    assert output == 'python'
+
+
+def test_binary_path_fpath_exists(isfile_mock, access_mock):
+    """
+    Tests if binary is in path and fpath is true
     """
     isfile_mock.return_value = True
     access_mock.return_value = True
@@ -48,24 +59,21 @@ def test_binary_path_exists(isfile_mock, access_mock, binary_path_mock):
     assert '/bin/python' in output
 
 
-def test_binary_path_doesnot_exist(isfile_mock, access_mock, binary_path_mock):
+def test_binary_path_doesnot_exist(isfile_mock, access_mock):
     """
     Tests if binary is not in path
     """
     isfile_mock.return_value = False
     access_mock.return_value = False
-    binary_path_mock.return_value = None
     output = binary_path('pyth0n')
     assert output is None
 
 
-def test_binary_path_not_executable(isfile_mock, access_mock,
-                                    binary_path_mock):
+def test_binary_path_not_executable(isfile_mock, access_mock):
     """
     tests if binary is not executable
     """
     isfile_mock.return_value = True
     access_mock.return_value = False
-    binary_path_mock.return_value = None
     output = binary_path('test_localhost_helpers.py')
     assert output is None

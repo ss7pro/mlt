@@ -23,6 +23,7 @@ import uuid
 
 from mlt.utils.kubernetes_helpers import (ensure_namespace_exists,
                                           checking_crds_on_k8)
+from test_utils.io import catch_stdout
 
 
 @pytest.fixture
@@ -61,3 +62,12 @@ def test_checking_crds_on_k8(proc_helpers):
     crd_set = {'tfjob', 'pytorchjob'}
     missing_crds = checking_crds_on_k8(crd_set)
     assert missing_crds == {'pytorchjob'}
+
+
+def test_checking_crds_on_k8_exception(proc_helpers):
+    proc_helpers.run_popen.side_effect = Exception('Something went wrong.')
+    with catch_stdout() as output:
+        crds = checking_crds_on_k8({'tfjob', 'pytorchjob'})
+        output = output.getvalue().strip()
+    assert output == "Crd_Checking - Exception: Something went wrong."
+    assert crds == set()

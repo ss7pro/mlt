@@ -23,7 +23,6 @@ from __future__ import print_function
 import pytest
 
 import uuid
-from mlt.utils.log_helpers import check_for_pods_readiness
 from mlt.commands.logs import LogsCommand
 
 from test_utils.io import catch_stdout
@@ -79,13 +78,13 @@ def test_logs_get_logs(json_mock, open_mock, verify_init, sleep_mock,
 
     check_for_pods_readiness_mock.return_value = True
     process_helpers.return_value.poll.return_value = 0
-    process_helpers.return_value.communicate.return_value = ('', '')
+    process_helpers.return_value.communicate.return_value = ("log output", '')
 
     with catch_stdout() as caught_output:
         logs_command.action()
-        output = caught_output.getvalue()
+        output = caught_output.getvalue().strip()
 
-    assert output == ''
+    assert output == "log output"
 
 
 def test_logs_no_push_json_file(open_mock, verify_init, sleep_mock,
@@ -163,62 +162,6 @@ def test_logs_no_logs_found(json_mock, open_mock, sleep_mock,
         logs_command.action()
         output = caught_output.getvalue()
     assert "No logs found for this job." in output
-
-
-def test_logs_check_for_pods_readiness(process_helpers, sleep_mock):
-    run_id = str(uuid.uuid4()).split("-")
-    filter_tag = "-".join(["app", run_id[0], run_id[1]])
-    process_helpers.return_value.stdout.read.return_value = "\n".join(
-        ["random-pod1", "random-pod2",
-         filter_tag + "-ps-" + run_id[3] + " 1/1  Running  0  16d",
-         filter_tag + "-worker1-" + run_id[3] + " 1/1  Running  0  16d",
-         filter_tag + "-worker2-" + run_id[3] + " 1/1  Running  0  16d",
-         filter_tag + "-worker2-" + run_id[3] + " 1/1  Completed  0  16d"])
-
-    with catch_stdout() as caught_output:
-        found = check_for_pods_readiness(namespace='namespace',
-                                         filter_tag=filter_tag, retries=5)
-        output = caught_output.getvalue()
-
-    assert found
-    assert "Checking for pod(s) readiness" in output
-
-
-def test_logs_check_for_pods_readiness_max_retries_reached(process_helpers,
-                                                           sleep_mock):
-    run_id = str(uuid.uuid4()).split("-")
-    filter_tag = "-".join(["app", run_id[0], run_id[1]])
-
-    process_helpers.return_value.stdout.read.return_value = "\n".join(
-        ["random-pod1", "random-pod2"])
-    with catch_stdout() as caught_output:
-        found = check_for_pods_readiness(namespace='namespace',
-                                         filter_tag=filter_tag, retries=5)
-        output = caught_output.getvalue()
-
-    assert not found
-    assert "Max retries Reached." in output
-
-
-def test_logs_check_for_pods_readiness_max_retries_when_status_is_not_running(
-        process_helpers, sleep_mock):
-    run_id = str(uuid.uuid4()).split("-")
-    filter_tag = "-".join(["app", run_id[0], run_id[1]])
-    process_helpers.return_value.stdout.read.return_value = "\n".join([
-        filter_tag + "-ps-" + run_id[3] + " 1/1  ContainerCreating  0  16d",
-        filter_tag + "-worker1-" + run_id[3] + " 1/1  ContainerCreating  0  "
-                                               "16d",
-        filter_tag + "-worker2-" + run_id[3] + " 1/1  ContainerCreating  0  "
-                                               "16d"]
-    )
-
-    with catch_stdout() as caught_output:
-        running = check_for_pods_readiness(namespace='namespace',
-                                           filter_tag=filter_tag, retries=4)
-        output = caught_output.getvalue()
-
-    assert not running
-    assert "Max retries Reached." in output
 
 
 def test_logs_keyboardinterrupt(json_mock, open_mock, verify_init, sleep_mock,

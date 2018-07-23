@@ -34,6 +34,11 @@ def sleep(patch):
 
 
 @pytest.fixture
+def call_logs(patch):
+    return patch('log_helpers.call_logs')
+
+
+@pytest.fixture
 def fetch_action_arg(patch):
     return patch('files.fetch_action_arg', MagicMock(return_value='output'))
 
@@ -114,12 +119,12 @@ def is_custom_mock(patch):
 
 
 def deploy(no_push, skip_crd_check, interactive, extra_config_args, retries=5,
-           template='test'):
+           template='test', logs=False):
     deploy = DeployCommand(
         {'deploy': True, '--no-push': no_push,
          '--skip-crd-check': skip_crd_check,
          '--interactive': interactive, '--retries': retries,
-         '--logs': False})
+         '--logs': logs})
     deploy.config = {'name': 'app',
                      'namespace': 'namespace',
                      'template': template}
@@ -159,24 +164,27 @@ def verify_successful_deploy(output, did_push=True, interactive=False,
 
 
 @pytest.mark.parametrize("sync_spec", [
-    None,
-    'hello-world'
-])
+    None, 'hello-world'])
 @pytest.mark.parametrize("registry", [
-    'gcr://projectfoo',
-    'dockerhub'
-])
-def test_deploy(walk_mock, progress_bar, popen_mock, open_mock,
+    'gcr://projectfoo', 'dockerhub'])
+@pytest.mark.parametrize("skip_crd_check", [
+    True, False])
+@pytest.mark.parametrize("logs", [
+    True, False])
+def test_deploy(walk_mock, call_logs, progress_bar, popen_mock, open_mock,
                 template, kube_helpers, process_helpers, verify_build,
-                verify_init, fetch_action_arg, json_mock,
-                get_sync_spec_mock, sync_spec, registry):
+                verify_init, fetch_action_arg, json_mock, get_sync_spec_mock,
+                sync_spec, registry, skip_crd_check, logs):
+    """Tests a successful deploy with and without sync_spec, 2 different
+       registry types, skipping and not skipping crd_check, and log tailing
+    """
     get_sync_spec_mock.return_value = sync_spec
     json_mock.load.return_value = {
         'last_remote_container': 'gcr.io/app_name:container_id',
         'last_push_duration': 0.18889}
     output = deploy(
-        no_push=False, skip_crd_check=True,
-        interactive=False,
+        no_push=False, skip_crd_check=skip_crd_check,
+        interactive=False, logs=logs,
         extra_config_args={'registry': registry})
     verify_successful_deploy(output)
 
@@ -299,6 +307,30 @@ def test_image_push_error(walk_mock, progress_bar, popen_mock, open_mock,
     error_location = output.find(error_str)
     assert all(var >= 0 for var in (output_location, error_location))
     assert output_location < error_location
+
+
+def test_no_image_found_error(walk_mock, progress_bar, popen_mock, open_mock,
+                              template, kube_helpers, process_helpers,
+                              verify_build, verify_init, fetch_action_arg,
+                              json_mock):
+    """if we don't have remote_container_name during deploy_new_container
+       then throw ValueError
+    """
+    get_sync_spec_mock.return_value = None
+    fetch_action_arg.side_effect = [None, None, None]
+    json_mock.load.return_value = {
+        'last_remote_container': 'gcr.io/app_name:container_id',
+        'last_push_duration': 0.18889}
+    deploy_cmd = DeployCommand({'deploy': True,
+                                '--skip-crd-check': True,
+                                '--no-push': True})
+    deploy_cmd.config = {'name': 'app', 'namespace': 'namespace'}
+    deploy_cmd.config.update({'registry': 'gcr://projectfoo'})
+
+    with catch_stdout() as caught_output:
+        with pytest.raises(ValueError):
+            deploy_cmd.action()
+        caught_output.getvalue()
 
 
 def test_deploy_custom_deploy(walk_mock, progress_bar, popen_mock, open_mock,

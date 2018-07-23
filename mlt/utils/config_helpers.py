@@ -38,6 +38,8 @@ def load_config():
 def update_config(json_data):
     """overwrites the existing MLT config with the specified data"""
     with open(constants.MLT_CONFIG, "w") as f:
+        # need to seek back to the beginning to get python2 json dump to work
+        f.seek(0)
         json.dump(json_data, f, indent=2)
 
 

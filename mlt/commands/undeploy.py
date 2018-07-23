@@ -67,7 +67,7 @@ class UndeployCommand(Command):
         app_run_id = data.get('app_run_id', "")
 
         if len(app_run_id) < 4:
-            print("Something went wrong,"
+            print("Something went wrong, "
                   "please delete folder and re-initiate app")
             sys.exit(1)
 

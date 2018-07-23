@@ -20,10 +20,10 @@
 
 from __future__ import print_function
 
-import os
+import errno
 import uuid
-import shutil
 
+from mock import MagicMock
 import pytest
 
 from mlt.commands.init import InitCommand
@@ -40,6 +40,16 @@ def checking_crds_mock(patch):
 @pytest.fixture
 def open_mock(patch):
     return patch('open')
+
+
+@pytest.fixture
+def os_path_exists_mock(patch):
+    return patch('os.path.exists')
+
+
+@pytest.fixture
+def colored_mock(patch):
+    return patch('colored', MagicMock(side_effect=lambda x, _: x))
 
 
 @pytest.fixture
@@ -73,11 +83,6 @@ def init_git_repo_mock(patch):
 
 
 @pytest.fixture
-def copy_tree_mock(patch):
-    return patch('git_helpers.copy_tree')
-
-
-@pytest.fixture
 def process_helpers(patch):
     return patch('process_helpers')
 
@@ -92,9 +97,33 @@ def config_helpers_mock(patch):
     return patch('config_helpers')
 
 
-def test_init_dir_exists():
+@pytest.fixture
+def traceback_mock(patch):
+    return patch('traceback')
+
+
+@pytest.fixture(autouse=True)
+def clone_repo_mock(patch):
+    clone_mock = MagicMock()
+    clone_mock.return_value.__enter__.return_value = 'bar'
+    return patch('git_helpers.clone_repo', clone_mock)
+
+
+@pytest.fixture(autouse=True)
+def get_latest_sha_mock(patch):
+    return patch('git_helpers.get_latest_sha')
+
+
+@pytest.fixture(autouse=True)
+def json_dump_mock(patch):
+    return patch('json.dump')
+
+
+@pytest.mark.parametrize('errno_op', [errno.EEXIST, errno.ESRCH])
+def test_init_dir_exists(open_mock, process_helpers, copytree_mock,
+                         check_output_mock, config_helpers_mock,
+                         colored_mock, traceback_mock, errno_op):
     new_dir = str(uuid.uuid4())
-    os.mkdir(new_dir)
     init_dict = {
         'init': True,
         '--template': 'hello-world',
@@ -102,22 +131,24 @@ def test_init_dir_exists():
         '--skip-crd-check': True,
         '--template-repo': project.basedir()
     }
-    try:
-        with catch_stdout() as caught_output:
-            with pytest.raises(SystemExit) as bad_init:
-                InitCommand(init_dict).action()
-                assert \
-                    caught_output.getvalue() == "Directory '{}' already " \
-                                                "exists: delete ".format(
-                        new_dir) + "before trying to initialize new " \
-                                   "application"
-                assert bad_init.value.code == 1
-    finally:
-        os.rmdir(new_dir)
+    copytree_mock.side_effect = OSError(errno_op, 'error')
+    with catch_stdout() as caught_output:
+        with pytest.raises(SystemExit) as bad_init:
+            InitCommand(init_dict).action()
+
+        assert bad_init.value.code == 1
+        if errno_op == errno.EEXIST:
+            assert \
+                caught_output.getvalue().strip() == \
+                "Directory '{}' already exists: delete ".format(
+                    new_dir) + "before trying to initialize new " \
+                               "application"
+        else:
+            traceback_mock.print_exc.assert_called_once()
 
 
 def test_init(open_mock, process_helpers, copytree_mock, check_output_mock,
-              config_helpers_mock, copy_tree_mock):
+              config_helpers_mock):
     check_output_mock.return_value.decode.return_value = 'bar'
     new_dir = str(uuid.uuid4())
 
@@ -140,8 +171,8 @@ def test_init(open_mock, process_helpers, copytree_mock, check_output_mock,
 
 def test_init_enable_sync(open_mock, process_helpers, copytree_mock,
                           check_output_mock, config_helpers_mock,
-                          copy_tree_mock, copyfile_mock, listdir_mock,
-                          binary_path_mock):
+                          copyfile_mock, listdir_mock,
+                          binary_path_mock, os_path_exists_mock):
     check_output_mock.return_value.decode.return_value = 'bar'
     new_dir = str(uuid.uuid4())
 
@@ -158,6 +189,9 @@ def test_init_enable_sync(open_mock, process_helpers, copytree_mock,
     binary_path_mock.return_value = True
     config_helpers_mock.get_template_parameters_from_file.return_value = \
         [{"name": "greeting", "value": "hello"}]
+    os_path_exists_mock.return_value = True
+    listdir_mock.return_value = ['job.yaml']
+
     init = InitCommand(init_dict)
     init.action()
     assert init.app_name == new_dir
@@ -165,8 +199,7 @@ def test_init_enable_sync(open_mock, process_helpers, copytree_mock,
 
 def test_init_ksync_missing(open_mock, process_helpers, copytree_mock,
                             check_output_mock, config_helpers_mock,
-                            copy_tree_mock, copyfile_mock, listdir_mock,
-                            binary_path_mock):
+                            copyfile_mock, listdir_mock, binary_path_mock):
     check_output_mock.return_value.decode.return_value = 'bar'
     new_dir = str(uuid.uuid4())
 
@@ -194,7 +227,7 @@ def test_init_ksync_missing(open_mock, process_helpers, copytree_mock,
 
 def test_init_sync_not_supported(open_mock, process_helpers, copytree_mock,
                                  check_output_mock, config_helpers_mock,
-                                 copy_tree_mock, copyfile_mock, listdir_mock,
+                                 copyfile_mock, listdir_mock,
                                  binary_path_mock, update_yaml_for_sync_mock,
                                  init_git_repo_mock):
     check_output_mock.return_value.decode.return_value = 'bar'
@@ -219,8 +252,8 @@ def test_init_sync_not_supported(open_mock, process_helpers, copytree_mock,
     assert init.app_name == new_dir
 
 
-def test_init_crd_check(checking_crds_mock, process_helpers, check_output_mock,
-                        copy_tree_mock):
+def test_init_crd_check(open_mock, checking_crds_mock, process_helpers,
+                        check_output_mock, copytree_mock, os_path_exists_mock):
     new_dir = str(uuid.uuid4())
     init_dict = {
         'init': True,
@@ -233,16 +266,16 @@ def test_init_crd_check(checking_crds_mock, process_helpers, check_output_mock,
         '<name>': new_dir
     }
     checking_crds_mock.return_value = {'tfjobs.kubeflow.org'}
-    init = InitCommand(init_dict)
-    try:
-        with catch_stdout() as caught_output:
-            init.action()
-            output = caught_output.getvalue()
+    # set crd_file as true since we don't actually create a dir
+    os_path_exists_mock.return_value = True
 
-        message_code = output.find("tfjobs.kubeflow.org")
-        assert message_code >= 0
-    finally:
-        shutil.rmtree(new_dir)
+    init = InitCommand(init_dict)
+    with catch_stdout() as caught_output:
+        init.action()
+        output = caught_output.getvalue()
+
+    message_code = output.find("tfjobs.kubeflow.org")
+    assert message_code >= 0
 
 
 def test_template_params():
@@ -282,11 +315,17 @@ def test_no_template_params():
     assert constants.TEMPLATE_PARAMETERS not in result
 
 
+@pytest.mark.parametrize('error', [
+    "No such file or directory",
+    "Warning:badness"
+])
 def test_no_gcloud_or_registry(open_mock, process_helpers, copytree_mock,
-                               check_output_mock, config_helpers_mock,
-                               copy_tree_mock):
-    # "No such file or directory" OSError to simulate gcloud not found
-    check_output_mock.side_effect = OSError("No such file or directory")
+                               check_output_mock, config_helpers_mock, error):
+    """No such file or directory" OSError to simulate gcloud not found
+       With and without the error `No such file or directory`
+       If there was a file or dir, then we `raise` the error triggered
+    """
+    check_output_mock.side_effect = OSError(error)
     new_dir = str(uuid.uuid4())
     init_dict = {
         'init': True,
@@ -300,10 +339,15 @@ def test_no_gcloud_or_registry(open_mock, process_helpers, copytree_mock,
     }
     init = InitCommand(init_dict)
 
-    with catch_stdout() as caught_output:
-        init.action()
-        output = caught_output.getvalue()
+    with catch_stdout() as output:
+        if "No such file or directory" in error:
+            init.action()
+            output = output.getvalue()
+            assert "No registry name was provided and gcloud was not "\
+                   "found.  Please set your container registry name" in output
+        else:
+            # raising OSError triggers a sys.exit(1) call in action()
+            with pytest.raises(SystemExit):
+                init.action()
 
-    assert "No registry name was provided and gcloud was not found.  " \
-           "Please set your container registry name" in output
     assert init.app_name == new_dir

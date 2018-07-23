@@ -35,7 +35,7 @@ setup(name='mlt',
       url='https://github.com/IntelAI/mlt',
       packages=find_packages(exclude=["tests"]),
       install_requires=[
-          'pip>=9.0.1',
+          'pip>=10.0.1',
           'conditional>=1.2',
           'docopt>=0.6.2',
           'progressbar2>=3.36.0',
