@@ -74,10 +74,14 @@ class CommandTester(object):
         objs, _ = self._launch_popen_call(obj_string, shell=True,
                                           return_output=True)
         if objs:
-            objs = json.loads(objs).get('items')[-1]['status']
             # tfjob is special and puts the `Succeeded` status on the `state`
             # rather than the `phase` like everything else
-            return objs["state"] if "tfjob" in obj_string else objs["phase"]
+            # it also orders its jobs latest-first, so we actually want
+            # the first job
+            if "tfjob" in obj_string:
+                return json.loads(objs).get('items')[0]['status']["state"]
+            else:
+                return json.loads(objs).get('items')[-1]['status']["phase"]
         else:
             raise ValueError("No pod(s) deployed to namespace {}".format(
                 self.namespace))

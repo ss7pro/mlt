@@ -28,14 +28,12 @@ from test_utils.e2e_commands import CommandTester
 # NOTE: you need to deploy first before you deploy with --no-push
 # otherwise you have no image to use to make new container from
 
-
 class TestDeployFlow(CommandTester):
     @pytest.fixture(autouse=True, scope='function')
     def teardown(self):
         """Allow normal deployment, then undeploy and check status at end of
            every test. Also delete the namespace because undeploy doesn't
            do that.
-           NOTE: is there a better way to write this? :joy:
         """
         try:
             # normal test execution
@@ -59,6 +57,7 @@ class TestDeployFlow(CommandTester):
                                  os.path.join('mlt-templates', x)),
                                  os.listdir('mlt-templates')))
     def test_deploying_templates(self, template):
+        """tests every template in our mlt-templates dir"""
         self.init(template)
         self.build()
         self.deploy()
@@ -82,11 +81,16 @@ class TestDeployFlow(CommandTester):
         self.deploy(no_push=True)
         self.status()
 
-    def test_interactive_deploy(self):
-        self.init()
+    @pytest.mark.parametrize('template', ['hello-world', 'tf-distributed'])
+    def test_interactive_deploy(self, template):
+        """tests 2 templates with different pod numbers"""
+        self.init(template)
         self.build()
         self.deploy()
         self.status()
+        # we don't need the original deployment and it interferes with
+        # picking the right tfjob pod to check
+        self.undeploy()
         self.deploy(interactive=True, no_push=True, retries=60)
         self.status()
 

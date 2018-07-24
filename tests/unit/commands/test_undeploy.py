@@ -18,7 +18,7 @@
 # SPDX-License-Identifier: EPL-2.0
 #
 
-from mock import patch
+from mock import MagicMock
 
 from mlt.commands.undeploy import UndeployCommand
 import pytest
@@ -26,18 +26,18 @@ from test_utils.io import catch_stdout
 
 
 @pytest.fixture
-def json_mock(patch):
-    return patch('json')
+def colored_mock(patch):
+    return patch('colored', MagicMock(side_effect=lambda x, _: x))
 
 
 @pytest.fixture
-def os_path_mock(patch):
-    return patch('os.path')
+def json_load_mock(patch):
+    return patch('json.load')
 
 
 @pytest.fixture
-def init_mock(patch):
-    return patch('config_helpers.load_config')
+def os_path_exists_mock(patch):
+    return patch('os.path.exists')
 
 
 @pytest.fixture
@@ -51,6 +51,11 @@ def open_mock(patch):
 
 
 @pytest.fixture
+def proc_helpers(patch):
+    return patch('process_helpers')
+
+
+@pytest.fixture
 def subprocess_mock(patch):
     return patch('subprocess.check_output')
 
@@ -60,40 +65,70 @@ def get_sync_spec_mock(patch):
     return patch('sync_helpers.get_sync_spec')
 
 
-def test_undeploy_custom_undeploy(json_mock, open_mock, init_mock,
-                                  get_sync_spec_mock, subprocess_mock,
-                                  is_custom_mock, os_path_mock):
+@pytest.fixture(autouse=True)
+def load_config_mock(patch):
+    return patch('config_helpers.load_config',
+                 MagicMock(return_value={'name': 'foo', 'namespace': 'bar'}))
+
+
+def undeploy_fail(fail_text):
+    """asserts we get some output along with a SystemExit"""
+    with catch_stdout() as output:
+        with pytest.raises(SystemExit):
+            UndeployCommand({'undeploy': True}).action()
+        assert output.getvalue().strip() == fail_text
+
+
+def test_undeploy_custom(get_sync_spec_mock, is_custom_mock,
+                         json_load_mock, load_config_mock, open_mock,
+                         os_path_exists_mock, subprocess_mock):
     """
-    Tests successful call to the undeploy command
+    Tests successful call to the undeploy command with a custom deploy
     """
-    undeploy = UndeployCommand({'undeploy': True})
-    undeploy.config = {'name': 'bar', 'namespace': 'foo', 'template': 'test'}
-    json_mock.load.return_value = {"app_run_id": "123-456-789"}
     get_sync_spec_mock.return_value = None
     is_custom_mock.return_value = True
-    os_path_mock.return_value = True
-    undeploy.action()
+    os_path_exists_mock.return_value = True
+    json_load_mock.return_value = {"app_run_id": "123-456-789"}
+    subprocess_mock.return_value = b"Successful Custom Undeploy"
+
+    with catch_stdout() as output:
+        UndeployCommand({'undeploy': True}).action()
+        assert output.getvalue().strip() == "Successful Custom Undeploy"
 
 
-@patch('mlt.commands.undeploy.config_helpers.load_config')
-@patch('mlt.commands.undeploy.process_helpers')
-def test_undeploy(proc_helpers, load_config):
-    undeploy = UndeployCommand({'undeploy': True})
-    undeploy.config = {'namespace': 'foo', 'template': 'test'}
-    undeploy.action()
+def test_undeploy_custom_no_app_deployed(open_mock, get_sync_spec_mock,
+                                         is_custom_mock, os_path_exists_mock):
+    """Custom deploy when the app isn't deployed, we should get error"""
+    get_sync_spec_mock.return_value = None
+    is_custom_mock.return_value = True
+    os_path_exists_mock.return_value = False
+    subprocess_mock.return_value = b"Successful Custom Undeploy"
+
+    undeploy_fail("This app has not been deployed yet.")
+
+
+def test_undeploy_custom_app_run_id_small(open_mock, json_load_mock,
+                                          get_sync_spec_mock, is_custom_mock,
+                                          os_path_exists_mock):
+    """if the app_run_id is < 4, we get an error"""
+
+    get_sync_spec_mock.return_value = None
+    is_custom_mock.return_value = True
+    json_load_mock.return_value = {"app_run_id": "123"}
+    os_path_exists_mock.return_value = True
+
+    undeploy_fail("Something went wrong, " +
+                  "please delete folder and re-initiate app")
+
+
+def test_undeploy(load_config_mock, proc_helpers):
+    """simple undeploy"""
+    UndeployCommand({'undeploy': True}).action()
     proc_helpers.run.assert_called_once()
 
 
-@patch('mlt.commands.undeploy.config_helpers.load_config')
-@patch('mlt.commands.undeploy.process_helpers')
-def test_undeploy_synced(proc_helpers, load_config, get_sync_spec_mock):
-    undeploy = UndeployCommand({'undeploy': True})
-    undeploy.config = {'namespace': 'foo', 'template': 'test'}
+def test_undeploy_synced(colored_mock, load_config_mock, get_sync_spec_mock):
+    """undeploying a synced job, we need to delete the sync first"""
     get_sync_spec_mock.return_value = 'hello-world'
-    with catch_stdout() as caught_output:
-        with pytest.raises(SystemExit):
-            undeploy.action()
-        output = caught_output.getvalue()
-    expected_output = "This app is currently being synced, please run "\
-                      "`mlt sync delete` to unsync first"
-    assert expected_output in output
+    undeploy_fail("This app is currently being synced, please run "
+                  "`mlt sync delete` to unsync first")

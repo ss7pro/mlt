@@ -83,3 +83,11 @@ def test_get_sync_spec_empty_json(isfile_mock, open_mock, json_mock,
     json.load.return_value = {}
     output = get_sync_spec()
     assert output is None
+
+
+def test_get_sync_spec_valid_spec(isfile_mock, open_mock, json_mock,
+                                  get_sync_spec_mock):
+    """tests a valid sync_spec contents that have `sync_spec` in json"""
+    json_mock.load.return_value = {'sync_spec': 'spec'}
+    output = get_sync_spec()
+    assert output == 'spec'

@@ -34,6 +34,11 @@ def sleep(patch):
 
 
 @pytest.fixture
+def call_logs(patch):
+    return patch('log_helpers.call_logs')
+
+
+@pytest.fixture
 def fetch_action_arg(patch):
     return patch('files.fetch_action_arg', MagicMock(return_value='output'))
 
@@ -114,12 +119,12 @@ def is_custom_mock(patch):
 
 
 def deploy(no_push, skip_crd_check, interactive, extra_config_args, retries=5,
-           template='test'):
+           template='test', logs=False):
     deploy = DeployCommand(
         {'deploy': True, '--no-push': no_push,
          '--skip-crd-check': skip_crd_check,
          '--interactive': interactive, '--retries': retries,
-         '--logs': False})
+         '--logs': logs})
     deploy.config = {'name': 'app',
                      'namespace': 'namespace',
                      'template': template}
@@ -132,14 +137,18 @@ def deploy(no_push, skip_crd_check, interactive, extra_config_args, retries=5,
     return output
 
 
-def verify_successful_deploy(output, did_push=True, interactive=False):
+def verify_successful_deploy(output, did_push=True, interactive=False,
+                             pod_count=2):
     """assert pushing, deploying, then objs created, then pushed"""
     pushing = output.find('Pushing ')
     push_skip = output.find('Skipping image push')
     deploying = output.find('Deploying ')
     inspecting = output.find('Inspect created objects by running:\n')
     pushed = output.find('Pushed app to ')
-    pod_connect = output.find('Connecting to pod...')
+    if pod_count == 1:
+        pod_connect = output.find('Connecting to pod...')
+    else:
+        pod_connect = output.find('watch until pods are `Running`')
 
     if did_push:
         assert all(var >= 0 for var in (
@@ -155,24 +164,27 @@ def verify_successful_deploy(output, did_push=True, interactive=False):
 
 
 @pytest.mark.parametrize("sync_spec", [
-    None,
-    'hello-world'
-])
+    None, 'hello-world'])
 @pytest.mark.parametrize("registry", [
-    'gcr://projectfoo',
-    'dockerhub'
-])
-def test_deploy(walk_mock, progress_bar, popen_mock, open_mock,
+    'gcr://projectfoo', 'dockerhub'])
+@pytest.mark.parametrize("skip_crd_check", [
+    True, False])
+@pytest.mark.parametrize("logs", [
+    True, False])
+def test_deploy(walk_mock, call_logs, progress_bar, popen_mock, open_mock,
                 template, kube_helpers, process_helpers, verify_build,
-                verify_init, fetch_action_arg, json_mock,
-                get_sync_spec_mock, sync_spec, registry):
+                verify_init, fetch_action_arg, json_mock, get_sync_spec_mock,
+                sync_spec, registry, skip_crd_check, logs):
+    """Tests a successful deploy with and without sync_spec, 2 different
+       registry types, skipping and not skipping crd_check, and log tailing
+    """
     get_sync_spec_mock.return_value = sync_spec
     json_mock.load.return_value = {
         'last_remote_container': 'gcr.io/app_name:container_id',
         'last_push_duration': 0.18889}
     output = deploy(
-        no_push=False, skip_crd_check=True,
-        interactive=False,
+        no_push=False, skip_crd_check=skip_crd_check,
+        interactive=False, logs=logs,
         extra_config_args={'registry': registry})
     verify_successful_deploy(output)
 
@@ -204,7 +216,7 @@ def test_deploy_interactive_one_file(walk_mock, progress_bar, popen_mock,
         no_push=False, skip_crd_check=True,
         interactive=True,
         extra_config_args={'registry': 'dockerhub'})
-    verify_successful_deploy(output, interactive=True)
+    verify_successful_deploy(output, interactive=True, pod_count=1)
 
     # verify that kubectl commands are specifying namespace
     for call_args in process_helpers.run_popen.call_args_list:
@@ -227,7 +239,7 @@ def test_deploy_interactive_two_files(walk_mock, progress_bar, popen_mock,
     output = deploy(
         no_push=False, skip_crd_check=True,
         interactive=True,
-        extra_config_args={'registry': 'dockerhub', '<kube_spec>': 'r'})
+        extra_config_args={'registry': 'dockerhub'})
     verify_successful_deploy(output, interactive=True)
 
 
@@ -237,13 +249,15 @@ def test_deploy_interactive_pod_not_run(walk_mock, progress_bar, popen_mock,
                                         verify_init, fetch_action_arg, sleep,
                                         yaml, json_mock):
     json_mock.loads.return_value = {'status': {'phase': 'Error'}}
+    # want to test that the kubectl apply failed
+    process_helpers.run.side_effect = SystemExit
     yaml.return_value = {
         'template': {'foo': 'bar'}, 'containers': [{'foo': 'bar'}]}
-    with pytest.raises(ValueError):
+    with pytest.raises(SystemExit):
         deploy(
             no_push=False, skip_crd_check=True,
             interactive=True,
-            extra_config_args={'registry': 'dockerhub', '<kube_spec>': 'r'})
+            extra_config_args={'registry': 'dockerhub'})
 
 
 def test_deploy_update_app_run_id(open_mock, json_mock):
@@ -295,6 +309,30 @@ def test_image_push_error(walk_mock, progress_bar, popen_mock, open_mock,
     assert output_location < error_location
 
 
+def test_no_image_found_error(walk_mock, progress_bar, popen_mock, open_mock,
+                              template, kube_helpers, process_helpers,
+                              verify_build, verify_init, fetch_action_arg,
+                              json_mock):
+    """if we don't have remote_container_name during deploy_new_container
+       then throw ValueError
+    """
+    get_sync_spec_mock.return_value = None
+    fetch_action_arg.side_effect = [None, None, None]
+    json_mock.load.return_value = {
+        'last_remote_container': 'gcr.io/app_name:container_id',
+        'last_push_duration': 0.18889}
+    deploy_cmd = DeployCommand({'deploy': True,
+                                '--skip-crd-check': True,
+                                '--no-push': True})
+    deploy_cmd.config = {'name': 'app', 'namespace': 'namespace'}
+    deploy_cmd.config.update({'registry': 'gcr://projectfoo'})
+
+    with catch_stdout() as caught_output:
+        with pytest.raises(ValueError):
+            deploy_cmd.action()
+        caught_output.getvalue()
+
+
 def test_deploy_custom_deploy(walk_mock, progress_bar, popen_mock, open_mock,
                               template, kube_helpers,
                               process_helpers, subprocess_mock,
@@ -331,7 +369,7 @@ def test_deploy_custom_deploy_interactive(walk_mock, progress_bar, popen_mock,
                                           process_helpers, subprocess_mock,
                                           verify_build, is_custom_mock,
                                           verify_init, fetch_action_arg,
-                                          json_mock):
+                                          json_mock, yaml):
     json_mock.load.return_value = {
         'last_remote_container': 'gcr.io/app_name:container_id',
         'last_push_duration': 0.18889}
@@ -347,5 +385,4 @@ def test_deploy_custom_deploy_interactive(walk_mock, progress_bar, popen_mock,
                            "template_parameters": {
                                "gpus": 0,
                                "num_workers": 1}})
-    verify_successful_deploy(output)
-    assert 'Connecting to pod...' in output
+    verify_successful_deploy(output, interactive=True)

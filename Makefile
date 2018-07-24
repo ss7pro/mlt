@@ -175,10 +175,10 @@ test-e2e-all-circleci: test-e2e-setup-circleci
 # if you'd like to use something other than localhost:5000, also set
 # MLT_REGISTRY env var and that'll be respected by tox
 test-e2e-no-docker-setup:
-	@ if [ -x "$(command -v kubectl version)" ]; then \
-        [ `kubectl1 get crd | grep -E 'tfjobs\.kubeflow\.org|pytorchjobs\.kubeflow\.org' -c` -eq "2" ] || \
+	@if [ "$(command -v kubectl version)" ]; then \
+        [ `kubectl get crd | grep -E 'tfjobs\.kubeflow\.org|pytorchjobs\.kubeflow\.org' -c` -eq "2" ] || \
 		GITHUB_TOKEN=${GITHUB_TOKEN} ./scripts/kubeflow_install.sh; \
-	else \
+	 else \
 		$(error Please install kubectl); \
    fi
 

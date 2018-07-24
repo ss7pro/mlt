@@ -129,33 +129,54 @@ class DeployCommand(Command):
 
         print("Deploying {}".format(remote_container_name))
         kubernetes_helpers.ensure_namespace_exists(self.namespace)
-        app_run_id = str(uuid.uuid4())
 
+        app_run_id = str(uuid.uuid4())
+        """
+        we'll keep track of the number of containers that would be deployed
+        so we know if we should exec into 1 or not (only auto-exec if 1 made)
+        if we have replicas (with value > 1) then we automatically won't
+        go into most recent pod, because there will be > 1 container made
+        if we find > 1 container regardless of replica, same logic applies
+        """
+        self._replicas_found = False
+        self._total_containers = 0
+
+        # deploy our normal template sub logic, then if `deploy` in Makefile
+        # add whatever custom stuff is desired
+        self._default_deploy(app_name=app_name,
+                             app_run_id=app_run_id,
+                             remote_container_name=remote_container_name)
         if files.is_custom("deploy:"):
-            # this checks if we use yaml files in K8s deployments in custom
-            # deploy case and do the template parameters substitutions.
-            if os.path.isdir("k8s-templates"):
-                self._default_deploy(
-                    app_name=app_name,
-                    app_run_id=app_run_id,
-                    remote_container_name=remote_container_name)
             # execute the custom deploy code
             self._custom_deploy(app_name=app_name,
                                 app_run_id=app_run_id,
                                 remote_container_name=remote_container_name)
+
+        self._update_app_run_id(app_run_id)
+        print("\nInspect created objects by running:\n"
+              "$ kubectl get --namespace={} all\n"
+              "or \n$ mlt status\n".format(self.namespace))
+
+        if self.args["--interactive"] and not self._replicas_found \
+                and self._total_containers == 1:
+            self._exec_into_pod(self._get_most_recent_podname())
         else:
-            self._default_deploy(app_name=app_name,
-                                 app_run_id=app_run_id,
-                                 remote_container_name=remote_container_name)
+            print("More than one container created."
+                  ".\nCall `kubectl exec -it {{pod_name_here}} "
+                  "--namespace={} /bin/bash` on a `Running` pod NAME "
+                  "below.\nIf no pods are running yet, run `mlt status` "
+                  "occasionally, or `watch -n1 mlt status` to watch until "
+                  "pods are `Running`.\n".format(self.namespace))
+
+            for line in self._get_pods_by_start_time():
+                print(line)
 
     def _default_deploy(self, app_name, app_run_id, remote_container_name):
-        # do template substitution across everything in `k8s-templates` dir
-        # replaces things with $ with the vars from template.substitute
-        # also patches deployment if interactive mode is set
-
-        self.interactive_deployment_found = False
+        """do template substitution across everything in `k8s-templates` dir
+           replaces things with $ with the vars from template.substitute
+           also patches deployment if interactive mode is set
+        """
         for path, dirs, filenames in os.walk("k8s-templates"):
-            self.file_count = len(filenames)
             for filename in filenames:
                 with open(os.path.join(path, filename)) as f:
                     template = Template(f.read())
@@ -164,44 +185,29 @@ class DeployCommand(Command):
                     app=app_name, run=app_run_id, namespace=self.namespace,
                     **config_helpers.get_template_parameters(self.config))
 
-                interactive, out = self._check_for_interactive_deployment(
-                    out, filename)
+                if self.args["--interactive"]:
+                    # every pod will be made to `sleep infinity & wait`
+                    out = self._patch_template_spec(out)
                 self._apply_template(out, filename)
-                if interactive:
-                    interactive_podname = self._get_most_recent_podname()
 
-            print("\nInspect created objects by running:\n"
-                  "$ kubectl get --namespace={} all\n"
-                  "or \n$ mlt status\n".format(self.namespace))
-
-        self._update_app_run_id(app_run_id)
-        # After everything is deployed we'll make a kubectl exec
-        # call into our debug container if interactive mode
-        if self.args["--interactive"] and self.interactive_deployment_found:
-            self._exec_into_pod(interactive_podname)
-        elif not self.interactive_deployment_found and \
-                self.args['--interactive']:
-            raise ValueError("Unable to find deployment to run interactively. "
-                             "Multiple deployment files found and bad "
-                             "<kube_spec> argument passed.")
-
-    def _check_for_interactive_deployment(self, data, filename):
-        """users can have multiple deployment templates
-           If only one file in template dir then we'll interactively deploy
-           that one, or if filename matches the <kube_spec> optional param
-           otherwise we'll throw an error
-        """
-        interactive = False
-        if self.args['--interactive']:
-            if self.file_count == 1 or \
-                    self.args["<kube_spec>"] == filename:
-                data = self._patch_template_spec(data)
-                interactive = True
-                # if we never hit this point, throw error at end of deployment
-                # process because we wanted an interactive deployment
-                # but nothing matched criteria
-                self.interactive_deployment_found = True
-        return interactive, data
+    def _custom_deploy(self, app_name, app_run_id, remote_container_name):
+        job_name = "-".join([app_name, app_run_id])
+        template_parameters = config_helpers.\
+            get_template_parameters(self.config)
+        template_parameters = \
+            {k.upper(): v for k, v in template_parameters.items()}
+        user_env = dict(os.environ,
+                        NAMESPACE=self.namespace,
+                        JOB_NAME=job_name,
+                        IMAGE=remote_container_name,
+                        **template_parameters)
+        try:
+            output = check_output(["make", "deploy"],
+                                  env=user_env,
+                                  stderr=STDOUT)
+            print(output.decode("utf-8").strip())
+        except CalledProcessError as e:
+            print("Error while deploying app: {}".format(e.output))
 
     def _apply_template(self, out, filename):
         """take k8s-template data and create deployment in k8s dir"""
@@ -218,64 +224,73 @@ class DeployCommand(Command):
            this gets the most recent pod by name, so we can exec
            into it once everything is done deploying
         """
-        pod = process_helpers.run_popen(
-            "kubectl get pods --namespace {} ".format(
-                self.namespace) +
-            "--sort-by=.status.startTime", shell=True
-        ).stdout.read().decode('utf-8').strip().splitlines()
-        if pod:
+        pods = self._get_pods_by_start_time()
+        if pods:
             # we want last pod listed, podname is always first
-            return pod[-1].split()[0]
+            return pods[-1].split()[0]
         else:
             raise ValueError(
                 "No pods found in namespace: {}".format(
                     self.namespace))
 
+    def _get_pods_by_start_time(self):
+        """helper func to return pods in current namespace by start time"""
+        return process_helpers.run_popen(
+            "kubectl get pods --namespace {} ".format(
+                self.namespace) +
+            "--sort-by=.status.startTime", shell=True
+        ).stdout.read().decode('utf-8').strip().splitlines()
+
     def _patch_template_spec(self, data):
         """Makes `command` of template yaml `sleep infinity`.
            We will also add a `debug=true` label onto this pod for easy
            discovery later.
-           # NOTE: for now we only support basic functionality. Only 1
-           container in a deployment for now. If there is > 1 container,
-           we'll interactively deploy first one we find.
         """
         data = yaml.load(data)
-
-        # references to locations in `data` that contain template and
-        # containers locations. This saves calling recursive function
-        # twice; once we find a location we store that and move on
-        self.template_location = None
-        self.containers_location = None
+        self.template_locations = []
+        self.containers_locations = []
 
         self._find_metadata_and_container_spec(data)
-        if not self.template_location or not self.containers_location:
-            raise ValueError("Unable to find 'templates' or 'containers' in "
-                             "spec. Unable to deploy interactively without "
-                             "these.")
+        if not self.containers_locations:
+            raise ValueError("Unable to find containers' in spec. Unable to "
+                             "deploy interactively without these.")
 
-        self.template_location['metadata'] = {'labels': {'debug': 'true'}}
-        self.containers_location[0].update(
-            {'command':
-             ["/bin/bash", "-c", "trap : TERM INT; sleep infinity & wait"]})
+        # TODO: confirm this, it appears that the yaml always makes
+        # `containers:` a list of lists
+        for location_list in self.containers_locations:
+            for location in location_list:
+                self._total_containers += 1
+                # https://kubernetes.io/docs/tasks/inject-data-application/
+                # define-command-argument-container/#notes
+                # this will override both ENTRYPOINT and Cmd to ensure sleep
+                # TODO: pick shell that exists in dockerfile
+                # https://github.com/IntelAI/mlt/issues/348
+                location.update({
+                    'command': ["/bin/bash"],
+                    'args': ["-c", "trap : TERM INT; sleep infinity & wait"]})
+        if self.template_locations:
+            for template in self.template_locations:
+                template['metadata'] = {'labels': {'debug': 'true'}}
         return json.dumps(data)
 
     def _find_metadata_and_container_spec(self, data):
         """recursively finds `metadata` and `containers` location in
-           deployment spec, that way we can apply debug label and update
-           container deployment to sleep
+           deployment spec, that way we can apply debug label and update all
+           container deployments to sleep
+           data: current dict or list which we're parsing through
+           original_spec: used to calculate the number of total containers
         """
         # containers and metadata will always be dicts, 98% sure
         data_is_dict = isinstance(data, dict)
         if data_is_dict:
-            if not self.template_location:
-                if 'template' in data:
-                    self.template_location = data['template']
-            if not self.containers_location:
-                if 'containers' in data:
-                    self.containers_location = data['containers']
-
-        if self.template_location and self.containers_location:
-            return
+            if 'template' in data:
+                self.template_locations.append(data['template'])
+                # we also can check for `replicas`, as these are at the same
+                # level as `template`
+                if 'replicas' in data and data['replicas'] != 1:
+                    self._replicas_found = True
+            if 'containers' in data:
+                self.containers_locations.append(data['containers'])
 
         if data_is_dict:
             for key, val in data.items():
@@ -328,48 +343,3 @@ class DeployCommand(Command):
 
     def _tail_logs(self):
         log_helpers.call_logs(self.config, self.args)
-
-    def _custom_deploy(self, app_name, app_run_id, remote_container_name):
-        job_name = "-".join([app_name, app_run_id])
-        template_parameters = config_helpers.\
-            get_template_parameters(self.config)
-        template_parameters = \
-            {k.upper(): v for k, v in template_parameters.items()}
-        user_env = dict(os.environ,
-                        NAMESPACE=self.namespace,
-                        JOB_NAME=job_name,
-                        IMAGE=remote_container_name,
-                        **template_parameters)
-        try:
-            kubernetes_helpers.ensure_namespace_exists(self.namespace)
-
-            output = check_output(["make", "deploy"],
-                                  env=user_env, stderr=STDOUT)
-            print(output.decode("utf-8").strip())
-            self._update_app_run_id(app_run_id)
-            print("\nInspect created objects by running:\n"
-                  "$ kubectl get --namespace={} all\n"
-                  "or \n$ mlt status\n".format(self.namespace))
-
-            if self.args["--interactive"]:
-                k8_label = ",".join(['app={}'.format(job_name), 'role=master'])
-
-                interactive_podname = \
-                    self._get_custom_deploy_pod_name(k8_label)
-                self._exec_into_pod(interactive_podname)
-
-        except CalledProcessError as e:
-            print("Error while deploying app: {}".format(e.output))
-
-    def _get_custom_deploy_pod_name(self, k8_label):
-        pod = process_helpers.run_popen(
-            "kubectl get pod --namespace {} --selector {}".format(
-                self.namespace, k8_label), shell=True
-        ).stdout.read().decode('utf-8').strip().splitlines()
-        if pod:
-            # we want last pod listed, podname is always first
-            return pod[-1].split()[0]
-        else:
-            raise ValueError(
-                "No pods found in namespace: {}".format(
-                    self.namespace))

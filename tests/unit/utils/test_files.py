@@ -17,21 +17,34 @@
 #
 # SPDX-License-Identifier: EPL-2.0
 #
+import pytest
+from mock import MagicMock
 
-from mock import patch
-
-from mlt.utils.files import fetch_action_arg
+from mlt.utils.files import fetch_action_arg, is_custom
 
 
-@patch('mlt.utils.files.open')
+@pytest.fixture
+def open_mock(patch):
+    open_mock = MagicMock()
+    open_mock.return_value.__enter__.return_value = ['deploy:\n', 'foo']
+    return patch('open', open_mock)
+
+
+@pytest.fixture
+def isfile_mock(patch):
+    return patch('os.path.isfile')
+
+
+@pytest.fixture
+def json_load_mock(patch):
+    return patch('json.load')
+
+
 def test_fetch_action_arg_file_nonexistent(open_mock):
     fetch_action_arg('build', 'last_build_container')
     open_mock.assert_not_called()
 
 
-@patch('mlt.utils.files.open')
-@patch('mlt.utils.files.os.path.isfile')
-@patch('mlt.utils.files.json.load')
 def test_fetch_action_arg_file_present(json_load_mock, isfile_mock, open_mock):
     isfile_mock.return_value = True
     action_data = {'somekey': 'someval'}
@@ -41,3 +54,12 @@ def test_fetch_action_arg_file_present(json_load_mock, isfile_mock, open_mock):
     open_mock.assert_called_once()
     json_load_mock.assert_called_once()
     assert result == action_data
+
+
+def test_fetch_action_arg_is_custom(json_load_mock, isfile_mock, open_mock):
+    isfile_mock.return_value = True
+    custom = is_custom('deploy:')
+
+    open_mock.assert_called_once()
+    isfile_mock.assert_called_once()
+    assert custom

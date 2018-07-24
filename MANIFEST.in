@@ -1,4 +1,7 @@
 include README.md
+include requirements.txt
+# needed for tox to auto-install
+include requirements-dev.txt
 graft mlt-templates
 include versioneer.py
 include mlt/_version.py

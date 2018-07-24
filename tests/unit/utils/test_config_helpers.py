@@ -17,21 +17,59 @@
 #
 # SPDX-License-Identifier: EPL-2.0
 #
-
+import json
+# io lib supports both python2 and python3 but there's issues with resolving
+# test_update_config test when using io lib for python2 so going with cString
+try:
+    from cStringIO import StringIO
+except ImportError:
+    from io import StringIO
+from mock import MagicMock
 import pytest
 
 from mlt.utils import constants
-from mlt.utils.config_helpers import load_config, get_template_parameters
+from mlt.utils.config_helpers import (load_config, get_template_parameters,
+                                      update_config)
 from test_utils.io import catch_stdout
 
 
+@pytest.fixture
+def json_mock(patch):
+    return patch('json')
+
+
+@pytest.fixture()
+def open_mock(patch):
+    return patch('open')
+
+
+@pytest.fixture
+def isfile_mock(patch):
+    return patch('os.path.isfile', MagicMock(return_value=True))
+
+
+def test_load_config(json_mock, open_mock, isfile_mock):
+    json_mock.load.return_value = {'foo': 'bar'}
+    assert load_config() == {'foo': 'bar'}
+
+
+def test_update_config(open_mock):
+    # need to create it empty because in python2 it is read-only if defined
+    # # https://docs.python.org/2/library/stringio.html#cStringIO.StringIO
+    const_dict = StringIO()
+    const_dict.write('{"foo": "bar"}')
+    open_mock.return_value.__enter__.return_value = const_dict
+    json_data = {'new': 'vals'}
+    update_config(json_data)
+    assert json.loads(const_dict.getvalue()) == {'new': 'vals'}
+
+
 def test_needs_init_command_bad_init():
-    with catch_stdout() as caught_output:
+    with catch_stdout() as output:
         with pytest.raises(SystemExit) as bad_init:
             load_config()
-            assert caught_output.getvalue() == "This command requires you to" \
-                                               " be in an `mlt init` built " \
-                                               "directory"
+            assert output.getvalue() == "This command requires you to" \
+                " be in an `mlt init` built directory"
             assert bad_init.value.code == 1
 
 

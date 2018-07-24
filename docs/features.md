@@ -111,7 +111,7 @@ This command builds a local image for the current project directory.
 ```
   mlt deploy [--no-push] [-i | --interactive] [-l | --logs]
       [--retries=<retries>] [--skip-crd-check]
-      [--since=<duration>] [<kube_spec>]
+      [--since=<duration>]
 ```
 
 The `mlt deploy` command pushes the last image that was built for the
