@@ -46,6 +46,7 @@ http://pytorch.org/tutorials/intermediate/dist_tuto.html
 pytorch-distributed  A distributed PyTorch MNIST example run using the \
 pytorch-operator.
 tensorboard          A TensorBoard service in Kubernetes cluster.
+tensorboard-bm       A TensorBoard service in Kubernetes Bare Metal cluster.
 tf-dist-mnist        A distributed TensorFlow MNIST model which designates \
 worker 0 as the chief.
 tf-distributed       A distributed TensorFlow matrix multiplication run \
@@ -91,6 +92,7 @@ http://pytorch.org/tutorials/intermediate/dist_tuto.html
 pytorch-distributed  A distributed PyTorch MNIST example run using the \
 pytorch-operator.
 tensorboard          A TensorBoard service in Kubernetes cluster.
+tensorboard-bm       A TensorBoard service in Kubernetes Bare Metal cluster.
 test-local           New local template for testing
 tf-dist-mnist        A distributed TensorFlow MNIST model which designates \
 worker 0 as the chief.

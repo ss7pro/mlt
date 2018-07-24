@@ -1,6 +1,6 @@
 {
   "template_parameters" : [
     { "name": "logdir", "value": "path_to_tensorboard_logs" },
-    { "name": "domain", "value": "the user domain in the bare-metal cluster" }
+    { "name": "domain", "value": "the user domain" }
   ]
 }
