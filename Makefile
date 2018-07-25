@@ -161,6 +161,8 @@ test-e2e-setup-circleci: env-up
 	docker-compose exec test bash -c "/usr/share/mlt/scripts/ksonnet_install_linux.sh"
 	docker-compose exec test bash -c "/usr/share/mlt/scripts/ksync_install.sh"
 	docker-compose exec test bash -c "ln -sf /root/.ksync/bin/ksync /usr/local/bin/ksync"
+	docker-compose exec test bash -c "wget -O /usr/local/bin/kubetail https://raw.githubusercontent.com/johanhaleby/kubetail/1.6.1/kubetail"
+	docker-compose exec test bash -c "chmod +x /usr/local/bin/kubetail"
 
 test-e2e-circleci: test-e2e-setup-circleci
 	docker-compose exec test env MLT_REGISTRY=gcr.io/intelai-mlt env NUMBER_OF_THREADS=${MAX_NUMBER_OF_THREADS_E2E} tox -e py${PY}-e2e
