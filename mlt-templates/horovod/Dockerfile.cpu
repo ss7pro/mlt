@@ -18,15 +18,14 @@
 # NOTE: they also have one for sshd but it's not been tagged recently
 FROM qnib/uplain-openmpi:2018-06-10_11-18 as ubuntu_cpu_install
 
-# Python 2.7 or 3.5 is supported by Ubuntu Xenial out of the box
-ENV PYTHON_VERSION=2.7
-
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    openssh-client openssh-server \
-    python-pip
+    openssh-client \
+    openssh-server \
+    python3-pip
 
-RUN pip install -U pip
-RUN pip install setuptools
+RUN python3 -m pip install -U pip==10.0.1 && \
+    cp /usr/bin/python3 /usr/bin/python && \
+    pip install setuptools
 
 FROM ubuntu_cpu_install AS ubuntu_cpu
 
