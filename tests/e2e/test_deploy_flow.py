@@ -60,12 +60,13 @@ class TestDeployFlow(CommandTester):
         """tests every template in our mlt-templates dir"""
         # TODO: find a way to test `tensorboard-bm`,
         # it requires the user domain to be configured as a custom parameter.
-        if template == "tensorboard-bm":
+        if template == 'tensorboard-bm':
             return
-        self.init(template)
-        self.build()
-        self.deploy()
-        self.status()
+        else:
+            self.init(template)
+            self.build()
+            self.deploy()
+            self.status()
 
     def test_deploy_enable_sync(self):
         self.init(enable_sync=True)
