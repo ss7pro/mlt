@@ -52,21 +52,18 @@ class TestDeployFlow(CommandTester):
                     # already deleted or were never created
                     pass
 
-    @pytest.mark.parametrize('template',
-                             filter(lambda x: os.path.isdir(
-                                 os.path.join('mlt-templates', x)),
-                                 os.listdir('mlt-templates')))
+    # TODO: find a way to test `tensorboard-bm`,
+    # it requires the user domain to be configured as a custom parameter.
+    @pytest.mark.parametrize('template', filter(lambda x: os.path.isdir(
+        os.path.join('mlt-templates', x)) and
+        ('tensorboard-bm' not in x), os.listdir('mlt-templates')))
+
     def test_deploying_templates(self, template):
         """tests every template in our mlt-templates dir"""
-        # TODO: find a way to test `tensorboard-bm`,
-        # it requires the user domain to be configured as a custom parameter.
-        if template == 'tensorboard-bm':
-            return
-        else:
-            self.init(template)
-            self.build()
-            self.deploy()
-            self.status()
+        self.init(template)
+        self.build()
+        self.deploy()
+        self.status()
 
     def test_deploy_enable_sync(self):
         self.init(enable_sync=True)
