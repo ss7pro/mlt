@@ -26,6 +26,7 @@ import getpass
 import json
 import os
 import pytest
+import signal
 import time
 import uuid
 from termcolor import colored
@@ -207,13 +208,21 @@ class CommandTester(object):
                 shell=True, stdout=None, stderr=None)
 
     def deploy(self, no_push=False, interactive=False, retries=10,
-               sync=False):
+               sync=False, logs=False):
         deploy_cmd = ['mlt', 'deploy', '--retries', str(retries)]
         if no_push:
             deploy_cmd.append('--no-push')
         if interactive:
             deploy_cmd.append('--interactive')
-        self._launch_popen_call(deploy_cmd)
+        if logs:
+            deploy_cmd.append('--logs')
+            p = self._launch_popen_call(deploy_cmd, wait=True)
+            self._verify_pod_success(interactive, sync)
+            # kill the 'mlt logs' process
+            p.send_signal(signal.SIGINT)
+            return
+        else:
+            self._launch_popen_call(deploy_cmd)
 
         if not no_push:
             assert os.path.isfile(self.deploy_json)
@@ -245,6 +254,12 @@ class CommandTester(object):
 
         # verify that we have some output
         assert output
+
+    def logs(self):
+        # If 'mlt logs' succeed next call won't error out
+        p = self._launch_popen_call(['mlt', 'logs'], wait=True)
+        # kill the 'mlt logs' process
+        p.send_signal(signal.SIGINT)
 
     def undeploy(self):
         self._launch_popen_call(['mlt', 'undeploy'])

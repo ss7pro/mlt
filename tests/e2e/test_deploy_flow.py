@@ -74,6 +74,19 @@ class TestDeployFlow(CommandTester):
         self.status()
         self.sync(delete=True)
 
+    def test_deploy_check_logs(self):
+        """
+        test deploying a template and then checking the logs to make sure the
+        call doesn't crash
+        """
+        self.init()
+        self.build()
+        self.deploy()
+        self.status()
+        self.logs()
+        self.status()
+        self.deploy(logs=True)
+
     def test_no_push_deploy(self):
         self.init()
         self.build()

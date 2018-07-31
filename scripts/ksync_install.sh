@@ -30,11 +30,8 @@ else
   HOST_ARCH=${HOST_ARCH:-$(uname -m)}
 fi
 
-get_latest_release() {
-    curl --silent "https://api.github.com/repos/$1/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/'
-}
-
-wget --quiet https://github.com/vapor-ware/ksync/releases/download/$(get_latest_release vapor-ware/ksync)/ksync_${HOST_OS}_${HOST_ARCH} \
+KSYNC_TAG=0.3.1
+wget --quiet https://github.com/vapor-ware/ksync/releases/download/$KSYNC_TAG/ksync_${HOST_OS}_${HOST_ARCH} \
     -O $TARGET_INSTALL_PATH/ksync
 
 export KSYNC="$HOME/.ksync/bin/ksync"
@@ -66,7 +63,7 @@ for i in {1..60}; do
         exit 0
     else
         echo "Ksync pods are being created";
-        sleep 5
+        sleep 10
     fi
 done
 
