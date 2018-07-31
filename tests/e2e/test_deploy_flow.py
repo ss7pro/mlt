@@ -57,7 +57,6 @@ class TestDeployFlow(CommandTester):
     @pytest.mark.parametrize('template', filter(lambda x: os.path.isdir(
         os.path.join('mlt-templates', x)) and
         ('tensorboard-bm' not in x), os.listdir('mlt-templates')))
-
     def test_deploying_templates(self, template):
         """tests every template in our mlt-templates dir"""
         self.init(template)
