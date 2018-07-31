@@ -20,12 +20,18 @@ FROM ubuntu:16.04
 # separately install software properties for adding apt-repo; then 1 update is needed rather than 2
 RUN apt-get update && apt-get install -yq --no-install-recommends --fix-missing \
     apt-transport-https \
+    build-essential \
     ca-certificates \
     curl \
     git \
     jq \
+    libffi-dev \
+    libssl-dev \
+    libxml2-dev \
+    libxslt1-dev \
     make \
     netcat \
+    openssh-server \
     python \
     python-dev \
     python-pip \
@@ -37,10 +43,14 @@ RUN apt-get update && apt-get install -yq --no-install-recommends --fix-missing 
     python3-setuptools \
     python3-wheel \
     software-properties-common \
-    openssh-server \
-    wget
+    tar \
+    wget \
+    zlib1g-dev
 
-RUN pip install tox
+
+RUN python -m pip install -U pip && \
+    pip install tox
+
 RUN curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add -
 RUN add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
 RUN apt-get update && apt-get install -yq --no-install-recommends --fix-missing \
