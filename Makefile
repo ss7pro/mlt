@@ -50,6 +50,10 @@ ifeq ($(shell test $(NUMBER_OF_THREADS) -gt $(MAX_NUMBER_OF_THREADS_E2E); echo $
 	NUMBER_OF_THREADS_E2E = $(MAX_NUMBER_OF_THREADS_E2E)
 endif
 
+# enables dynamic running of tests threaded
+# to run tests without threads (useful for debugging) run with TESTOPTS=""
+TESTOPTS ?= "-n ${NUMBER_OF_THREADS_E2E}"
+
 .PHONY: \
        clean \
        coverage \
@@ -96,15 +100,15 @@ dev-env-all:
 
 test:
 	@echo "Running Python${PY} unit tests..."
-	@NUMBER_OF_THREADS=${NUMBER_OF_THREADS} tox -e py${PY}-unit
+	@tox -e py${PY}-unit
 
 test-all:
 	@echo "Running unit tests across Python2 and Python3..."
-	@NUMBER_OF_THREADS=${NUMBER_OF_THREADS} tox -e py2-unit -e py3-unit
+	@tox -e py2-unit -e py3-unit
 
 test-all-circleci:
 	@echo "Running Python unit tests on circleci..."
-	@NUMBER_OF_THREADS=8 tox -e py2-unit -e py3-unit
+	tox -e py2-unit -e py3-unit
 
 lint:
 	@echo "Running Linting with flake8 for Python${PY}..."
@@ -165,12 +169,12 @@ test-e2e-setup-circleci: env-up
 	docker-compose exec test bash -c "chmod +x /usr/local/bin/kubetail"
 
 test-e2e-circleci: test-e2e-setup-circleci
-	docker-compose exec test env MLT_REGISTRY=gcr.io/intelai-mlt env NUMBER_OF_THREADS=${MAX_NUMBER_OF_THREADS_E2E} tox -e py${PY}-e2e
+	docker-compose exec test env MLT_REGISTRY=gcr.io/intelai-mlt env TESTOPTS="-n ${MAX_NUMBER_OF_THREADS_E2E}" tox -e py${PY}-e2e
 
 # NOTE: if we're on a circleci machine, for now we've got 8 cores so we'll cap at 8
 # check for core count isn't valid because we have a subset of cores available on a large host node
 test-e2e-all-circleci: test-e2e-setup-circleci
-	docker-compose exec test env MLT_REGISTRY=gcr.io/intelai-mlt env NUMBER_OF_THREADS=${MAX_NUMBER_OF_THREADS_E2E} tox -e py2-e2e -e py3-e2e
+	docker-compose exec test env MLT_REGISTRY=gcr.io/intelai-mlt env TESTOPTS="-n ${MAX_NUMBER_OF_THREADS_E2E}" tox -e py2-e2e -e py3-e2e
 
 # EXTRA_ARGS enables usage of other docker registries for testing
 # ex: EXTRA_ARGS=`$MLT_REGISTRY_AUTH_COMMAND` make test-e2e-no-docker
@@ -184,11 +188,13 @@ test-e2e-no-docker-setup:
 		$(error Please install kubectl); \
    fi
 
-test-e2e-no-docker: test-e2e-no-docker-setup
-	@${EXTRA_ARGS:} NUMBER_OF_THREADS=${NUMBER_OF_THREADS_E2E} tox -e py${PY}-e2e
+# having these have a dep of test-e2e-no-docker-setup means that it'll never run again after running once
+# TODO: figure out why this is the case
+test-e2e-no-docker:
+	@${EXTRA_ARGS:} TESTOPTS=${TESTOPTS} tox -e py${PY}-e2e
 
-test-e2e-no-docker-all: test-e2e-no-docker-setup
-	@${EXTRA_ARGS:} NUMBER_OF_THREADS=${NUMBER_OF_THREADS_E2E} tox -e py2-e2e -e py3-e2e
+test-e2e-no-docker-all:
+	@${EXTRA_ARGS:} TESTOPTS=${TESTOPTS} tox -e py2-e2e -e py3-e2e
 
 clean:
 	rm -rf .venv .venv3

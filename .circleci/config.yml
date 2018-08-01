@@ -2,7 +2,7 @@ version: 2
 jobs:
   build:
     docker:
-      - image: circleci/python:2.7-stretch
+        - image: circleci/python:3.6.6-jessie
     resource_class: xlarge
     environment:
       KUBECONFIG: /home/circleci/.kube/config
@@ -17,8 +17,13 @@ jobs:
           command: |
             sudo apt-get update
             sudo apt-get install -yq --no-install-recommends --fix-missing \
+                build-essential \
                 curl \
                 git \
+                libffi-dev \
+                libssl-dev \
+                libxml2-dev \
+                libxslt1-dev \
                 make \
                 python \
                 python-dev \
@@ -29,7 +34,10 @@ jobs:
                 python3-pip \
                 python3-setuptools \
                 python3-wheel \
-                tar
+                tar \
+                zlib1g-dev
+
+            sudo python -m pip install -U pip
             sudo pip install tox
 
       - run:
@@ -58,7 +66,6 @@ jobs:
             if [[ $? != 0 ]]; then
                 exit 1
             fi
-            sudo pip install -U pip
             PIP=/usr/local/bin/pip
             sudo $PIP install -I dist/${MLT_DIST_WHEEL}
             PIP_DEPS=$(${PIP} freeze)
