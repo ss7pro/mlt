@@ -21,8 +21,8 @@ OK := $(foreach exec,$(EXES), $(if $(shell which $(exec)),,$(error "No $(exec) f
 
 # Set PY to 2 or 3 to test with Python2 or Python3 versions
 PY ?= $(shell python --version 2>&1  | cut -c8)
-VIRTUALENV_DIR=$(if $(subst 2,,$(PY)),.venv3,.venv)
-ACTIVATE="$(VIRTUALENV_DIR)/bin/activate"
+VIRTUALENV_DIR := $(if $(subst 2,,$(PY)),.venv3,.venv)
+ACTIVATE := "$(VIRTUALENV_DIR)/bin/activate"
 
 # we don't have that many e2e tests, if we go over this amount then we don't get speedup
 # as threads get allocated and then sit there with nothing to do

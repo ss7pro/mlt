@@ -40,5 +40,12 @@ def run_popen(command, shell=False, stdout=PIPE, stderr=PIPE, cwd=None):
     with open(os.devnull, 'w') as quiet:
         stdout = quiet if stdout is False else stdout
         stderr = quiet if stderr is False else stderr
-        return Popen(command, stdout=stdout, stderr=stderr, shell=shell,
-                     cwd=cwd)
+        if not (isinstance(command, str) or isinstance(command, list)):
+            print("The following command is invalid:\n{}".format(command))
+            sys.exit(1)
+        try:
+            return Popen(command, stdout=stdout, stderr=stderr, shell=shell,
+                         cwd=cwd)
+        except CalledProcessError as e:
+            print(e.output)
+            sys.exit(1)
