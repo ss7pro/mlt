@@ -53,7 +53,8 @@ class TestDeployFlow(CommandTester):
                     pass
 
     # TODO: find a way to test `tensorboard-bm`.
-    # `tensorboard-bm` template requires the user domain to be configured as a custom parameter.
+    # `tensorboard-bm` template requires the user domain to be configured
+    # as a custom parameter.
     @pytest.mark.parametrize('template', filter(lambda x: os.path.isdir(
         os.path.join('mlt-templates', x)) and
         ('tensorboard-bm' not in x), os.listdir('mlt-templates')))
