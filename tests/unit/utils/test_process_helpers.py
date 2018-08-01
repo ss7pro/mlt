@@ -69,8 +69,23 @@ def test_run_popen(popen):
 
 
 @patch('mlt.utils.process_helpers.Popen')
-def test_run_popen_shell(popen):
+def test_run_popen_shell_str(popen):
     """Popen call should succeed"""
     popen.return_value = 0
     result = run_popen('ls /tmp', shell=True)
     assert result == 0
+
+
+@patch('mlt.utils.process_helpers.Popen')
+def test_run_popen_shell_list(popen):
+    """Popen call should succeed"""
+    popen.return_value = 0
+    result = run_popen(['ls', '/tmp'], shell=True)
+    assert result == 0
+
+
+@patch('mlt.utils.process_helpers.Popen')
+def test_run_popen_invalid_cmd(popen):
+    with pytest.raises(SystemExit) as pytest_raised_err:
+            run_popen(0)
+    assert pytest_raised_err.value.code == 1
