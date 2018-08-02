@@ -17,7 +17,7 @@ This template assumes that `jq` is installed. `jq` is used while launching Tenso
 1. Create a TensorBoard application using the TensorBoard MLT template.
 `mlt init tensorboard-app --template=tensorboard-bm --namespace=<value> --registry-<value>`
 
-From inside the application `cd tensorboard-app` :
+`cd tensorboard-app` :
 
 2. Set TensorBoard `logdir` and `domain`.
 `mlt config set template_parameters.logdir <value>` and
@@ -29,6 +29,7 @@ From inside the application `cd tensorboard-app` :
 4. Deploy TensorBoard service.
 `mlt deploy`,
 which deploys the TensorBoard service and launches the local browser with `http://<service-name>.domain`.
+It might take few seconds for the service to be up and running, so reload the page if Tensorbaord did not open right away.
 
 7. Finally, when done, a user can delete the running TensorBoard service
 `mlt undeploy`.
