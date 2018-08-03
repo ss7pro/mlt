@@ -1,6 +1,6 @@
 {
   "template_parameters" : [
     { "name": "logdir", "value": "path_to_tensorboard_logs" },
-    { "name": "domain", "value": "the cluster domain" }
+    { "name": "domain", "value": "localhost" }
   ]
 }
