@@ -19,10 +19,9 @@ SHELL := /bin/bash
 
 .PHONY: \
 	build \
+	deploy \
 	main \
 	status
-
-SHELL := /bin/bash
 
 all: main
 
