@@ -52,6 +52,10 @@ ks env set default --namespace ${NAMESPACE}
 ks registry add kubeflow github.com/kubeflow/kubeflow/tree/${VERSION}/kubeflow
 ks pkg install kubeflow/openmpi@${VERSION}
 
+# Temporary fix for volume-mount.
+# Untill this is merged : https://github.com/kubeflow/kubeflow/issues/838
+cp -rf ../volume-mount/workloads.libsonnet vendor/kubeflow/openmpi/
+cp -rf ../volume-mount/prototypes/openmpi.jsonnet vendor/kubeflow/openmpi/prototypes/
 
 # Generate openmpi components.
 COMPONENT=${JOB_NAME}
@@ -62,6 +66,14 @@ EXEC="mpiexec -n ${WORKERS} --hostfile /kubeflow/openmpi/assets/hostfile --allow
 ks generate openmpi ${COMPONENT} --image ${IMAGE} --secret ${SECRET} --workers ${WORKERS} --gpu ${GPU} --exec "${EXEC}"
 
 } &> /dev/null
+
+# Uncomment below params to mount data.
+
+# If you have data on your host, if you want to mount that as volume. Please update below paths
+# volumes - path in this section will create a volume for you based on host path provided
+# volumeMounts - mountPath in this section will mount above volume at specified location
+#ks param set ${COMPONENT} volumes '[{ "name": "vol", "hostPath": { "path": "<path_on_host_data>" }}]'
+#ks param set ${COMPONENT} volumeMounts '[{ "name": "vol", "mountPath": "<mount_path_in_container"}]'
 
 # Deploy to your cluster.
 ks apply default
