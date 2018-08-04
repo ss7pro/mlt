@@ -1,2 +1,2 @@
-tensorflow
+# Please don't add tensorflow here since it's being installed by the Docker
 pycodestyle
