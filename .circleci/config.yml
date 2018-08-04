@@ -3,11 +3,11 @@ jobs:
   build:
     docker:
         - image: circleci/python:3.6.6-jessie
-    resource_class: xlarge
+    resource_class: medium
     environment:
       KUBECONFIG: /home/circleci/.kube/config
       MLT_TEST_CLUSTER_ENV_FILE: /tmp/mlt_test_cluster
-      MAX_NUMBER_OF_THREADS_E2E: 8
+      MAX_NUMBER_OF_THREADS_E2E: 2
     working_directory: ~/repo
     steps:
       - checkout
@@ -86,7 +86,7 @@ jobs:
       - run:
           name: Install gcloud
           command: |
-            GCLOUD_SDK_VERSION="202.0.0"
+            GCLOUD_SDK_VERSION="210.0.0"
             curl -sSLo google-cloud-sdk.tar.gz https://storage.googleapis.com/cloud-sdk-release/google-cloud-sdk-${GCLOUD_SDK_VERSION}-linux-x86_64.tar.gz \
             && tar zxf google-cloud-sdk.tar.gz \
             && rm google-cloud-sdk.tar.gz \
@@ -105,7 +105,7 @@ jobs:
             echo $GKE_CREDENTIALS | base64 -di > mltkey.json
             ./google-cloud-sdk/bin/gcloud auth activate-service-account mltjson@intelai-mlt.iam.gserviceaccount.com --key-file=mltkey.json
             ./google-cloud-sdk/bin/gcloud --project intelai-mlt beta container clusters create "$MLT_TEST_CLUSTER" \
-            --zone "us-west1-b" --cluster-version "1.10.4-gke.2" --num-nodes "5" --machine-type "n1-highmem-4"
+            --zone "us-west1-b" --cluster-version "1.10.4-gke.2" --num-nodes "3" --machine-type "n1-highmem-4"
             sudo apt-get install -y kubectl
             ./google-cloud-sdk/bin/gcloud --project intelai-mlt beta container clusters get-credentials "$MLT_TEST_CLUSTER" \
             --zone "us-west1-b"
