@@ -197,6 +197,7 @@ LAST SEEN   FIRST SEEN   COUNT     NAME                                         
 ### Examples
 
 * [Distributed U-Net model training using KVC and MLT](examples/distributed_unet)
+* [Distributed U-Net model training using horovod and openmpi on Kubernetes](examples/horovod_unet)
 
 ### Template Development
 
