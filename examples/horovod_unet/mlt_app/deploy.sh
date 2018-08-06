@@ -22,12 +22,15 @@ VERSION=master
 SECRET=openmpi-secret
 # https://github.com/ksonnet/ksonnet/issues/298
 export USER=root
+# Please update physical cores value. Below command works for linux.
+#export PHYSICAL_CORES=`lscpu | grep "Core(s) per socket" | cut -d':' -f2 | sed "s/ //g"` # Total number of physical cores per socket
+export PHYSICAL_CORES=4
 
 {
 # Generate one-time ssh keys used by Open MPI.
 SECRET=openmpi-secret
 mkdir -p .tmp
-echo "y" | ssh-keygen -N "" -f .tmp/id_rsa
+yes 2>/dev/null | ssh-keygen -N "" -f .tmp/id_rsa
 kubectl delete secret ${SECRET} -n ${NAMESPACE} || true
 kubectl create secret generic ${SECRET} -n ${NAMESPACE} --from-file=id_rsa=.tmp/id_rsa --from-file=id_rsa.pub=.tmp/id_rsa.pub --from-file=authorized_keys=.tmp/id_rsa.pub
 rm -rf .tmp
@@ -52,19 +55,32 @@ ks env set default --namespace ${NAMESPACE}
 ks registry add kubeflow github.com/kubeflow/kubeflow/tree/${VERSION}/kubeflow
 ks pkg install kubeflow/openmpi@${VERSION}
 
-# Temporary fix for volume-mount.
+# Temporary fix for volume-mount
 # Untill this is merged : https://github.com/kubeflow/kubeflow/issues/838
 cp -rf ../volume-mount/workloads.libsonnet vendor/kubeflow/openmpi/
 cp -rf ../volume-mount/prototypes/openmpi.jsonnet vendor/kubeflow/openmpi/prototypes/
 
 # Generate openmpi components.
+NODE_SELECTOR="node-type=highmem"
 COMPONENT=${JOB_NAME}
-IMAGE=${IMAGE}
-WORKERS=${NUM_WORKERS}
-GPU=${GPUS}
-EXEC="mpiexec -n ${WORKERS} --hostfile /kubeflow/openmpi/assets/hostfile --allow-run-as-root --display-map --tag-output --timestamp-output sh -c 'python /src/app/main.py'"
-ks generate openmpi ${COMPONENT} --image ${IMAGE} --secret ${SECRET} --workers ${WORKERS} --gpu ${GPU} --exec "${EXEC}"
 
+# Base dir for training data
+BASE_DIR=${BASE_DIR}
+
+# output path to store results
+OUTPUT_PATH=${OUTPUT_PATH}
+
+IMAGE=${IMAGE}
+LOG_DIR=${LOG_DIR}
+WORKERS=$(( ${NUM_NODES} * ${NUM_WORKERS_PER_NODE} ))
+SOCKETS_PER_NODE=${SOCKETS_PER_NODE}
+NUM_INTER_THREADS=${NUM_INTER_THREADS}
+
+PPR=$(( $NUM_WORKERS_PER_NODE / $SOCKETS_PER_NODE ))
+PE=$(( $PHYSICAL_CORES / $PPR ))
+GPU=${GPUS}
+EXEC="mpirun -np ${WORKERS} --hostfile /kubeflow/openmpi/assets/hostfile --map-by socket -cpus-per-proc $PHYSICAL_CORES --report-bindings --oversubscribe bash /src/app/exec_multiworker.sh ${LOG_DIR} ${PPR} ${NUM_INTER_THREADS}"
+ks generate openmpi ${COMPONENT} --image ${IMAGE} --secret ${SECRET} --workers ${WORKERS} --gpu ${GPU} --exec "${EXEC}" --nodeSelector "${NODE_SELECTOR}"
 } &> /dev/null
 
 # Uncomment below params to mount data.
@@ -72,8 +88,8 @@ ks generate openmpi ${COMPONENT} --image ${IMAGE} --secret ${SECRET} --workers $
 # If you have data on your host, if you want to mount that as volume. Please update below paths
 # volumes - path in this section will create a volume for you based on host path provided
 # volumeMounts - mountPath in this section will mount above volume at specified location
-#ks param set ${COMPONENT} volumes '[{ "name": "vol", "hostPath": { "path": "<path_on_host_data>" }}]'
-#ks param set ${COMPONENT} volumeMounts '[{ "name": "vol", "mountPath": "<mount_path_in_container"}]'
+ks param set ${COMPONENT} volumes '[{ "name": "vol", "hostPath": { "path": "/var/datasets/unet/vck-resource-8fd827a8-809a-11e8-b982-0a580a480bd4" }}]'
+ks param set ${COMPONENT} volumeMounts '[{ "name": "vol", "mountPath": "/var/datasets/unet/vck-resource-8fd827a8-809a-11e8-b982-0a580a480bd4"}]'
 
 # Deploy to your cluster.
 ks apply default
