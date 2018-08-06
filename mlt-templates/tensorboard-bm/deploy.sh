@@ -18,7 +18,7 @@
 
 # check if the service is up and running, get the TB service host and launch it in the local browser
 
-if [ ! -z "$( kubectl get ing ${JOB_NAME} --namespace ${NAMESPACE} )" ]
+if [ -n "$( kubectl get ing ${JOB_NAME} --namespace ${NAMESPACE} )" ]
 then
     echo "Launching TensorBoard in your local browser..."
     # open TB in the default browser
