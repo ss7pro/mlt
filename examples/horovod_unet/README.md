@@ -84,6 +84,20 @@ repo. Copied below list of files
     bash /src/app/exec_multiworker.sh \
     ${LOG_DIR} ${PPR} ${NUM_INTER_THREADS}"
     ```
+ 4. `NODE_SELECTOR` option - There are cases where data scientist wants to target set of nodes to launch job.
+     kubeflow openmpi component allows to set that option. We did as below.
+     In `deploy.sh` script, look for this section.
+
+     ```
+        # Node selector helps to launch job on specific set of nodes with label.
+        # For kubernetes nodes we assigned label called `node-type=highmem` to set of nodes.
+        # Ex: kubectl label node gke-node-1 node-type=highmem
+        NODE_SELECTOR="node-type=highmem"
+     ```
+     and once you set label above, you should provide that to `ks generate` command as below.
+     ```
+        ks generate openmpi ${COMPONENT} --image ${IMAGE} --secret ${SECRET} --workers ${WORKERS} --gpu ${GPU} --exec "${EXEC}" --nodeSelector "${NODE_SELECTOR}"
+     ```
 
     When the job completes, the final trained Keras model is saved to the directory you specified in output_path
 

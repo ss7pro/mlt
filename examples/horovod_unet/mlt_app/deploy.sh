@@ -61,7 +61,12 @@ cp -rf ../volume-mount/workloads.libsonnet vendor/kubeflow/openmpi/
 cp -rf ../volume-mount/prototypes/openmpi.jsonnet vendor/kubeflow/openmpi/prototypes/
 
 # Generate openmpi components.
+
+# Node selector helps to launch job on specific set of nodes with label.
+# For kubernetes nodes we assigned label called `node-type=highmem` to set of nodes.
+# Ex: kubectl label node gke-node-1 node-type=highmem
 NODE_SELECTOR="node-type=highmem"
+
 COMPONENT=${JOB_NAME}
 
 # Base dir for training data
