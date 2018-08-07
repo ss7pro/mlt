@@ -55,9 +55,9 @@ class TestDeployFlow(CommandTester):
     # TODO: find a way to test `tensorboard-bm`.
     # `tensorboard-bm` template requires the user domain to be configured
     # as a custom parameter https://github.com/IntelAI/mlt/issues/371
-    @pytest.mark.parametrize('template', filter(lambda x: os.path.isdir(
+    @pytest.mark.parametrize('template', sorted(filter(lambda x: os.path.isdir(
         os.path.join('mlt-templates', x)) and
-        ('tensorboard-bm' not in x), os.listdir('mlt-templates')))
+        ('tensorboard-bm' not in x), os.listdir('mlt-templates'))))
     def test_deploying_templates(self, template):
         """tests every template in our mlt-templates dir"""
         self.init(template)
