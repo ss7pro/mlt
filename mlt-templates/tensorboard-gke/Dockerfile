@@ -15,26 +15,10 @@
 # SPDX-License-Identifier: EPL-2.0
 #
 
-SHELL := /bin/bash
+FROM python:3.6
 
-.PHONY: \
-	build \
-	main \
-	status
+ADD requirements.txt /src/deps/requirements.txt
+RUN pip install -r /src/deps/requirements.txt
 
-SHELL := /bin/bash
-
-all: main
-
-main: main.py
-	@echo "Should run linting and tests before submitting application"
-
-build:
-	docker build --build-arg HTTP_PROXY=${HTTP_PROXY} --build-arg HTTPS_PROXY=${HTTPS_PROXY} --build-arg http_proxy=${http_proxy} --build-arg https_proxy=${https_proxy} -t ${CONTAINER_NAME} .
-
-deploy:
-	@./deploy.sh
-
-status:
-	@echo "TB Service:"
-	-@kubectl get service ${JOB_NAME} --namespace ${NAMESPACE} || echo "The service may have been undeployed."
+WORKDIR /src/app
+ADD . /src/app

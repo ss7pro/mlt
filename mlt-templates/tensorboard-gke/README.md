@@ -1,21 +1,20 @@
-# TensorBoard MLT Application
+# TensorBoard MLT Application for Google Kubernetes cluster
 
-A TensorBoard service in Kubernetes cluster.
+A TensorBoard service in Google Kubernetes cluster.
 
 This template requires the path to the TensorFlow job logs to be configured.
 The command below shows how to update the log directory value in `k8s-templates/tbjob.yaml`.
 
 `mlt config set template_parameters.logdir <value>`
 
-TensorBoard template works with different storage sources, and it's the user responsibility to allow the TensorBoard service to access the logs location.
+TensorBoard template works with different storage sources, and it's the user's responsibility to allow the TensorBoard service to access the logs location.
 
-This template assumes that Ingress controller is enabled in the Kubernetes cluster, and also that `jq` is installed. `jq` is used while launching TensorBoard to get the service IP address.
+In this template, we expose TensorBoard as a service in GKE using [GCP load balancer](https://cloud.google.com/kubernetes-engine/docs/how-to/exposing-apps).
+We assume that `jq` is installed. `jq` is used while launching TensorBoard to get the service IP address.
 
 
 
 ## Example: Using the TensorBoard template with Google Cloud Storage
-
-- When using Google Kubernetes Engine (GKE) (similar to this example), installing Ingress is not needed as GKE can expose Kubernetes services using [GCP load balancer](https://cloud.google.com/kubernetes-engine/docs/how-to/exposing-apps).
 
 - Assuming that the user stores TensorFlow jobs logs/results in gcloud storage as S3 bucket, then the 'logdir' value would be 
 `S3://<user-bucket-name>/<directory-name>`. In this case, to allow access to the storage source, the user gets the access key and ID from gcloud storage and use them to create `gcs-creds` secrets in `kubectl`:
@@ -30,7 +29,7 @@ kubectl create secret generic gcs-creds --from-literal=awsAccessKeyID=${GCS_ACCE
 ### Steps to launch TensorBoard service using TensorBoard MLT template:
 
 1. Create a TensorBoard application using the TensorBoard MLT template.
-`mlt init tensorboard-app --template=tensorboard`
+`mlt init tensorboard-app --template=tensorboard-gke`
 
 From inside the application `cd tensorboard-app` :
 

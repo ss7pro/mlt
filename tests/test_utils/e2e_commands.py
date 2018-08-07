@@ -233,7 +233,7 @@ class CommandTester(object):
 
         # setting interactive to True for tensorboard templates, because
         # the pods stay alive (running) until the user kills the session.
-        if self.template == "tensorboard":
+        if self.template == "tensorboard-gke":
             interactive = True
 
         self._verify_pod_success(interactive, sync)
