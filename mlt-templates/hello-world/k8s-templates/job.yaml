@@ -16,3 +16,7 @@ spec:
         - name: GREETING
           value: $greeting
       restartPolicy: Never
+  # TODO: discovered why this doesn't work in kubernetes 1.10.2
+  # https://github.com/kubernetes/kubernetes/issues/62382 it's a bug
+  # fixed in 1.10.5 though
+  backoffLimit: 4

@@ -24,8 +24,9 @@ import fnmatch
 import os
 import sys
 import traceback
+import yaml
 from copy import deepcopy
-from shutil import copytree, copyfile, ignore_patterns
+from shutil import copy, copytree, copyfile, ignore_patterns
 from subprocess import check_output
 from termcolor import colored
 
@@ -79,7 +80,7 @@ class InitCommand(Command):
                         if self._check_update_yaml_for_sync():
                             copyfile(app_ignore_file, ksync_ignore_file)
                             with open(ksync_ignore_file, 'a+') as f:
-                                f.write(".git/**")
+                                f.write("\n.git/**")
                         else:
                             print(colored("This app doesn't support syncing",
                                           'yellow'))
@@ -89,9 +90,17 @@ class InitCommand(Command):
                         sys.exit(1)
 
                 data = self._build_mlt_json(template_params, template_git_sha)
+
+                # If the app has option for debugging failures, grab the
+                # Kubernetes debug wrapper file and put it in the app directory
+                if any(param["name"] == "debug_on_fail"
+                       for param in template_params):
+                    self._enable_debug_on_fail(temp_clone)
+
                 with open(os.path.join(self.app_name,
                                        constants.MLT_CONFIG), 'w') as f:
                     json.dump(data, f, indent=2)
+
                 self._init_git_repo()
             except OSError as exc:
                 if exc.errno == 17:
@@ -101,6 +110,43 @@ class InitCommand(Command):
                 else:
                     traceback.print_exc()
                 sys.exit(1)
+
+    def _recursive_update_container_yaml(self, yaml_dict):
+        if "containers" in yaml_dict:
+            debug_on_fail_env = {'name': "DEBUG_ON_FAIL",
+                                 'value': "$debug_on_fail"}
+            for container in yaml_dict["containers"]:
+                container["tty"] = True
+                container["stdin"] = True
+                if "env" in container:
+                    if not any(e["name"] == "DEBUG_ON_FAIL" for e in
+                               container["env"]):
+                        container["env"].append(debug_on_fail_env)
+                else:
+                    container["env"] = [debug_on_fail_env]
+        for k, v in yaml_dict.items():
+            if isinstance(v, dict):
+                v = self._recursive_update_container_yaml(v)
+        return yaml_dict
+
+    def _enable_debug_on_fail(self, temp_clone):
+        # copy kubernetes debug wrapper file to the app
+        copy(os.path.join(
+            temp_clone, constants.DEBUG_WRAPPER_FILE),
+            self.app_name)
+
+        # update k8s yaml files
+        k8s_dir = os.path.join(self.app_name, "k8s-templates")
+        if os.path.isdir(k8s_dir):
+            for k8s_file in os.listdir(k8s_dir):
+                if os.path.splitext(k8s_file)[1] == ".yaml":
+                    yaml_path = os.path.join(k8s_dir, k8s_file)
+                    with open(yaml_path) as fh:
+                        yaml_dict = yaml.load(fh)
+                    updated_yaml = self._recursive_update_container_yaml(
+                        yaml_dict)
+                    with open(yaml_path, "w") as fh:
+                        json.dump(updated_yaml, fh, indent=2)
 
     def _check_update_yaml_for_sync(self):
         # update k8s-template job spec, to keep the containers

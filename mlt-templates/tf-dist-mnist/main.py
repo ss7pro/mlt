@@ -1,3 +1,4 @@
+# !/usr/bin/env python
 #
 # -*- coding: utf-8 -*-
 #
@@ -221,6 +222,5 @@ def main(_):
 
 
 if __name__ == "__main__":
-
     logging.getLogger().setLevel(logging.INFO)
     tf.app.run()

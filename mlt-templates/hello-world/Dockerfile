@@ -25,4 +25,5 @@ ADD . /src/app
 
 RUN pycodestyle -v .
 
-ENTRYPOINT [ "python", "main.py" ]
+# debug wrapper, followed by the model training script to execute
+ENTRYPOINT [ "python", "kubernetes_debug_wrapper.py", "main.py" ]
