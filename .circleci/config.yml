@@ -107,7 +107,7 @@ jobs:
             echo $GKE_CREDENTIALS | base64 -di > mltkey.json
             ./google-cloud-sdk/bin/gcloud auth activate-service-account mltjson@intelai-mlt.iam.gserviceaccount.com --key-file=mltkey.json
             ./google-cloud-sdk/bin/gcloud --project intelai-mlt beta container clusters create "$MLT_TEST_CLUSTER" \
-            --zone "us-west1-b" --cluster-version "1.10.5-gke.3" --num-nodes "3" --machine-type "n1-highmem-4"
+            --zone "us-west1-b" --cluster-version "1.10" --num-nodes "3" --machine-type "n1-highmem-4"
             sudo apt-get install -y kubectl
             ./google-cloud-sdk/bin/gcloud --project intelai-mlt beta container clusters get-credentials "$MLT_TEST_CLUSTER" \
             --zone "us-west1-b"
