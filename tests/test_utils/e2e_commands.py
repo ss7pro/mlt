@@ -38,16 +38,21 @@ from project import basedir
 
 
 class CommandTester(object):
-    @classmethod
+
     @pytest.fixture(scope='class', autouse=True)
     def setup(self):
+        # workaround for issue described here:
+        # https://github.com/pytest-dev/pytest/issues/3778
+            # issuecomment-411899446
+        # this will enable us to use pytest 3.7.1
+
         # just in case tests fail, want a clean namespace always
-        self.registry = os.getenv('MLT_REGISTRY', 'localhost:5000')
+        type(self).registry = os.getenv('MLT_REGISTRY', 'localhost:5000')
 
         # ANY NEW TFJOBS NEED TO HAVE THEIR TEMPLATE NAMES LISTED HERE
         # TFJob terminates pods after completion so can't check old pods
         # for status of job completion
-        self.tfjob_templates = ('tf-dist-mnist', 'tf-distributed')
+        type(self).tfjob_templates = ('tf-dist-mnist', 'tf-distributed')
 
     def _set_new_mlt_project_vars(self, template):
         """init calls this function to reset a new project's test vars"""
