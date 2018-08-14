@@ -185,10 +185,31 @@ class DeployCommand(Command):
                     app=app_name, run=app_run_id, namespace=self.namespace,
                     **config_helpers.get_template_parameters(self.config))
 
+                # some templates are still in yaml form by the time they reach
+                # this point, so ignore a ValueError due to no json obj avail
+                try:
+                    out = self._ensure_correct_data_types(json.loads(out))
+                except ValueError:
+                    pass
+
                 if self.args["--interactive"]:
                     # every pod will be made to `sleep infinity & wait`
                     out = self._patch_template_spec(out)
                 self._apply_template(out, filename)
+
+    def _ensure_correct_data_types(self, template_json):
+        """Due to us editing the yaml now in init.py as well, we have some
+           values that get turned into strings that kubernetes expects to be
+           integers.
+           TODO: move all template logic to deploy.py so this isn't needed
+        """
+        if "replicaSpecs" in template_json:
+            for spec in template_json["replicaSpecs"]:
+                spec["replicas"] = int(spec["replicas"])
+        for k, v in template_json.items():
+            if isinstance(v, dict):
+                v = self._ensure_correct_data_types(v)
+        return json.dumps(template_json, indent=2)
 
     def _custom_deploy(self, app_name, app_run_id, remote_container_name):
         job_name = "-".join([app_name, app_run_id])

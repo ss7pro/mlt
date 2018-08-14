@@ -18,6 +18,7 @@
 # SPDX-License-Identifier: EPL-2.0
 #
 import os
+import time
 import pytest
 
 
@@ -63,12 +64,20 @@ class TestDeployFlow(CommandTester):
         self.init(template)
         self.build()
         self.deploy()
+
+        # set the expected status for tensorboard templates as running, because
+        # the pods stay alive (running) until the user kills the session.
+        expected_status = "Running" if template == "tensorboard-gke" \
+            else "Succeeded"
+
+        self.verify_pod_status(expected_status=expected_status)
         self.status()
 
     def test_deploy_enable_sync(self):
         self.init(enable_sync=True)
         self.build()
         self.deploy(sync=True)
+        self.verify_pod_status(expected_status="Running")
         self.sync(create=True)
         self.status()
         self.sync(reload=True)
@@ -86,14 +95,17 @@ class TestDeployFlow(CommandTester):
         self.status()
         self.logs()
         self.status()
-        self.deploy(logs=True)
+        self.deploy(logs=True, no_push=True)
+        self.verify_pod_status()
 
     def test_no_push_deploy(self):
         self.init()
         self.build()
         self.deploy()
+        self.verify_pod_status()
         self.status()
         self.deploy(no_push=True)
+        self.verify_pod_status()
         self.status()
 
     @pytest.mark.parametrize('template', ['hello-world', 'tf-distributed'])
@@ -107,12 +119,47 @@ class TestDeployFlow(CommandTester):
         # picking the right tfjob pod to check
         self.undeploy()
         self.deploy(interactive=True, no_push=True, retries=60)
+        self.verify_pod_status(expected_status="Running")
         self.status()
 
     def test_watch_build_and_deploy_no_push(self):
         self.init()
         self.build(watch=True)
         self.deploy()
+        self.verify_pod_status()
         self.status()
         self.deploy(no_push=True)
+        self.verify_pod_status()
         self.status()
+
+    def test_debug_wrapper(self):
+        """tests debug_on_fail param"""
+        # Update configs to enable debug_on_fail
+        self.init()
+        self.config(subcommand="set",
+                    config_name="template_parameters.debug_on_fail",
+                    config_value="True")
+
+        # Edit to insert an error
+        main_file = os.path.join(self.project_dir, "main.py")
+        with open(main_file, "a") as fh:
+            fh.write("raise ValueError()\n")
+
+        self.build()
+        # Pod should still be running instead of going to 'Succeeded'
+        # since debug is enabled and we inserted an error
+        self.deploy()
+        self.verify_pod_status(expected_status="Running")
+
+        # Pod should still be running to allow user to debug
+        time.sleep(5)
+        mlt_status = self.status()
+        assert "Running" in mlt_status
+        self.undeploy()
+
+        # Try again with debug disabled
+        self.config(subcommand="set",
+                    config_name="template_parameters.debug_on_fail",
+                    config_value="False")
+        self.deploy(no_push=True)
+        self.verify_pod_status(expected_status="Failed")

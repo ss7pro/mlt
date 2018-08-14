@@ -23,8 +23,8 @@ from __future__ import print_function
 import errno
 import uuid
 
-from mock import MagicMock
 import pytest
+from mock import MagicMock
 
 from mlt.commands.init import InitCommand
 from mlt.utils import constants
@@ -45,6 +45,11 @@ def open_mock(patch):
 @pytest.fixture
 def os_path_exists_mock(patch):
     return patch('os.path.exists')
+
+
+@pytest.fixture
+def os_path_isdir_mock(patch):
+    return patch('os.path.isdir')
 
 
 @pytest.fixture
@@ -98,8 +103,23 @@ def config_helpers_mock(patch):
 
 
 @pytest.fixture
+def copy_mock(patch):
+    return patch('copy')
+
+
+@pytest.fixture
+def get_template_params_mock(patch):
+    return patch('config_helpers.get_template_parameters_from_file')
+
+
+@pytest.fixture
 def traceback_mock(patch):
     return patch('traceback')
+
+
+@pytest.fixture
+def yaml_load_mock(patch):
+    return patch('yaml.load')
 
 
 @pytest.fixture(autouse=True)
@@ -289,8 +309,8 @@ def test_template_params():
         '<name>': new_dir
     }
     init = InitCommand(init_dict)
-    template_params = [{'name': 'num_ps', 'value': '1'},
-                       {'name': 'num_workers', 'value': '2'}]
+    template_params = [{'name': 'num_ps', 'value': 1},
+                       {'name': 'num_workers', 'value': 2}]
     result = init._build_mlt_json(template_params, None)
     assert constants.TEMPLATE_PARAMETERS in result
     result_params = result[constants.TEMPLATE_PARAMETERS]
@@ -351,3 +371,37 @@ def test_no_gcloud_or_registry(open_mock, process_helpers, copytree_mock,
                 init.action()
 
     assert init.app_name == new_dir
+
+
+def test_debug_on_fail_init(get_template_params_mock, copy_mock, copytree_mock,
+                            open_mock, checking_crds_mock, check_output_mock,
+                            process_helpers, os_path_isdir_mock, listdir_mock,
+                            yaml_load_mock):
+    """ Tests that when debug_on_fail is a template parameter, 'copy' is
+    called, since we copy the kubernetes debug wrapper to the app. """
+    get_template_params_mock.return_value = [{'name': 'debug_on_fail',
+                                              'value': 'false'}]
+    os_path_isdir_mock.return_value = True
+    listdir_mock.return_value = ["job.yaml"]
+    yaml_load_mock.return_value = {
+        "containers": [
+            {"name": "container", "env":
+                [{"name": "DEBUG_ON_FAIL", "value": True}]},
+            {"name": "container2", "env":
+                [{"name": "random", "value": False}]}
+        ]}
+
+    new_dir = str(uuid.uuid4())
+    init_dict = {
+        'init': True,
+        '--template': 'tf-dist-mnist',
+        '--template-repo': project.basedir(),
+        '--registry': True,
+        '--namespace': None,
+        '<name>': new_dir,
+        '--skip-crd-check': False,
+        '--enable-sync': False
+    }
+    init = InitCommand(init_dict)
+    init.action()
+    assert copy_mock.called

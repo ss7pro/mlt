@@ -38,16 +38,21 @@ from project import basedir
 
 
 class CommandTester(object):
-    @classmethod
+
     @pytest.fixture(scope='class', autouse=True)
     def setup(self):
+        # workaround for issue described here:
+        # https://github.com/pytest-dev/pytest/issues/3778
+            # issuecomment-411899446
+        # this will enable us to use pytest 3.7.1
+
         # just in case tests fail, want a clean namespace always
-        self.registry = os.getenv('MLT_REGISTRY', 'localhost:5000')
+        type(self).registry = os.getenv('MLT_REGISTRY', 'localhost:5000')
 
         # ANY NEW TFJOBS NEED TO HAVE THEIR TEMPLATE NAMES LISTED HERE
         # TFJob terminates pods after completion so can't check old pods
         # for status of job completion
-        self.tfjob_templates = ('tf-dist-mnist', 'tf-distributed')
+        type(self).tfjob_templates = ('tf-dist-mnist', 'tf-distributed')
 
     def _set_new_mlt_project_vars(self, template):
         """init calls this function to reset a new project's test vars"""
@@ -56,6 +61,8 @@ class CommandTester(object):
         # using template name to better id the job that's running for debugging
         self.app_name = 'a' + template[:4] + str(uuid.uuid4())[:4]
         self.namespace = getpass.getuser() + '-' + self.app_name
+        # useful debug print to id which test is running when
+        print("Running test with namespace {}".format(self.namespace))
 
         self.project_dir = os.path.join(pytest.workdir, self.app_name)
         self.mlt_json = os.path.join(self.project_dir, 'mlt.json')
@@ -217,7 +224,7 @@ class CommandTester(object):
         if logs:
             deploy_cmd.append('--logs')
             p = self._launch_popen_call(deploy_cmd, wait=True)
-            self._verify_pod_success(interactive, sync)
+
             # kill the 'mlt logs' process
             p.send_signal(signal.SIGINT)
             return
@@ -230,13 +237,6 @@ class CommandTester(object):
                 deploy_data = json.loads(f.read())
                 assert 'last_push_duration' in deploy_data and \
                        'last_remote_container' in deploy_data
-
-        # setting interactive to True for tensorboard templates, because
-        # the pods stay alive (running) until the user kills the session.
-        if self.template == "tensorboard-gke":
-            interactive = True
-
-        self._verify_pod_success(interactive, sync)
 
     def sync(self, create=False, reload=False, delete=False):
         sync_cmd = ['mlt', 'sync']
@@ -254,6 +254,7 @@ class CommandTester(object):
 
         # verify that we have some output
         assert output
+        return output
 
     def logs(self):
         # If 'mlt logs' succeed next call won't error out
@@ -326,8 +327,9 @@ class CommandTester(object):
         else:
             return p
 
-    def _verify_pod_success(self, interactive_deploy, sync_deploy):
-        """verify that our latest job did indeed get deployed to k8s"""
+    def verify_pod_status(self, expected_status="Succeeded"):
+        """verify that our latest job did indeed get deployed to k8s and
+         gets to the specified status"""
         # TODO: probably refactor this function
         # allow for 2 min for the pod to start creating;
         # pytorch operator causes pods to fail for a bit before success
@@ -353,14 +355,16 @@ class CommandTester(object):
             if time.time() - start >= 300:
                 break
 
-        # interactive pods are `sleep; infinity` so will still be running
-        if not interactive_deploy and not sync_deploy:
+        if expected_status != pod_status:
             # since new pods could come up, we might find another 'Pending' pod
             while pod_status == "Running" or pod_status == "Pending":
+                if pod_status == expected_status:
+                    break
                 time.sleep(1)
                 pod_status = self._grab_latest_pod_or_tfjob()
                 if time.time() - start >= 600:
                     break
-            assert pod_status == "Succeeded", pod_status
-        else:
-            assert pod_status == "Running", pod_status
+
+            assert pod_status == expected_status, \
+                "Expected pod status '{}' but was '{}'".\
+                format(expected_status, pod_status)

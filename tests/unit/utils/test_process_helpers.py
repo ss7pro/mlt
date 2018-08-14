@@ -19,38 +19,45 @@
 #
 
 import pytest
-from mock import patch
 from subprocess import CalledProcessError
 
 from mlt.utils.process_helpers import run, run_popen
 from test_utils.io import catch_stdout
 
 
-@patch('mlt.utils.process_helpers.check_output')
-def test_run_no_cwd(check_output):
+@pytest.fixture
+def check_output_mock(patch):
+    return patch('check_output')
+
+
+@pytest.fixture
+def popen_mock(patch):
+    return patch('Popen')
+
+
+def test_run_no_cwd(check_output_mock):
     """Assert a command was called with no current working dir
        This command should return the value of `bar`
     """
-    check_output.return_value.decode.return_value = 'bar'
+    check_output_mock.return_value.decode.return_value = 'bar'
     output = run('ls')
     assert output == 'bar'
 
 
-@patch('mlt.utils.process_helpers.check_output')
-def test_run_cwd(check_output):
+def test_run_cwd(check_output_mock):
     """Assert a command was called with /tmp as working dir
        This command should return the value of `foo`
     """
-    check_output.return_value.decode.return_value = 'foo'
+    check_output_mock.return_value.decode.return_value = 'foo'
     output = run('ls', '/tmp')
     assert output == 'foo'
 
 
-@patch('mlt.utils.process_helpers.check_output')
-def test_run_error(check_output):
+def test_run_error(check_output_mock):
     """There was a bad command made, therefore no output"""
-    check_output.side_effect = CalledProcessError(
+    check_output_mock.side_effect = CalledProcessError(
         returncode=2, cmd='Bad Command!')
+    # pytest.set_trace()
     with catch_stdout() as caught_output:
         with pytest.raises(SystemExit):
             run('ls')
@@ -60,32 +67,42 @@ def test_run_error(check_output):
     assert output == 'None'
 
 
-@patch('mlt.utils.process_helpers.Popen')
-def test_run_popen(popen):
+def test_run_popen(popen_mock):
     """Popen call should succeed"""
-    popen.return_value = 0
+    popen_mock.return_value = 0
     result = run_popen(['ls', '/tmp'])
     assert result == 0
 
 
-@patch('mlt.utils.process_helpers.Popen')
-def test_run_popen_shell_str(popen):
+def test_run_popen_shell_str(popen_mock):
     """Popen call should succeed"""
-    popen.return_value = 0
+    popen_mock.return_value = 0
     result = run_popen('ls /tmp', shell=True)
     assert result == 0
 
 
-@patch('mlt.utils.process_helpers.Popen')
-def test_run_popen_shell_list(popen):
+def test_run_popen_shell_list(popen_mock):
     """Popen call should succeed"""
-    popen.return_value = 0
+    popen_mock.return_value = 0
     result = run_popen(['ls', '/tmp'], shell=True)
     assert result == 0
 
 
-@patch('mlt.utils.process_helpers.Popen')
-def test_run_popen_invalid_cmd(popen):
+def test_run_popen_invalid_cmd(popen_mock):
+    """Assert passing not a string or list causes SystemExit"""
     with pytest.raises(SystemExit) as pytest_raised_err:
-            run_popen(0)
+        run_popen(0)
     assert pytest_raised_err.value.code == 1
+
+
+def test_run_popen_failed_cmd(popen_mock):
+    """If the cmd isn't valid assert some sort of error output + SystemExit"""
+    bad_cmd = "foo bar"
+    bad_cmd_output = "Not a valid command"
+    popen_mock.side_effect = CalledProcessError(
+        returncode=2, cmd=bad_cmd, output=bad_cmd_output)
+    with catch_stdout() as caught_output:
+        with pytest.raises(SystemExit):
+            run_popen(bad_cmd)
+        output = caught_output.getvalue().strip()
+    assert output == bad_cmd_output

@@ -34,7 +34,42 @@ specific to your template.  These parameters are added to the app's
 `mlt.json` file when it's initialized.  The parameter values are subbed
 in to the `k8s-templates` directory when the app is deployed.
 
-5. To test your template, you need to use the `--template-repo`
+5. Some templates provide the option to debug unhandled exceptions by
+setting a pdb breakpoint and allowing the user to attach into the failed
+pod.  Templates that allow this have a `debug_on_fail` option in the
+`parameters.json` file. Debugging failures is handled by using the
+[kubernetes_debug_wrapper.py](../mlt/utils/kubernetes_debug_wrapper.py)
+script.  If a template that includes this option is initailized, the
+`kubernetes_debug_wrapper.py` will be copied to the app directory.  As
+a template developer, if your app includes this `debug_on_fail` option,
+you need to ensure that the entry point in your `Dockerfile` executes
+the `kubernetes_debug_wrapper.py` script and passes the model training
+script as the next arg:
+```
+ENTRYPOINT [ "python", "kubernetes_debug_wrapper.py", "main.py" ]
+```
+Also, the Kubernetes job yaml file needs to have `tty` and `stdin`
+enabled for the container and set `DEBUG_ON_FAIL` as an environment
+variable:
+```
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: $app-$run
+spec:
+  template:
+    spec:
+      containers:
+      - name: $app
+        image: $image
+        tty: true
+        stdin: true
+        env:
+        - name: DEBUG_ON_FAIL
+          value: '$debug_on_fail'
+```
+
+6. To test your template, you need to use the `--template-repo`
 parameter with `mlt templates list` and `mlt init` in order
 to specify the git url for  template repo (otherwise, this defaults to
 `https://github.com/IntelAI/mlt`).

@@ -30,3 +30,6 @@ TEMPLATE_CONFIG = "parameters.json"
 
 # Name of config file section that has template parameters
 TEMPLATE_PARAMETERS = "template_parameters"
+
+# Location of kuberentes debug wrapper file
+DEBUG_WRAPPER_FILE = "mlt/utils/kubernetes_debug_wrapper.py"
