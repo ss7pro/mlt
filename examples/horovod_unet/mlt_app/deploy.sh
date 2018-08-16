@@ -22,6 +22,10 @@ VERSION=master
 SECRET=openmpi-secret
 # https://github.com/ksonnet/ksonnet/issues/298
 export USER=root
+
+# set your GITHUB_TOKEN otherwise deployment will fail with API Limit error
+export GITHUB_TOKEN=$GITHUB_TOKEN
+
 # Please update physical cores value. Below command works for linux.
 #export PHYSICAL_CORES=`lscpu | grep "Core(s) per socket" | cut -d':' -f2 | sed "s/ //g"` # Total number of physical cores per socket
 export PHYSICAL_CORES=4
