@@ -20,7 +20,7 @@
 # install ksonnet + kubeflow so we can support TFJob
 
 KS_VERSION=0.11.0
-KUBEFLOW_VERSION=v0.2.2
+export KUBEFLOW_VERSION=0.2.2
 APP_NAME=kubeflow
 # by default we'll use our hyperkube config
 # TODO: delete the hyperkube config
@@ -33,6 +33,6 @@ curl -LO https://github.com/ksonnet/ksonnet/releases/download/v${KS_VERSION}/ks_
 tar -xvf ks_${KS_VERSION}_linux_amd64.tar.gz
 sudo mv ks_${KS_VERSION}_linux_amd64/ks /usr/local/bin/ks
 
-# create namespace if doesn't exist yet
-curl https://raw.githubusercontent.com/kubeflow/kubeflow/${KUBEFLOW_VERSION}/scripts/deploy.sh | bash
+# Install kubeflow
+curl https://raw.githubusercontent.com/kubeflow/kubeflow/v${KUBEFLOW_VERSION}/scripts/deploy.sh | bash
 
