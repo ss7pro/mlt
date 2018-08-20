@@ -45,6 +45,9 @@ Optional prerequisites:
 - [jq](http://macappstore.org/jq/) (for the `tensorboard` templates)
 - [openssh-server](https://www.openssh.com/) (for the `horovod` template)
 
+Linux Debian-based distro users:
+- Run `make debian_prereq_install` to install every dependency required for `mlt` to work. We assume users already have `kubectl` and `docker` set up though.
+
 ## Installation
 
 ### Install from [PyPI](https://pypi.org/)

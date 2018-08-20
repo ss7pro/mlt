@@ -28,8 +28,7 @@ APP_NAME=kubeflow
 # workaround for https://github.com/ksonnet/ksonnet/issues/298
 export USER=root
 
-# install ksonnet
-sudo ./scripts/ksonnet_install_linux.sh
+./scripts/ksonnet_install_linux.sh
 
 # create namespace if doesn't exist yet
 kubectl create namespace $NAMESPACE -v=7 || true
