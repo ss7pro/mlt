@@ -19,8 +19,8 @@
 
 # install ksonnet + kubeflow so we can support TFJob
 
-NAMESPACE=kubeflow
-VERSION=v0.2.2
+KS_VERSION=0.11.0
+KUBEFLOW_VERSION=v0.2.2
 APP_NAME=kubeflow
 # by default we'll use our hyperkube config
 # TODO: delete the hyperkube config
@@ -29,25 +29,10 @@ APP_NAME=kubeflow
 export USER=root
 
 # pull ksonnet from web
-curl -LO https://github.com/ksonnet/ksonnet/releases/download/v0.9.2/ks_0.9.2_linux_amd64.tar.gz
-tar -xvf ks_0.9.2_linux_amd64.tar.gz
-sudo mv ./ks_0.9.2_linux_amd64/ks /usr/local/bin/ks
+curl -LO https://github.com/ksonnet/ksonnet/releases/download/v${KS_VERSION}/ks_${KS_VERSION}_linux_amd64.tar.gz
+tar -xvf ks_${KS_VERSION}_linux_amd64.tar.gz
+sudo mv ./ks_${KS_VERSION}_linux_amd64/ks /usr/local/bin/ks
 
 # create namespace if doesn't exist yet
-kubectl create namespace $NAMESPACE -v=7 || true
+curl https://raw.githubusercontent.com/kubeflow/kubeflow/v${KUBEFLOW_VERSION}/scripts/deploy.sh | bash
 
-# create basic ks app
-cd /tmp
-ks init $APP_NAME
-cd $APP_NAME
-ks env set default --namespace $NAMESPACE
-
-# install kubeflow components for TFJob support
-ks registry add kubeflow github.com/kubeflow/kubeflow/tree/$VERSION/kubeflow
-ks pkg install kubeflow/core@$VERSION
-ks pkg install kubeflow/tf-job@$VERSION
-ks pkg install kubeflow/pytorch-job@$VERSION
-ks generate kubeflow-core kubeflow-core
-ks generate pytorch-operator pytorch-operator
-ks apply default -c kubeflow-core
-ks apply default -c pytorch-operator
