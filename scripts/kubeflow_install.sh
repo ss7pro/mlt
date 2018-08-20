@@ -31,8 +31,8 @@ export USER=root
 # pull ksonnet from web
 curl -LO https://github.com/ksonnet/ksonnet/releases/download/v${KS_VERSION}/ks_${KS_VERSION}_linux_amd64.tar.gz
 tar -xvf ks_${KS_VERSION}_linux_amd64.tar.gz
-sudo mv ./ks_${KS_VERSION}_linux_amd64/ks /usr/local/bin/ks
+sudo mv ks_${KS_VERSION}_linux_amd64/ks /usr/local/bin/ks
 
 # create namespace if doesn't exist yet
-curl https://raw.githubusercontent.com/kubeflow/kubeflow/v${KUBEFLOW_VERSION}/scripts/deploy.sh | bash
+curl https://raw.githubusercontent.com/kubeflow/kubeflow/${KUBEFLOW_VERSION}/scripts/deploy.sh | bash
 
