@@ -115,6 +115,7 @@ jobs:
       - run:
           name: Install kubeflow for TFJob operator
           command: |
+            sudo apt-get install -yq --no-install-recommends --fix-missing uuid-runtime
             # since running on a cluster with RBAC enabled, need workaround
             # https://github.com/kubeflow/kubeflow/blob/master/user_guide.md#rbac-clusters
             kubectl create clusterrolebinding default-admin --clusterrole=cluster-admin --user=mltjson@intelai-mlt.iam.gserviceaccount.com
