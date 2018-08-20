@@ -20,7 +20,7 @@
 # install ksonnet + kubeflow so we can support TFJob
 
 NAMESPACE=kubeflow
-VERSION=3920d1402f40455c0f3e5f54ea4cc8142c23c2c8
+VERSION=v0.2.2
 APP_NAME=kubeflow
 # by default we'll use our hyperkube config
 # TODO: delete the hyperkube config
