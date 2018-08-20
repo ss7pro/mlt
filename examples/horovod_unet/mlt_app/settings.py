@@ -20,8 +20,8 @@
 
 import os
 
-DATA_PATH = os.environ.get('DATA_PATH', '/var/datasets/unet/vck-resource-8fd827a8-809a-11e8-b982-0a580a480bd4')
-OUTPUT_PATH = os.environ.get('OUTPUT_PATH', '/var/datasets/unet/vck-resource-8fd827a8-809a-11e8-b982-0a580a480bd4')
+DATA_PATH = os.environ.get('DATA_PATH', '/home/nfsshare/unet')
+OUTPUT_PATH = os.environ.get('OUTPUT_PATH', '/home/nfsshare/unet')
 
 IMG_HEIGHT = 128
 IMG_WIDTH = 128

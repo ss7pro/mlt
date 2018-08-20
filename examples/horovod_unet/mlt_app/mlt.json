@@ -4,13 +4,13 @@
   "namespace": "unet",
   "template_parameters": {
     "num_nodes": "2",
-    "num_workers_per_node": "1",
+    "num_workers_per_node": "2",
     "num_inter_threads": "2",
-    "sockets_per_node": "1",
+    "sockets_per_node": "2",
     "gpus": "0",
-    "data_path": "/var/datasets/unet/vck-resource-8fd827a8-809a-11e8-b982-0a580a480bd4",
-    "output_path": "/var/datasets/unet/vck-resource-8fd827a8-809a-11e8-b982-0a580a480bd4"
+    "data_path": "/home/nfsshare/unet",
+    "output_path": "/home/nfsshare/unet/checkpoints"
   },
-  "registry": "<gcr.io/project_id>or<docker.io/repo_name>",
+  "registry": "aipg-infr-07.ra.intel.com:5000",
   "template_git_sha": "f5ca4c85d559656d7a78549d3cde4a977db1a037"
 }

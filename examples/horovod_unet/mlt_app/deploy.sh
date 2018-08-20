@@ -69,7 +69,7 @@ cp -rf ../volume-mount/prototypes/openmpi.jsonnet vendor/kubeflow/openmpi/protot
 # Node selector helps to launch job on specific set of nodes with label.
 # For kubernetes nodes we assigned label called `node-type=highmem` to set of nodes.
 # Ex: kubectl label node gke-node-1 node-type=highmem
-NODE_SELECTOR="node-type=highmem"
+#NODE_SELECTOR="node-type=highmem"
 
 COMPONENT=${JOB_NAME}
 
@@ -95,7 +95,7 @@ EXEC="mpirun -np ${WORKERS} \
 --report-bindings \
 --oversubscribe bash /src/app/exec_multiworker.sh ${PPR} ${NUM_INTER_THREADS} ${DATA_PATH} ${OUTPUT_PATH}"
 
-ks generate openmpi ${COMPONENT} --image ${IMAGE} --secret ${SECRET} --workers ${WORKERS} --gpu ${GPU} --exec "${EXEC}" --nodeSelector "${NODE_SELECTOR}"
+ks generate openmpi ${COMPONENT} --image ${IMAGE} --secret ${SECRET} --workers ${WORKERS} --gpu ${GPU} --exec "${EXEC}"
 } &> /dev/null
 
 # Uncomment below params to mount data.
@@ -103,8 +103,8 @@ ks generate openmpi ${COMPONENT} --image ${IMAGE} --secret ${SECRET} --workers $
 # If you have data on your host, if you want to mount that as volume. Please update below paths
 # volumes - path in this section will create a volume for you based on host path provided
 # volumeMounts - mountPath in this section will mount above volume at specified location
-ks param set ${COMPONENT} volumes '[{ "name": "vol", "hostPath": { "path": "/var/datasets/unet/vck-resource-8fd827a8-809a-11e8-b982-0a580a480bd4" }}]'
-ks param set ${COMPONENT} volumeMounts '[{ "name": "vol", "mountPath": "/var/datasets/unet/vck-resource-8fd827a8-809a-11e8-b982-0a580a480bd4"}]'
+ks param set ${COMPONENT} volumes '[{ "name": "vol", "hostPath": { "path": "/home/nfsshare/unet" }}]'
+ks param set ${COMPONENT} volumeMounts '[{ "name": "vol", "mountPath": "/home/nfsshare/unet"}]'
 
 # Deploy to your cluster.
 ks apply default
