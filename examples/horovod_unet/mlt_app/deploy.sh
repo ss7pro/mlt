@@ -73,22 +73,28 @@ NODE_SELECTOR="node-type=highmem"
 
 COMPONENT=${JOB_NAME}
 
-# Base dir for training data
-BASE_DIR=${BASE_DIR}
+# data path for training data
+DATA_PATH=${DATA_PATH}
 
 # output path to store results
 OUTPUT_PATH=${OUTPUT_PATH}
 
 IMAGE=${IMAGE}
-LOG_DIR=${LOG_DIR}
 WORKERS=$(( ${NUM_NODES} * ${NUM_WORKERS_PER_NODE} ))
 SOCKETS_PER_NODE=${SOCKETS_PER_NODE}
 NUM_INTER_THREADS=${NUM_INTER_THREADS}
 
 PPR=$(( $NUM_WORKERS_PER_NODE / $SOCKETS_PER_NODE ))
 PE=$(( $PHYSICAL_CORES / $PPR ))
+
 GPU=${GPUS}
-EXEC="mpirun -np ${WORKERS} --hostfile /kubeflow/openmpi/assets/hostfile --map-by socket -cpus-per-proc $PHYSICAL_CORES --report-bindings --oversubscribe bash /src/app/exec_multiworker.sh ${LOG_DIR} ${PPR} ${NUM_INTER_THREADS}"
+EXEC="mpirun -np ${WORKERS} \
+--hostfile /kubeflow/openmpi/assets/hostfile \
+--map-by socket \
+-cpus-per-proc $PHYSICAL_CORES \
+--report-bindings \
+--oversubscribe bash /src/app/exec_multiworker.sh ${PPR} ${NUM_INTER_THREADS} ${DATA_PATH} ${OUTPUT_PATH}"
+
 ks generate openmpi ${COMPONENT} --image ${IMAGE} --secret ${SECRET} --workers ${WORKERS} --gpu ${GPU} --exec "${EXEC}" --nodeSelector "${NODE_SELECTOR}"
 } &> /dev/null
 
