@@ -39,7 +39,7 @@ Prerequisites:
 Optional prerequisites:
 - [kubetail](https://github.com/johanhaleby/kubetail) (for `mlt logs` command)
 - [Ksync](https://github.com/vapor-ware/ksync) (for `mlt sync` commands)
-- [ks](https://github.com/ksonnet/ksonnet#install) (for the `horovod` template)
+- [ks](https://github.com/IntelAI/mlt/blob/master/scripts/ksonnet_install_linux.sh) (Needed `0.11.0` version for volume support to work in `horovod` template)
 - [TFJob operator](https://github.com/kubeflow/tf-operator#installing-the-tfjob-crd-and-operator-on-your-k8s-cluster) (for the `distributed tensorflow` templates)
 - [PyTorch operator](https://github.com/kubeflow/pytorch-operator) (for the `pytorch-distributed` template)
 - [jq](http://macappstore.org/jq/) (for the `tensorboard` templates)
