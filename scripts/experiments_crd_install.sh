@@ -17,11 +17,10 @@
 # SPDX-License-Identifier: EPL-2.0
 #
 
-pushd .
-mkdir -p /tmp/ksonnet
-cd /tmp/ksonnet
-curl -LO https://github.com/ksonnet/ksonnet/releases/download/v0.11.0/ks_0.11.0_linux_amd64.tar.gz
-tar -xvf ks_0.11.0_linux_amd64.tar.gz
-mv -f ./ks_0.11.0_linux_amd64/ks /usr/local/bin/ks
+git clone https://github.com/IntelAI/experiments.git
+pushd experiments
+EXPERIMENTS_VERISON=`cat ../mlt-templates/experiments/EXPERIMENTS_VERSION.txt`
+git checkout ${EXPERIMENTS_VERISON}
+kubectl create -f resources/crds/experiment-crd.yaml
+kubectl create -f resources/crds/result-crd.yaml
 popd
-rm -rf /tmp/ksonnet
