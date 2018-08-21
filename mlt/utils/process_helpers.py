@@ -22,14 +22,22 @@ import sys
 from subprocess import check_output, CalledProcessError, Popen, PIPE
 
 
-def run(command, cwd=None, raise_on_failure=False):
+def run(command, cwd=None, raise_on_failure=False, ignore_failure=False):
+    """wrapper around check_output call
+       raise_on_failure: mlt will raise error if output call failed
+       ignore_failure: mlt won't even print out any error that occurred
+                       (useful for mlt undeploy call, in case undeploy
+                        was called multiple times for some reason)
+    """
+    output = ''
     try:
         output = check_output(command, cwd=cwd).decode("utf-8")
     except CalledProcessError as e:
         if raise_on_failure:
             raise e
-        print(e.output)
-        sys.exit(1)
+        if not ignore_failure:
+            print(e.output)
+            sys.exit(1)
 
     return output
 

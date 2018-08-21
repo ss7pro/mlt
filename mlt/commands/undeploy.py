@@ -49,9 +49,11 @@ class UndeployCommand(Command):
         else:
             # don't delete namespace here because we could be using a
             # user-provided namespace
+            # can't think of a reason to want to error out mlt if user
+            # has undeployed multiple times so ignoring this case for now
             process_helpers.run(
                 ["kubectl", "--namespace", namespace, "delete", "-f", "k8s"],
-                raise_on_failure=True)
+                ignore_failure=True)
 
     def _custom_undeploy(self):
         """
