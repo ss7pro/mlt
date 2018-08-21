@@ -44,14 +44,13 @@ RUN ln -sf /opt/anaconda3/bin/python /usr/bin/python
 # Install MKL optimized tensorflow.
 # If you wish to use general tensorflow. Please comment conda install -c anaconda tensorflow
 # and include tensorflow version in requirements.txt
-ARG TF_VERSION="1.8.0"
-RUN conda install -c anaconda tensorflow==$TF_VERSION && \
+RUN conda install -c anaconda tensorflow && \
     conda install pip && \
     conda clean --all
 
 FROM ubuntu_cpu_install AS ubuntu_cpu
 
-# Install requirements
+## Install requirements
 ADD requirements.txt /src/deps/requirements.txt
 RUN pip install -r /src/deps/requirements.txt
 
@@ -76,4 +75,4 @@ RUN cat /etc/ssh/ssh_config | grep -v StrictHostKeyChecking > /etc/ssh/ssh_confi
 WORKDIR /src/app
 ADD . /src/app
 
-# RUN pycodestyle -v .
+#RUN pycodestyle -v .
