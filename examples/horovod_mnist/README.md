@@ -1,0 +1,1 @@
+# Horovod MNIST example with mounted data
