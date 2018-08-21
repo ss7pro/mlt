@@ -103,8 +103,8 @@ ks generate openmpi ${COMPONENT} --image ${IMAGE} --secret ${SECRET} --workers $
 # If you have data on your host, if you want to mount that as volume. Please update below paths
 # volumes - path in this section will create a volume for you based on host path provided
 # volumeMounts - mountPath in this section will mount above volume at specified location
-ks param set ${COMPONENT} volumes '[{ "name": "vol", "hostPath": { "path": "/home/nfsshare/unet" }}]'
-ks param set ${COMPONENT} volumeMounts '[{ "name": "vol", "mountPath": "/home/nfsshare/unet"}]'
+ks param set ${COMPONENT} volumes '[{ "name": "vol", "hostPath": { "path": "/home/nfsshare/mnnist" }}]'
+ks param set ${COMPONENT} volumeMounts '[{ "name": "vol", "mountPath": "/home/nfsshare/mnist"}]'
 
 # Deploy to your cluster.
 ks apply default
