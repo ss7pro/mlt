@@ -17,6 +17,7 @@
 # SPDX-License-Identifier: EPL-2.0
 #
 
+export USER=root
 pushd .
 mkdir -p /tmp/ksonnet
 cd /tmp/ksonnet
@@ -25,6 +26,6 @@ KS_VERSION=0.11.0
 # pull ksonnet from web
 curl -LO https://github.com/ksonnet/ksonnet/releases/download/v${KS_VERSION}/ks_${KS_VERSION}_linux_amd64.tar.gz
 tar -xvf ks_${KS_VERSION}_linux_amd64.tar.gz
-sudo mv ks_${KS_VERSION}_linux_amd64/ks /usr/local/bin/ks
+mv ks_${KS_VERSION}_linux_amd64/ks /usr/local/bin/ks
 
 popd
