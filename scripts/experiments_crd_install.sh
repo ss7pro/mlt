@@ -1,4 +1,4 @@
-#!/bin/bash
+#! /bin/bash
 #
 # Copyright (c) 2018 Intel Corporation
 #
@@ -17,19 +17,10 @@
 # SPDX-License-Identifier: EPL-2.0
 #
 
-# install kubeflow so we can support TFJob
-
-export KUBEFLOW_VERSION=0.2.3
-APP_NAME=kubeflow
-# by default we'll use our hyperkube config
-# TODO: delete the hyperkube config
-# : "${KUBECONFIG:=../resources/config.yaml}"
-# workaround for https://github.com/ksonnet/ksonnet/issues/298
-export USER=root
-
-# pull ksonnet from web
-./scripts/ksonnet_install_linux.sh
-
-# Install kubeflow
-curl https://raw.githubusercontent.com/kubeflow/kubeflow/v${KUBEFLOW_VERSION}/scripts/gke/deploy.sh | bash
-
+git clone https://github.com/IntelAI/experiments.git
+pushd experiments
+EXPERIMENTS_VERISON=`cat ../mlt-templates/experiments/EXPERIMENTS_VERSION.txt`
+git checkout ${EXPERIMENTS_VERISON}
+kubectl create -f resources/crds/experiment-crd.yaml
+kubectl create -f resources/crds/result-crd.yaml
+popd
