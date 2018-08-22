@@ -27,8 +27,10 @@ export USER=root
 # pull ksonnet from web
 ./scripts/ksonnet_install_linux.sh
 
-# Install kubeflow, the PRIVATE_CLUSTER environment variable is required by kubeflow deploy.sh
+# Install kubeflow, the PRIVATE_CLUSTER, CLIENT_ID and CLIENT_SECRET environment variables are required by kubeflow deploy.sh
 export KUBEFLOW_VERSION=0.2.3
 export PRIVATE_CLUSTER=true
+export CLIENT_ID=$(base64 /dev/urandom | tr -d '/+' | dd bs=32 count=1 2>/dev/null)
+export CLIENT_SECRET=$(base64 /dev/urandom | tr -d '/+' | dd bs=32 count=1 2>/dev/null)
 curl https://raw.githubusercontent.com/kubeflow/kubeflow/v${KUBEFLOW_VERSION}/scripts/gke/deploy.sh | bash
 
