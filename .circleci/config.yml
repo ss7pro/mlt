@@ -7,7 +7,6 @@ jobs:
     environment:
       KUBECONFIG: /home/circleci/.kube/config
       MLT_TEST_CLUSTER_ENV_FILE: /tmp/mlt_test_cluster
-      PRIVATE_CLUSTER: true # the PRIVATE_CLUSTER environment variable is required by kubeflow deploy.sh
       # Since it's not safe to run more threads than the actual avaialbe cores,
       # specially with compute intensive tests like horovod this was reduced to 2
       MAX_NUMBER_OF_THREADS_E2E: 2
