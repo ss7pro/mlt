@@ -29,5 +29,7 @@ export USER=root
 
 # Install kubeflow
 export KUBEFLOW_VERSION=0.2.3
-curl https://raw.githubusercontent.com/kubeflow/kubeflow/v${KUBEFLOW_VERSION}/scripts/deploy.sh | bash
+wget https://raw.githubusercontent.com/kubeflow/kubeflow/v${KUBEFLOW_VERSION}/scripts/deploy.sh
 
+# Disable usage statistics report
+sed -i -e 's/ks\ param/#ks\ param/g' deploy.sh ./deploy.sh

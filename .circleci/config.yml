@@ -129,7 +129,6 @@ jobs:
       - run:
           name: Run e2e tests
           command: |
-            sudo apt-get install -yq --no-install-recommends --fix-missing uuid-runtime
             make -e test-e2e-all-circleci
           # The timeout was increased to 30 due to new tensorflow images that require longer build times
           no_output_timeout: 30m
