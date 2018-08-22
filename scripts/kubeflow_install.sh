@@ -31,5 +31,5 @@ export USER=root
 export KUBEFLOW_VERSION=0.2.3
 wget https://raw.githubusercontent.com/kubeflow/kubeflow/v${KUBEFLOW_VERSION}/scripts/deploy.sh
 
-# Disable usage statistics report
+# Disable usage statistics report due to this bug: https://github.com/purpleidea/puppet-gluster/issues/39
 sed -i -e 's/ks\ param/#ks\ param/g' deploy.sh ./deploy.sh
