@@ -17,9 +17,6 @@
 # SPDX-License-Identifier: EPL-2.0
 #
 
-# install kubeflow so we can support TFJob
-
-export KUBEFLOW_VERSION=0.2.3
 APP_NAME=kubeflow
 # by default we'll use our hyperkube config
 # TODO: delete the hyperkube config
@@ -30,6 +27,8 @@ export USER=root
 # pull ksonnet from web
 ./scripts/ksonnet_install_linux.sh
 
-# Install kubeflow
+# Install kubeflow, the PRIVATE_CLUSTER environment variable is required by kubeflow deploy.sh
+export KUBEFLOW_VERSION=0.2.3
+export PRIVATE_CLUSTER=true
 curl https://raw.githubusercontent.com/kubeflow/kubeflow/v${KUBEFLOW_VERSION}/scripts/gke/deploy.sh | bash
 
