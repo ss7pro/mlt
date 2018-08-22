@@ -115,7 +115,6 @@ jobs:
       - run:
           name: Set clusterrolebinding for kubeflow install later
           command: |
-            sudo apt-get install -yq --no-install-recommends --fix-missing uuid-runtime
             # since running on a cluster with RBAC enabled, need workaround
             # https://github.com/kubeflow/kubeflow/blob/master/user_guide.md#rbac-clusters
             kubectl create clusterrolebinding default-admin --clusterrole=cluster-admin --user=mltjson@intelai-mlt.iam.gserviceaccount.com
@@ -130,6 +129,7 @@ jobs:
       - run:
           name: Run e2e tests
           command: |
+            sudo apt-get install -yq --no-install-recommends --fix-missing uuid-runtime
             make -e test-e2e-all-circleci
           # The timeout was increased to 30 due to new tensorflow images that require longer build times
           no_output_timeout: 30m
