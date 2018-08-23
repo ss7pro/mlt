@@ -42,7 +42,7 @@ class TestDeployFlow(CommandTester):
         finally:
             # no matter what, undeploy and check status
             try:
-                self.undeploy()
+                self.undeploy_for_test_teardown()
                 self.status()
             finally:
                 # tear down namespace at end of test
@@ -107,6 +107,7 @@ class TestDeployFlow(CommandTester):
         self.deploy(no_push=True)
         self.verify_pod_status()
         self.status()
+        self.undeploy(all_jobs=True)
 
     @pytest.mark.parametrize('template', ['hello-world', 'tf-distributed'])
     def test_interactive_deploy(self, template):
@@ -131,6 +132,7 @@ class TestDeployFlow(CommandTester):
         self.deploy(no_push=True)
         self.verify_pod_status()
         self.status()
+        self.undeploy(all_jobs=True)
 
     def test_debug_wrapper(self):
         """tests debug_on_fail param"""

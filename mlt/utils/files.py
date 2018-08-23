@@ -39,3 +39,9 @@ def is_custom(target):
                     custom = True
                     break
     return custom
+
+
+def get_deployed_jobs():
+    """get the list of the deployed jobs."""
+    return [d for d in os.listdir('k8s')
+            if os.path.isdir(os.path.join('k8s', d))]

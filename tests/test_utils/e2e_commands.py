@@ -293,8 +293,23 @@ class CommandTester(object):
         # kill the 'mlt logs' process
         p.send_signal(signal.SIGINT)
 
-    def undeploy(self):
-        self._launch_popen_call(['mlt', 'undeploy'])
+    def undeploy(self, all_jobs=False, job_name=None):
+        command = ['mlt', 'undeploy']
+        if all_jobs:
+            command.append("--all")
+        elif job_name:
+            command.append("--job-name={}".format(job_name))
+        self._launch_popen_call(command)
+
+    # TODO: merge with undeploy(...) to use undeploy(all_jobs=True)
+    # in teardown()
+    def undeploy_for_test_teardown(self):
+        """use `mlt undeploy --all` in test teardown."""
+        command = ['mlt', 'undeploy', '--all']
+        # expected output message in case of second undeploy
+        expected_out = "This app has not been deployed yet."
+        self._launch_popen_call(command, allow_err=True,
+                                expected_err_msg=expected_out)
         # verify no more deployment job
         # TODO: this will always return a 0 exit code...
         self._launch_popen_call(
@@ -312,10 +327,11 @@ class CommandTester(object):
         assert output
         return output.decode("utf-8")
 
-    def _launch_popen_call(self, command, cwd=None,
-                           return_output=False, shell=False, stdout=PIPE,
-                           stderr=PIPE, stderr_is_not_okay=False,
-                           wait=False, preexec_fn=None):
+    def _launch_popen_call(self, command, cwd=None, return_output=False,
+                           shell=False, stdout=PIPE, stderr=PIPE,
+                           stderr_is_not_okay=False, wait=False,
+                           preexec_fn=None, allow_err=False,
+                           expected_err_msg=None):
         """Lightweight wrapper that launches run_popen and handles dumping
            output if there was an error
            cwd: where to launch popen call from
@@ -335,6 +351,12 @@ class CommandTester(object):
            preexec_fn: runs a func after the fork() call but before exec()
                        to run the shell. Useful for killing subprocesses of
                        subprocesses (like `mlt deploy -l` --> `kubetail`)
+           allow_err: if True, we expect the command to fail and want to
+                      test with an expected error message
+                      `expected_err_msg`.
+           expected_err_msg: the expected error message if the command
+                             execution fails, it's used when `allow_err`
+                             is True.
         """
         if cwd is None:
             # default to project dir if that's defined, otherwise just use /tmp
@@ -347,7 +369,11 @@ class CommandTester(object):
 
             error_msg = "Popen call failed:\nSTDOUT:{}\n\nSTDERR:{}".format(
                 str(out), colored(str(err), 'red'))
-            assert p.wait() == 0, error_msg
+            if allow_err & p.wait() != 0:
+                output = out.decode("utf-8").strip()
+                assert output == expected_err_msg, error_msg
+            else:
+                assert p.wait() == 0, error_msg
 
             if stderr_is_not_okay is True:
                 assert not err, error_msg
