@@ -347,8 +347,6 @@ class CommandTester(object):
 
             error_msg = "Popen call failed:\nSTDOUT:{}\n\nSTDERR:{}".format(
                 str(out), colored(str(err), 'red'))
-            # TODO: doesn't p.wait() check error code? Can you have `err` and
-            # exit code of 0?
             assert p.wait() == 0, error_msg
 
             if stderr_is_not_okay is True:
