@@ -32,7 +32,7 @@ Usage:
       [--retries=<retries>] [--skip-crd-check]
       [--since=<duration>]
   mlt sync (create | reload | delete)
-  mlt undeploy
+  mlt undeploy [--all] [--job-name=<name>]
   mlt status
   mlt (template | templates) list [--template-repo=<repo>]
   mlt update-template [--template-repo=<repo>]
@@ -89,6 +89,8 @@ Options:
   --since=<duration>        Returns logs newer than a relative
                             duration like 10s, 1m, or 2h [default: 1m].
   --logs                    Tail logs after deploying [default: False]
+  --all                     Undeploy all of the deployed jobs.
+  --job-name=<name>         Job name to undeploy.
 """
 
 # Note that new commands/flags should be documented in docs/features.md

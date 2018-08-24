@@ -18,10 +18,10 @@
 # SPDX-License-Identifier: EPL-2.0
 #
 
-import json
 import os
 import subprocess
 import sys
+import shutil
 
 from termcolor import colored
 
@@ -43,35 +43,55 @@ class UndeployCommand(Command):
             sys.exit(1)
 
         namespace = self.config['namespace']
-
-        if files.is_custom('undeploy:'):
-            self._custom_undeploy()
+        jobs_list = files.get_deployed_jobs()
+        if not jobs_list:
+            print("This app has not been deployed yet.")
+            sys.exit(1)
         else:
-            # don't delete namespace here because we could be using a
-            # user-provided namespace
-            process_helpers.run(
-                ["kubectl", "--namespace", namespace, "delete", "-f", "k8s"],
-                raise_on_failure=True)
+            if self.args.get('--all'):
+                self._undeploy_all(namespace, jobs_list)
+            elif self.args.get('--job-name'):
+                job_name = self.args['--job-name']
+                if job_name in jobs_list:
+                    self._undeploy_job(namespace, job_name)
+                else:
+                    print('Job-name {} not found in: {}'
+                          .format(job_name, jobs_list))
+                    sys.exit(1)
+            elif len(jobs_list) == 1:
+                self._undeploy_job(namespace, jobs_list.pop())
+            else:
+                print("Multiple jobs are found under this application, "
+                      "please try `mlt undeploy --all` or specify a single"
+                      " job to undeploy using "
+                      "`mlt undeploy --job-name <job-name>`")
+                sys.exit(1)
 
-    def _custom_undeploy(self):
+    def _undeploy_all(self, namespace, jobs_list):
+        """undeploy all jobs."""
+        for job in jobs_list:
+            self._undeploy_job(namespace, job)
+
+    def _undeploy_job(self, namespace, job_name):
+        """undeploy the given job name"""
+        job_dir = "k8s/{}".format(job_name)
+        if files.is_custom('undeploy:'):
+            self._custom_undeploy(job_name)
+        else:
+            process_helpers.run(
+                ["kubectl", "--namespace", namespace, "delete", "-f",
+                 job_dir, "--recursive"],
+                raise_on_failure=True)
+        self.remove_job_dir(job_dir)
+
+    def remove_job_dir(self, job_dir):
+        """remove the job sub-directory from k8s."""
+        shutil.rmtree(job_dir)
+
+    def _custom_undeploy(self, job_name):
         """
         Custom undeploy uses the make targets to perform operation.
         """
-        if os.path.exists('.push.json'):
-            with open('.push.json', 'r') as f:
-                data = json.load(f)
-        else:
-            print("This app has not been deployed yet.")
-            sys.exit(1)
-
-        app_run_id = data.get('app_run_id', "")
-
-        if len(app_run_id) < 4:
-            print("Something went wrong, "
-                  "please delete folder and re-initiate app")
-            sys.exit(1)
-
-        job_name = "-".join([self.config['name'], app_run_id])
         # Adding USER env because
         # https://github.com/ksonnet/ksonnet/issues/298
         user_env = dict(os.environ, JOB_NAME=job_name, USER='root')

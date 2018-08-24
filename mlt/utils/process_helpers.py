@@ -19,6 +19,7 @@
 #
 import os
 import sys
+from contextlib import contextmanager
 from subprocess import check_output, CalledProcessError, Popen, PIPE
 
 
@@ -34,7 +35,8 @@ def run(command, cwd=None, raise_on_failure=False):
     return output
 
 
-def run_popen(command, shell=False, stdout=PIPE, stderr=PIPE, cwd=None):
+def run_popen(command, shell=False, stdout=PIPE, stderr=PIPE, cwd=None,
+              preexec_fn=None):
     """to suppress output, pass False to stdout or stderr
        None is a valid option that we want to allow"""
     with open(os.devnull, 'w') as quiet:
@@ -45,7 +47,19 @@ def run_popen(command, shell=False, stdout=PIPE, stderr=PIPE, cwd=None):
             sys.exit(1)
         try:
             return Popen(command, stdout=stdout, stderr=stderr, shell=shell,
-                         cwd=cwd)
+                         cwd=cwd, preexec_fn=preexec_fn)
         except CalledProcessError as e:
             print(e.output)
             sys.exit(1)
+
+
+@contextmanager
+def prevent_deadlock(proc):
+    """function designed to read from a process' pipe and prevent deadlock
+       Useful for when we can't use `.communicate()` and need a `.wait()` with
+       also using PIPEs.
+       We won't actually do anything with the output here.
+    """
+    yield
+    for line in iter(proc.stdout.readline, b''):
+        pass
