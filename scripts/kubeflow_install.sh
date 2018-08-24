@@ -28,7 +28,7 @@ export USER=root
 ./scripts/ksonnet_install_linux.sh
 
 # Install kubeflow
-export KUBEFLOW_VERSION=0.2.3
+export KUBEFLOW_VERSION=0.2.4
 wget https://raw.githubusercontent.com/kubeflow/kubeflow/v${KUBEFLOW_VERSION}/scripts/deploy.sh
 
 # Disable usage statistics report due to this bug: https://github.com/purpleidea/puppet-gluster/issues/39
