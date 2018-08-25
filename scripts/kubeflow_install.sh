@@ -35,8 +35,10 @@ wget https://raw.githubusercontent.com/kubeflow/kubeflow/v${KUBEFLOW_VERSION}/sc
 sed -i -e 's/ks\ param/#ks\ param/g' deploy.sh
 chmod +x deploy.sh
 ./deploy.sh
-pushd
+
 # install Pytorch Operator
+pushd .
+cd kubeflow_ks_app
 ks generate pytorch-operator pytorch-operator
 ks apply default -c pytorch-operator
 popd
