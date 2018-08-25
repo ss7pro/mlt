@@ -29,7 +29,7 @@ export USER=root
 
 # Install kubeflow
 export KUBEFLOW_VERSION=0.2.4
-wget https://raw.githubusercontent.com/kubeflow/kubeflow/v${KUBEFLOW_VERSION}/scripts/deploy.sh
+wget https://raw.githubusercontent.com/kubeflow/kubeflow/v${KUBEFLOW_VERSION}/scripts/deploy.sh -O deploy.sh
 
 # Disable usage statistics report due to this bug: https://github.com/purpleidea/puppet-gluster/issues/39
 sed -i -e 's/ks\ param/#ks\ param/g' deploy.sh
