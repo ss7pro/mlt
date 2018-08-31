@@ -100,7 +100,8 @@ def check_for_pods_readiness(namespace, filter_tag, retries):
             print("Max retries Reached.")
             break
         try:
-            kubectl_cmd = ["kubectl", "get", "pods", "--namespace", namespace]
+            kubectl_cmd = ["kubectl", "get", "pods", "--namespace", namespace,
+                           "--show-all"]
             pods = process_helpers.run_popen(kubectl_cmd)\
                 .stdout.read().strip().splitlines()
 
