@@ -1,0 +1,10 @@
+{
+  "name": "",
+  "registry": "",
+  "template_git_sha": "fc46d14b744096099deb336944abcf39fb3cc7f4",
+  "template_parameters": {
+    "greeting": "Hello"
+  }, 
+  "template_name": "hello-world", 
+  "namespace": ""
+}

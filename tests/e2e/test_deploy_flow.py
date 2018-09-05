@@ -73,6 +73,17 @@ class TestDeployFlow(CommandTester):
         self.verify_pod_status(expected_status=expected_status)
         self.status()
 
+    def test_deploy_using_old_app(self):
+        """ Test to ensure build/deploy/status of an old MLT v0.2.1 app
+        works with the current MLT code. """
+        old_app_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                   "../old-mlt-app")
+        self.init(existing_app_dir=old_app_dir)
+        self.build()
+        self.deploy()
+        self.verify_pod_status()
+        self.status()
+
     def test_deploy_enable_sync(self):
         self.init(enable_sync=True)
         self.build()
