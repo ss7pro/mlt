@@ -26,6 +26,7 @@ import getpass
 import json
 import os
 import pytest
+import shutil
 import signal
 import time
 import uuid
@@ -127,15 +128,24 @@ class CommandTester(object):
             self._launch_popen_call(command, stderr_is_not_okay=True)
 
     def init(self, template='hello-world', template_repo=basedir(),
-             enable_sync=False):
+             enable_sync=False, existing_app_dir=None):
         self._set_new_mlt_project_vars(template)
-        init_options = ['mlt', 'init', '--registry={}'.format(self.registry),
-                        '--template-repo={}'.format(template_repo),
-                        '--namespace={}'.format(self.namespace),
-                        '--template={}'.format(template), self.app_name]
-        if enable_sync:
-            init_options.append('--enable-sync')
-        self._launch_popen_call(init_options, cwd=pytest.workdir)
+
+        # If there isn't an existing app, run mlt init to create a new one
+        if not existing_app_dir:
+            init_options = ['mlt', 'init',
+                            '--registry={}'.format(self.registry),
+                            '--template-repo={}'.format(template_repo),
+                            '--namespace={}'.format(self.namespace),
+                            '--template={}'.format(template), self.app_name]
+            if enable_sync:
+                init_options.append('--enable-sync')
+            self._launch_popen_call(init_options, cwd=pytest.workdir)
+        else:
+            shutil.copytree(existing_app_dir, self.project_dir)
+            self.config("set", "namespace", self.namespace)
+            self.config("set", "name", self.app_name)
+            self.config("set", "registry", self.registry)
 
         # keep track of template we created so we can check if it's a TFJob
         # that terminates pods after completion so we need to check the crd
@@ -150,10 +160,12 @@ class CommandTester(object):
             }
             actual_configs = json.loads((f.read()))
             assert dict(actual_configs, **standard_configs) == actual_configs
-        # verify we created a git repo with our project init
-        assert "On branch master" in run(
-            "git --git-dir={}/.git --work-tree={} status".format(
-                self.project_dir, self.project_dir).split())
+
+        if not existing_app_dir:
+            # verify we created a git repo with our project init
+            assert "On branch master" in run(
+                "git --git-dir={}/.git --work-tree={} status".format(
+                    self.project_dir, self.project_dir).split())
 
         # setup additional namespace configs for experiments
         if template == 'experiments':

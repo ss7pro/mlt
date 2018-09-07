@@ -38,7 +38,7 @@ def init_processes(rank, size, fn, backend='tcp'):
 
 
 if __name__ == "__main__":
-    size = 1
+    size = 2
     processes = []
     for rank in range(size):
         p = Process(target=init_processes, args=(rank, size, run))
