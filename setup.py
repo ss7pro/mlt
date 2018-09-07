@@ -43,7 +43,8 @@ setup(name='mlt',
           'termcolor>=1.1.0',
           'PyYAML>=3.12',
           'watchdog>=0.8.3',
-          'jsonschema==2.6.0'
+          'jsonschema==2.6.0',
+          'pytz==2018.5'
       ],
       entry_points={
           'console_scripts': ['mlt=mlt.main:main']
