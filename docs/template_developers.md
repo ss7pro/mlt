@@ -74,7 +74,7 @@ parameter with `mlt templates list` and `mlt init` in order
 to specify the git url for  template repo (otherwise, this defaults to
 `https://github.com/IntelAI/mlt`).
 
-6. For templates supporting `mlt sync`, a few assumptions have been made:
+7. For templates supporting `mlt sync`, a few assumptions have been made:
 - The Pods for job should either remain running after the job has finished, or the `Job` spec
 under `k8s-templates` should contain commented lines describing how to keep the containers running
 after the job has finished.
@@ -89,3 +89,7 @@ For example here is an snippet from [tf-distributed](../mlt-templates/tf-distrib
 #             ### END KSYNC SECTION
           restartPolicy: OnFailure
 ```
+
+8. `mlt undeploy` currently assumes all jobs will either be a custom undeploy or a regular undeploy.
+It does this by checking if there's a `Makefile` in the template with an `undeploy:` rule.
+If you change your app from a normal deploy to a custom deploy, you are required to manually undeploy old jobs using (`kubectl delete deployment/job/...`).

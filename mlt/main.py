@@ -33,11 +33,12 @@ Usage:
       [--since=<duration>] [-v | --verbose]
   mlt sync (create | reload | delete)
   mlt undeploy [--all] [--job-name=<name>]
-  mlt status
+  mlt status [--job-name=<name>] [-n <count> | --count <count>]
   mlt (template | templates) list [--template-repo=<repo>]
   mlt update-template [--template-repo=<repo>]
   mlt (log | logs) [--since=<duration>] [--retries=<retries>]
-  mlt events
+      [--job-name=<name>]
+  mlt events [--job-name=<name>]
 
 Options:
   --template=<template>     Template name for app
@@ -91,6 +92,8 @@ Options:
   --logs                    Tail logs after deploying [default: False]
   --all                     Undeploy all of the deployed jobs.
   --job-name=<name>         Job name to undeploy.
+  --count=<count>           Number of job statuses to return in `mlt status`
+                            [default: 5]
 """
 
 # Note that new commands/flags should be documented in docs/features.md
@@ -155,21 +158,21 @@ def sanitize_input(args, regex=None):
                              "an alphanumeric character.".
                              format(args["<name>"]))
 
-    # -i is an alias, so ensure that we only have to do logic on --interactive
+    # we only do logic on full flag name rather than alias
     if args["-i"]:
         args["--interactive"] = True
-
-    # -l is an alias, so ensure that we only have to do logic on --logs
     if args["-l"]:
         args["--logs"] = True
-
-    # -v is an alias, so ensure that we only have to do logic on --verbose
     if args["-v"]:
         args["--verbose"] = True
+    if args["-n"]:
+        args["--count"] = True
 
     # docopt doesn't support type assignment:
     # https://github.com/docopt/docopt/issues/8
     args['--retries'] = int(args['--retries'])
+    if args['<count>']:
+        args['<count>'] = int(args['<count>'])
 
     # verify that the specified namespace is valid
     if args['--namespace'] and not regex_checks.k8s_name_is_valid(

@@ -43,7 +43,7 @@ class TestDeployFlow(CommandTester):
             # no matter what, undeploy and check status
             try:
                 self.undeploy_for_test_teardown()
-                self.status()
+                self.status(job_statuses=False)
             finally:
                 # tear down namespace at end of test
                 try:
@@ -115,9 +115,10 @@ class TestDeployFlow(CommandTester):
         self.deploy()
         self.verify_pod_status()
         self.status()
+        self.logs(use_job_name=True)
         self.deploy(no_push=True)
         self.verify_pod_status()
-        self.status()
+        self.status(count=2)
         self.undeploy(all_jobs=True)
 
     @pytest.mark.parametrize('template', ['hello-world', 'tf-distributed'])
@@ -129,7 +130,7 @@ class TestDeployFlow(CommandTester):
         self.status()
         # we don't need the original deployment and it interferes with
         # picking the right tfjob pod to check
-        self.undeploy()
+        self.undeploy(use_job_name=True)
         self.deploy(interactive=True, no_push=True, retries=60)
         self.verify_pod_status(expected_status="Running")
         self.status()
@@ -150,7 +151,7 @@ class TestDeployFlow(CommandTester):
         self.status()
         self.deploy(no_push=True)
         self.verify_pod_status()
-        self.status()
+        self.status(count=2)
         self.undeploy(all_jobs=True)
 
     def test_debug_wrapper(self):
@@ -176,7 +177,7 @@ class TestDeployFlow(CommandTester):
         time.sleep(5)
         mlt_status = self.status()
         assert "Running" in mlt_status
-        self.undeploy()
+        self.undeploy(use_job_name=True)
 
         # Try again with debug disabled
         self.config(subcommand="set",

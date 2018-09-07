@@ -148,16 +148,22 @@ the cluster using Kubernetes.
 ### mlt status (alpha)
 
 ```
-  mlt status
+  mlt status [--job-name=<name>] [-n <count> | --count <count>]
 ```
 
-The `mlt status` command displays the job/pod status for the last job
-that was deployed for the current project directory.
+The `mlt status` command displays the job/pod status for jobs
+that were deployed for the current project directory.
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `--job-name=<name>` | The name of a job to show status for, if there are multiple deployed. |
+| `-n <count> --count <count>` | Number of jobs to display status for, sorted by creation time. | 10 |
 
 ### mlt logs (alpha)
 
 ```
   mlt (log | logs) [--since=<duration>] [--retries=<retries>]
+  [--job-name=<name>]
 ```
 
 The `mlt log` command waits for pods to start running, then tails the
@@ -167,15 +173,20 @@ logs for those pods using `kubetail`.
 |--------|-------------|---------|
 | `--retries=<retries>` | Number of times to retry waiting for pods to come up for `--logs` or `--interactive`.  Waits 1 second between retrying. | 10 |
 | `--since` | Returns logs newer than a relative duration like 10s, 1m, or 2h.  Only used in conjunction with the `--logs` option. | 1m |
+| `--job-name=<name>` | Name of the job to show logs for, if multiple jobs are deployed. |
 
 ### mlt events (alpha)
 
 ```
-  mlt events
+  mlt events [--job-name=<name>]
 ```
 
 This command displays the Kubernetes events related to the last job that
 was deployed for the current project directory.
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `--job-name=<name>` | Name of the job to show events for, if multiple jobs are deployed. |
 
 ### mlt undeploy
 

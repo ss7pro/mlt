@@ -247,15 +247,18 @@ class DeployCommand(Command):
             print("Error while deploying app: {}".format(e.output))
 
     def _apply_template(self, out, filename, app_name, app_run_id):
-        """take k8s-template data and create deployment in k8s dir"""
-        job_sub_dir = self._track_deployed_job(app_name, app_run_id)
-        with open(os.path.join(job_sub_dir,
-                               filename), 'w') as f:
+        """take k8s-template data and create deployment in k8s dir
+           job_sub_dir will be used in case of a mlt deploy -l to pass in the
+           most current job being deployed to tail just in case there are > 1
+           jobs that exist since mlt logs requires --job-name if > 1 job
+        """
+        self.job_sub_dir = self._track_deployed_job(app_name, app_run_id)
+        with open(os.path.join(self.job_sub_dir, filename), 'w') as f:
             f.write(out)
 
         process_helpers.run(
             ["kubectl", "--namespace", self.namespace,
-             "apply", "-R", "-f", job_sub_dir])
+             "apply", "-R", "-f", self.job_sub_dir])
 
     def _track_deployed_job(self, app_name, app_run_id):
         """create a subdirectory in k8s with the deployed job name."""
@@ -393,4 +396,8 @@ class DeployCommand(Command):
                                   stdout=None, stderr=None).wait()
 
     def _tail_logs(self):
+        """need to tail the most recent job just in case there are more than
+           one and a user runs `mlt deploy -l`
+        """
+        self.args["--job-name"] = self.job_sub_dir.replace('k8s/', '')
         log_helpers.call_logs(self.config, self.args)

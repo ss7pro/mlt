@@ -53,10 +53,14 @@ def test_run_command(command):
 
 @pytest.mark.parametrize('args', [
     {'<name>': 'Capitalized-Name',
-     '-i': False, '-l': False, '-v': False, '--retries': '5'},
-    {'-i': True, '-l': False, '-v': False, '<name>': 'foo', '--retries': '5'},
-    {'-i': True, '-l': False, '-v': False, '<name>': 'foo', '--retries': '8'},
-    {'-i': True, '-l': False, '-v': True, '<name>': 'foo', '--retries': '8'}])
+     '-i': False, '-l': False, '-v': False, '--retries': '5',
+     '--job-name': None, '-n': True, "<count>": 10},
+    {'-i': True, '-l': False, '-v': False, '<name>': 'foo', '--retries': '5',
+     '--job-name': 'app', '-n': True, "<count>": 10},
+    {'-i': True, '-l': False, '-v': False, '<name>': 'foo',
+        '--retries': '8', '--job-name': None, '-n': True, "<count>": 10},
+    {'-i': True, '-l': False, '-v': True, '<name>': 'foo', '--retries': '8',
+     '--job-name': 'app', '-n': True, "<count>": 10}])
 def test_main_various_args(run_command_mock, docopt_mock, args):
     docopt_mock.return_value = args
     # add common args and expected arg manipulations
@@ -84,11 +88,13 @@ def test_main_invalid_namespace(docopt_mock):
     """ Test that an invalid namespace throws a ValueError """
     args = {
         "<name>": "foo",
+        "<count>": 3,
         # underscore should not be allowed in namespace
         "--namespace": "foo_bar",
         "-i": False,
         "-l": False,
         "-v": False,
+        "-n": True,
         "--retries": 5
     }
     docopt_mock.return_value = args
@@ -106,9 +112,11 @@ def test_main_set_remove_name(docopt_mock, command):
         command: True,
         "--namespace": "foo",
         "<name>": "",
+        "<count>": 10,
         "-i": False,
         "-l": False,
         "-v": False,
+        "-n": True,
         "--retries": 5
     }
     docopt_mock.return_value = args
@@ -121,9 +129,11 @@ def test_main_load_args(docopt_mock, run_command_mock):
     args = {
         "--namespace": "foo",
         "<name>": "bar",
+        "<count>": 1,
         "-i": False,
         "-l": False,
         "-v": False,
+        "-n": True,
         "--retries": 5,
         "status": True
     }

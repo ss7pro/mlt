@@ -17,15 +17,13 @@
 #
 # SPDX-License-Identifier: EPL-2.0
 #
-import json
-import os
 import sys
 import subprocess
 
 from termcolor import colored
 from time import sleep
 
-from mlt.utils import process_helpers
+from mlt.utils import files, process_helpers
 
 
 def call_logs(config, args):
@@ -34,31 +32,18 @@ def call_logs(config, args):
     and provides run-id to _get_logs method to
     fetch logs.
     """
-    if os.path.exists('.push.json'):
-        with open('.push.json', 'r') as f:
-            data = json.load(f)
-    else:
-        print("This app has not been deployed yet, "
-              "there are no logs to display.")
-        sys.exit(1)
-
-    app_run_id = data['app_run_id'].split("-")
-
-    if len(app_run_id) < 2:
-        print("Please re-deploy app again, something went wrong.")
-        sys.exit(1)
-
-    prefix = "-".join([config["name"], app_run_id[0], app_run_id[1]])
+    job = files.get_only_one_job(
+        job_desired=args["--job-name"],
+        error_msg="Please use --job-name flag to pick a job to tail.")
 
     namespace = config['namespace']
-    retires = args["--retries"]
 
-    # check for pod readiness before fetching logs.
-    running = check_for_pods_readiness(namespace, prefix, retires)
+    # check for pod readiness before fetching logs
+    running = check_for_pods_readiness(namespace, job, args["--retries"])
 
     if running:
         since = args["--since"]
-        _get_logs(prefix, since, namespace)
+        _get_logs(job, since, namespace)
     else:
         print("No logs found for this job.")
 
@@ -79,7 +64,7 @@ def _get_logs(prefix, since, namespace):
         if error_msg:
             if 'command not found' in error_msg:
                 print(colored("Please install `{}`. "
-                      "It is a prerequisite "
+                              "It is a prerequisite "
                               "for `mlt logs` to work"
                               .format(error_msg.split()[1]), 'red'))
             else:

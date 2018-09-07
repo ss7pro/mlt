@@ -19,12 +19,9 @@
 #
 
 import sys
-import json
-import os
 
 from mlt.commands import Command
-from mlt.utils import (process_helpers,
-                       config_helpers)
+from mlt.utils import config_helpers, files, process_helpers
 
 
 class EventsCommand(Command):
@@ -34,38 +31,18 @@ class EventsCommand(Command):
 
     def action(self):
         """
-        Display events for the latest run
-        """
-        self.call_events()
-
-    def call_events(self):
-        """
-        This method will check for `.push.josn`
+        Display events for a job. If multiple jobs, specify with --job-name
+        This method will check for `.push.json`
         and provides run-id to _get_event method to
         fetch events.
         """
-        if os.path.exists('.push.json'):
-            with open('.push.json', 'r') as f:
-                data = json.load(f)
-        else:
-            print("This app has not been deployed yet, "
-                  "there are no events to display.")
-            sys.exit(1)
+        job = files.get_only_one_job(
+            job_desired=self.args["--job-name"],
+            error_msg="Please use --job-name flag to query for job events.")
 
-        app_run_id = data['app_run_id'].split("-")
+        self._get_events(job, self.config['namespace'])
 
-        if len(app_run_id) < 4:
-            print("Please re-deploy app again, something went wrong.")
-            sys.exit(1)
-
-        filter_tag = "-".join([self.config["name"],
-                               app_run_id[0],
-                               app_run_id[1]])
-        namespace = self.config['namespace']
-        self._get_events(filter_tag, namespace)
-
-    @staticmethod
-    def _get_events(filter_tag, namespace):
+    def _get_events(self, filter_tag, namespace):
         """
          Fetches events
         """
@@ -75,16 +52,16 @@ class EventsCommand(Command):
             header_line = True
             header = events.stdout.readline()
             while True:
-                output = events.stdout.readline()
+                output = events.stdout.readline().decode('utf-8')
                 if output == '' and events.poll() is not None:
                     error = events.stderr.readline()
                     if error:
                         raise Exception(error)
                     break
 
-                if output is not '' and filter_tag in output:
+                if output is not '' and filter_tag and filter_tag in output:
                     if header_line:
-                        print(header)
+                        print(header.decode('utf-8'))
                         header_line = False
                     sys.stdout.write(output)
                     sys.stdout.flush()
@@ -98,4 +75,4 @@ class EventsCommand(Command):
                       "to work".format(str(ex).split()[1]))
             else:
                 print("Exception: {}".format(ex))
-            sys.exit()
+            sys.exit(1)

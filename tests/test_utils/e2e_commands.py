@@ -33,6 +33,7 @@ import uuid
 from termcolor import colored
 from subprocess import PIPE
 
+from mlt.utils.files import get_deployed_jobs
 from mlt.utils.git_helpers import clone_repo, get_experiments_version
 from mlt.utils.process_helpers import run, run_popen
 from project import basedir
@@ -94,6 +95,13 @@ class CommandTester(object):
         else:
             raise ValueError("No pod(s) deployed to namespace {}".format(
                 self.namespace))
+
+    def _grab_job_name(self):
+        """used with use_job_name flag to get the first of the list of the
+           deployed jobs
+        """
+        return get_deployed_jobs(
+            job_names_only=True, work_dir=self.project_dir)[0]
 
     def _setup_experiments_sa(self):
         """
@@ -310,26 +318,39 @@ class CommandTester(object):
             sync_cmd.append('delete')
         self._launch_popen_call(sync_cmd)
 
-    def status(self):
-        output, err = self._launch_popen_call(
-            ['mlt', 'status'], return_output=True, stderr_is_not_okay=True)
+    def status(self, count=1, job_statuses=True):
+        """
+           count: number of jobs to show status for
+           job_statuses: assert 0 job statuses in output (for undeploy check)
+        """
+        output, _ = self._launch_popen_call(
+            ['mlt', 'status', '-n', str(count)], return_output=True,
+            stderr_is_not_okay=True)
 
-        # verify that we have some output
-        assert output
+        if job_statuses:
+            assert output.count('Job: ') == count, [output, self.project_dir]
+            assert output.count('Creation Time: ') == count, output
+        else:
+            assert output == ''
         return output
 
-    def logs(self):
+    def logs(self, use_job_name=False):
+        command = ['mlt', 'logs']
+        if use_job_name:
+            command.append("--job-name={}".format(self._grab_job_name()))
+
         # If 'mlt logs' succeed next call won't error out
-        p = self._launch_popen_call(['mlt', 'logs'], wait=True)
+        p = self._launch_popen_call(command, wait=True)
+
         # kill the 'mlt logs' process
         p.send_signal(signal.SIGINT)
 
-    def undeploy(self, all_jobs=False, job_name=None):
+    def undeploy(self, all_jobs=False, use_job_name=None):
         command = ['mlt', 'undeploy']
         if all_jobs:
             command.append("--all")
-        elif job_name:
-            command.append("--job-name={}".format(job_name))
+        elif use_job_name:
+            command.append("--job-name={}".format(self._grab_job_name()))
         self._launch_popen_call(command)
 
     # TODO: merge with undeploy(...) to use undeploy(all_jobs=True)
@@ -400,7 +421,7 @@ class CommandTester(object):
 
             error_msg = "Popen call failed:\nSTDOUT:{}\n\nSTDERR:{}".format(
                 str(out), colored(str(err), 'red'))
-            if allow_err & p.wait() != 0:
+            if allow_err and p.wait() != 0:
                 output = out.decode("utf-8").strip()
                 assert output == expected_err_msg, error_msg
             else:

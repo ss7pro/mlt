@@ -43,46 +43,54 @@ class UndeployCommand(Command):
             sys.exit(1)
 
         namespace = self.config['namespace']
-        jobs_list = files.get_deployed_jobs()
-        if not jobs_list:
+        jobs = files.get_deployed_jobs(job_names_only=True)
+        if not jobs:
             print("This app has not been deployed yet.")
             sys.exit(1)
         else:
-            if self.args.get('--all'):
-                self._undeploy_all(namespace, jobs_list)
-            elif self.args.get('--job-name'):
+            if self.args.get('--job-name'):
                 job_name = self.args['--job-name']
-                if job_name in jobs_list:
-                    self._undeploy_job(namespace, job_name)
+                if job_name in jobs:
+                    self._undeploy_jobs(namespace, job_name)
                 else:
-                    print('Job-name {} not found in: {}'
-                          .format(job_name, jobs_list))
+                    print('Job name {} not found in: {}'
+                          .format(job_name, jobs))
                     sys.exit(1)
-            elif len(jobs_list) == 1:
-                self._undeploy_job(namespace, jobs_list.pop())
+            elif self.args.get('--all') or len(jobs) == 1:
+                self._undeploy_jobs(namespace, jobs, all_jobs=True)
             else:
                 print("Multiple jobs are found under this application, "
-                      "please try `mlt undeploy --all` or specify a single"
-                      " job to undeploy using "
+                      "please try `mlt undeploy --all` or specify a single "
+                      "job to undeploy using "
                       "`mlt undeploy --job-name <job-name>`")
                 sys.exit(1)
 
-    def _undeploy_all(self, namespace, jobs_list):
-        """undeploy all jobs."""
-        for job in jobs_list:
-            self._undeploy_job(namespace, job)
+    def _undeploy_jobs(self, namespace, jobs, all_jobs=False):
+        """undeploy the jobs passed to us
+           jobs: 1 or more jobs to undeploy
+           NOTE: right now there's no case in which some template has both
+                 custom and not custom jobs because we check for custom job
+                 by if there's a Makefile in the top level of the project
+        """
+        # simplify logic by `looping` over all jobs even if there's just 1
+        if not isinstance(jobs, list):
+            jobs = [jobs]
 
-    def _undeploy_job(self, namespace, job_name):
-        """undeploy the given job name"""
-        job_dir = "k8s/{}".format(job_name)
-        if files.is_custom('undeploy:'):
-            self._custom_undeploy(job_name)
-        else:
+        # custom jobs require looping over all of them and calling
+        # `make undeploy` on each job
+        recursive_delete = False if files.is_custom('undeploy:') else True
+        if recursive_delete:
             process_helpers.run(
                 ["kubectl", "--namespace", namespace, "delete", "-f",
-                 job_dir, "--recursive"],
+                 "k8s", "--recursive"],
                 raise_on_failure=True)
-        self.remove_job_dir(job_dir)
+            # TODO: have this not be in a loop
+            for job in jobs:
+                self.remove_job_dir(os.path.join('k8s', job))
+        else:
+            for job in jobs:
+                self._custom_undeploy(job)
+                self.remove_job_dir(os.path.join('k8s', job))
 
     def remove_job_dir(self, job_dir):
         """remove the job sub-directory from k8s."""
