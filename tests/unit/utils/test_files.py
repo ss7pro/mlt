@@ -91,15 +91,16 @@ def test_fetch_action_arg_is_custom(json_load_mock, isfile_mock, open_mock):
 
 def test_get_only_one_job_no_job_desired(get_deployed_jobs_mock):
     """this is old behavior, return the only job in the list"""
-    get_deployed_jobs_mock.return_value = ['k8s/job-asdf']
+    get_deployed_jobs_mock.return_value = ['k8s/job-asdf-1234']
     job = get_only_one_job(None, '')
     assert job == 'k8s/job-asdf'
 
 
 def test_get_only_one_job_job_desired(get_deployed_jobs_mock):
     """If we have multiple jobs returned and only want 1, return that one"""
-    get_deployed_jobs_mock.return_value = ['k8s/job-asdf', 'k8s/job-jkl;']
-    job = get_only_one_job('k8s/job-asdf', '')
+    get_deployed_jobs_mock.return_value = ['k8s/job-asdf-1234',
+                                           'k8s/job-jkl;-1234']
+    job = get_only_one_job('k8s/job-asdf-1234', '')
     assert job == 'k8s/job-asdf'
 
 

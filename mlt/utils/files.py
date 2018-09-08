@@ -69,6 +69,17 @@ def get_deployed_jobs(job_names_only=False, work_dir=None):
     return jobs
 
 
+def _get_truncated_job_name(job_name):
+    """When we need to truncate the job name (which is the MLT app name plus
+       the app run id) in order to get the prefix for pod names.
+
+        Pod names have max len of 253 so shorten all jobs returned by
+        truncating after the last `-` of the app run id and then shortening.
+        We do a fuzzy search anyhow so shortening to max 200 chars is plenty.
+    """
+    return job_name[:job_name.rfind("-")][-53:]
+
+
 def get_only_one_job(job_desired, error_msg):
     """Checks if job desired is in the list of jobs available
        Throws error if more than 1 job found or job doesn't exist
@@ -78,9 +89,6 @@ def get_only_one_job(job_desired, error_msg):
        If there are no jobs deployed or job desired not found,
        we'll print an error message and exit. print + exit(1) is nicer for
        the user than a traceback via ValueError so we'll go with the former
-
-       Pod names have max len of 253 so shorten all jobs returned
-       We do a fuzzy search anyhow so shortening to max 200 chars is plenty
 
        job_desired: `--job-name` parameter string passed to us
        error_msg: What to print if > 1 job or job not found
@@ -94,14 +102,14 @@ def get_only_one_job(job_desired, error_msg):
     elif job_desired:
         # --job-name was passed in to us
         if job_desired in jobs:
-            return job_desired[-53:]
+            return _get_truncated_job_name(job_desired)
         else:
             print("Job {} not found.".format(job_desired))
             print('Jobs to choose from are:\n{}'.format('\n'.join(jobs)))
             sys.exit(1)
     elif jobs:
         # no --job-name flag passed and only 1 job exists
-        return jobs[0][-53:]
+        return _get_truncated_job_name(jobs[0])
     else:
         print("No jobs are deployed.")
         sys.exit(1)
