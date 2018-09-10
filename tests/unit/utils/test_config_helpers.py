@@ -28,7 +28,10 @@ from mock import MagicMock
 import pytest
 
 from mlt.utils import constants
-from mlt.utils.config_helpers import (load_config, get_template_parameters,
+from mlt.utils.config_helpers import (load_config,
+                                      get_template_parameters as
+                                      get_template_params,
+                                      get_template_parameters_from_file,
                                       update_config)
 from test_utils.io import catch_stdout
 
@@ -38,14 +41,21 @@ def json_mock(patch):
     return patch('json')
 
 
-@pytest.fixture()
+@pytest.fixture
 def open_mock(patch):
-    return patch('open')
+    open_mock = MagicMock()
+    open_mock.return_value.__enter__.return_value = 'description'
+    return patch('open', open_mock)
 
 
 @pytest.fixture
 def isfile_mock(patch):
     return patch('os.path.isfile', MagicMock(return_value=True))
+
+
+@pytest.fixture
+def get_template_parameters_mock(patch):
+    return patch('get_template_parameters')
 
 
 def test_load_config(json_mock, open_mock, isfile_mock):
@@ -76,12 +86,19 @@ def test_needs_init_command_bad_init():
 def test_get_empty_template_params():
     config = {"namespace": "foo", "registry": "bar",
               constants.TEMPLATE_PARAMETERS: {}}
-    assert get_template_parameters(config) == {}
+    assert get_template_params(config) == {}
 
 
 def test_get_template_params():
     config = {"namespace": "foo", "registry": "bar",
               constants.TEMPLATE_PARAMETERS:
                   {"epochs": "10", "num_workers": "4"}}
-    assert get_template_parameters(config) == \
+    assert get_template_params(config) == \
         {"epochs": "10", "num_workers": "4"}
+
+
+def test_get_template_params_from_file(get_template_parameters_mock,
+                                       open_mock, isfile_mock, json_mock):
+    get_template_parameters_mock.return_value = {'param': 'value'}
+    assert get_template_parameters_from_file('file_path') == \
+        {'param': 'value'}

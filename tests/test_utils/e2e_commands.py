@@ -26,12 +26,14 @@ import getpass
 import json
 import os
 import pytest
+import shutil
 import signal
 import time
 import uuid
 from termcolor import colored
 from subprocess import PIPE
 
+from mlt.utils.files import get_deployed_jobs
 from mlt.utils.git_helpers import clone_repo, get_experiments_version
 from mlt.utils.process_helpers import run, run_popen
 from project import basedir
@@ -94,6 +96,13 @@ class CommandTester(object):
             raise ValueError("No pod(s) deployed to namespace {}".format(
                 self.namespace))
 
+    def _grab_job_name(self):
+        """used with use_job_name flag to get the first of the list of the
+           deployed jobs
+        """
+        return get_deployed_jobs(
+            job_names_only=True, work_dir=self.project_dir)[0]
+
     def _setup_experiments_sa(self):
         """
         Running the experiments template requires role/rolebindings setup
@@ -127,15 +136,24 @@ class CommandTester(object):
             self._launch_popen_call(command, stderr_is_not_okay=True)
 
     def init(self, template='hello-world', template_repo=basedir(),
-             enable_sync=False):
+             enable_sync=False, existing_app_dir=None):
         self._set_new_mlt_project_vars(template)
-        init_options = ['mlt', 'init', '--registry={}'.format(self.registry),
-                        '--template-repo={}'.format(template_repo),
-                        '--namespace={}'.format(self.namespace),
-                        '--template={}'.format(template), self.app_name]
-        if enable_sync:
-            init_options.append('--enable-sync')
-        self._launch_popen_call(init_options, cwd=pytest.workdir)
+
+        # If there isn't an existing app, run mlt init to create a new one
+        if not existing_app_dir:
+            init_options = ['mlt', 'init',
+                            '--registry={}'.format(self.registry),
+                            '--template-repo={}'.format(template_repo),
+                            '--namespace={}'.format(self.namespace),
+                            '--template={}'.format(template), self.app_name]
+            if enable_sync:
+                init_options.append('--enable-sync')
+            self._launch_popen_call(init_options, cwd=pytest.workdir)
+        else:
+            shutil.copytree(existing_app_dir, self.project_dir)
+            self.config("set", "namespace", self.namespace)
+            self.config("set", "name", self.app_name)
+            self.config("set", "registry", self.registry)
 
         # keep track of template we created so we can check if it's a TFJob
         # that terminates pods after completion so we need to check the crd
@@ -150,17 +168,19 @@ class CommandTester(object):
             }
             actual_configs = json.loads((f.read()))
             assert dict(actual_configs, **standard_configs) == actual_configs
-        # verify we created a git repo with our project init
-        assert "On branch master" in run(
-            "git --git-dir={}/.git --work-tree={} status".format(
-                self.project_dir, self.project_dir).split())
+
+        if not existing_app_dir:
+            # verify we created a git repo with our project init
+            assert "On branch master" in run(
+                "git --git-dir={}/.git --work-tree={} status".format(
+                    self.project_dir, self.project_dir).split())
 
         # setup additional namespace configs for experiments
         if template == 'experiments':
             self._setup_experiments_sa()
 
     def config(self, subcommand="list", config_name=None, config_value=None):
-        command = ['mlt', 'config', subcommand]
+        command = ['mlt', 'template_config', subcommand]
 
         if config_name:
             command.append(config_name)
@@ -176,16 +196,21 @@ class CommandTester(object):
 
         return output, err
 
-    def build(self, watch=False):
+    def build(self, watch=False, verbose=False):
         build_cmd = ['mlt', 'build']
         call_args = {'command': build_cmd}
+
+        if verbose:
+            build_cmd.append('--verbose')
+            call_args['return_output'] = True
+            call_args['stderr_is_not_okay'] = True
+
         if watch:
             build_cmd.append('--watch')
             # we don't want to wait for the popen call to finish
             # because it'll go until we kill it
             call_args['wait'] = True
 
-        if watch:
             build_proc = self._launch_popen_call(**call_args)
             # ensure that `mlt build --watch` has started
             time.sleep(3)
@@ -202,7 +227,12 @@ class CommandTester(object):
                     break
             build_proc.kill()
         else:
-            self._launch_popen_call(**call_args)
+            # verbose displays normal docker output rather than progressbar
+            if verbose:
+                out, _ = self._launch_popen_call(**call_args)
+                assert "Sending build context to Docker daemon" in out, out
+            else:
+                self._launch_popen_call(**call_args)
 
         assert os.path.isfile(self.build_json)
         with open(self.build_json) as f:
@@ -215,12 +245,16 @@ class CommandTester(object):
                 shell=True, stdout=None, stderr=None)
 
     def deploy(self, no_push=False, interactive=False, retries=10,
-               sync=False, logs=False):
+               sync=False, logs=False, verbose=False):
         deploy_cmd = ['mlt', 'deploy', '--retries', str(retries)]
+        call_args = {'command': deploy_cmd}
         if no_push:
             deploy_cmd.append('--no-push')
         if interactive:
             deploy_cmd.append('--interactive')
+        if verbose:
+            deploy_cmd.append('--verbose')
+            call_args['return_output'] = True
         if logs:
             # make log command string so we can shell it out due to ">"
             log_file = '/tmp/logFile{}'.format(self.app_name)
@@ -260,7 +294,12 @@ class CommandTester(object):
             os.killpg(os.getpgid(p.pid), signal.SIGINT)
             return
         else:
-            self._launch_popen_call(deploy_cmd)
+            # verbose displays regular docker output instead of progressar
+            if verbose:
+                out, _ = self._launch_popen_call(**call_args)
+                assert "The push refers to" in out, out
+            else:
+                self._launch_popen_call(**call_args)
 
         if not no_push:
             assert os.path.isfile(self.deploy_json)
@@ -279,22 +318,50 @@ class CommandTester(object):
             sync_cmd.append('delete')
         self._launch_popen_call(sync_cmd)
 
-    def status(self):
-        output, err = self._launch_popen_call(
-            ['mlt', 'status'], return_output=True, stderr_is_not_okay=True)
+    def status(self, count=1, job_statuses=True):
+        """
+           count: number of jobs to show status for
+           job_statuses: assert 0 job statuses in output (for undeploy check)
+        """
+        output, _ = self._launch_popen_call(
+            ['mlt', 'status', '-n', str(count)], return_output=True,
+            stderr_is_not_okay=True)
 
-        # verify that we have some output
-        assert output
+        if job_statuses:
+            assert output.count('Job: ') == count, [output, self.project_dir]
+            assert output.count('Creation Time: ') == count, output
+        else:
+            assert output == ''
         return output
 
-    def logs(self):
+    def logs(self, use_job_name=False):
+        command = ['mlt', 'logs']
+        if use_job_name:
+            command.append("--job-name={}".format(self._grab_job_name()))
+
         # If 'mlt logs' succeed next call won't error out
-        p = self._launch_popen_call(['mlt', 'logs'], wait=True)
+        p = self._launch_popen_call(command, wait=True)
+
         # kill the 'mlt logs' process
         p.send_signal(signal.SIGINT)
 
-    def undeploy(self):
-        self._launch_popen_call(['mlt', 'undeploy'])
+    def undeploy(self, all_jobs=False, use_job_name=None):
+        command = ['mlt', 'undeploy']
+        if all_jobs:
+            command.append("--all")
+        elif use_job_name:
+            command.append("--job-name={}".format(self._grab_job_name()))
+        self._launch_popen_call(command)
+
+    # TODO: merge with undeploy(...) to use undeploy(all_jobs=True)
+    # in teardown()
+    def undeploy_for_test_teardown(self):
+        """use `mlt undeploy --all` in test teardown."""
+        command = ['mlt', 'undeploy', '--all']
+        # expected output message in case of second undeploy
+        expected_out = "This app has not been deployed yet."
+        self._launch_popen_call(command, allow_err=True,
+                                expected_err_msg=expected_out)
         # verify no more deployment job
         # TODO: this will always return a 0 exit code...
         self._launch_popen_call(
@@ -312,10 +379,11 @@ class CommandTester(object):
         assert output
         return output.decode("utf-8")
 
-    def _launch_popen_call(self, command, cwd=None,
-                           return_output=False, shell=False, stdout=PIPE,
-                           stderr=PIPE, stderr_is_not_okay=False,
-                           wait=False, preexec_fn=None):
+    def _launch_popen_call(self, command, cwd=None, return_output=False,
+                           shell=False, stdout=PIPE, stderr=PIPE,
+                           stderr_is_not_okay=False, wait=False,
+                           preexec_fn=None, allow_err=False,
+                           expected_err_msg=None):
         """Lightweight wrapper that launches run_popen and handles dumping
            output if there was an error
            cwd: where to launch popen call from
@@ -335,6 +403,12 @@ class CommandTester(object):
            preexec_fn: runs a func after the fork() call but before exec()
                        to run the shell. Useful for killing subprocesses of
                        subprocesses (like `mlt deploy -l` --> `kubetail`)
+           allow_err: if True, we expect the command to fail and want to
+                      test with an expected error message
+                      `expected_err_msg`.
+           expected_err_msg: the expected error message if the command
+                             execution fails, it's used when `allow_err`
+                             is True.
         """
         if cwd is None:
             # default to project dir if that's defined, otherwise just use /tmp
@@ -347,9 +421,11 @@ class CommandTester(object):
 
             error_msg = "Popen call failed:\nSTDOUT:{}\n\nSTDERR:{}".format(
                 str(out), colored(str(err), 'red'))
-            # TODO: doesn't p.wait() check error code? Can you have `err` and
-            # exit code of 0?
-            assert p.wait() == 0, error_msg
+            if allow_err and p.wait() != 0:
+                output = out.decode("utf-8").strip()
+                assert output == expected_err_msg, error_msg
+            else:
+                assert p.wait() == 0, error_msg
 
             if stderr_is_not_okay is True:
                 assert not err, error_msg

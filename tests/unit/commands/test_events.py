@@ -19,17 +19,12 @@
 #
 
 from __future__ import print_function
+from conditional import conditional
 
 import pytest
-
 import uuid
 from mlt.commands.events import EventsCommand
 from test_utils.io import catch_stdout
-
-
-@pytest.fixture
-def json_mock(patch):
-    return patch('json')
 
 
 @pytest.fixture
@@ -38,8 +33,10 @@ def open_mock(patch):
 
 
 @pytest.fixture
-def os_path_mock(patch):
-    return patch('os.path')
+def get_only_one_job(patch):
+    def mocker(job_desired, error_msg):
+        return job_desired
+    return patch('files.get_only_one_job', mocker)
 
 
 @pytest.fixture
@@ -52,110 +49,56 @@ def verify_init(patch):
     return patch('config_helpers.load_config')
 
 
-def test_events_get_events(json_mock, open_mock, verify_init, process_helpers,
-                           os_path_mock):
-    run_id = str(uuid.uuid4())
-    os_path_mock.exists.return_value = True
-    json_mock_data = {
-        'last_remote_container': 'gcr.io/app_name:container_id',
-        'last_push_duration': 0.18889,
-        'app_run_id': run_id}
-    json_mock.load.return_value = json_mock_data
-
-    events_command = EventsCommand({'events': True})
+def get_events(catch_exception=None, job_name=None):
+    events_command = EventsCommand({'events': True, '--job-name': job_name})
     events_command.config = {'name': 'app', 'namespace': 'namespace'}
 
-    head_value = "LAST SEEN   FIRST SEEN   COUNT"
-    event_value = '-'.join(['app', run_id])
+    with catch_stdout() as caught_output:
+        with conditional(catch_exception, pytest.raises(catch_exception)):
+            events_command.action()
+        output = caught_output.getvalue().strip()
+    return output
+
+# END SIMILAR STUFF TO TEST_LOGS
+
+
+def test_events_get_events(open_mock, verify_init, process_helpers,
+                           get_only_one_job):
+    head_value = bytearray("LAST SEEN   FIRST SEEN   COUNT", 'utf-8')
+    # technically event_value is different from app_run_id
+    # but didn't want to set a global app_run_id
+    # if others disagree, I'm not super opposed to it
+    job = 'app-{}'.format(uuid.uuid4())
+    event_value = bytearray(job, 'utf-8')
     process_helpers.return_value.stdout.readline.side_effect = \
-        [head_value, event_value, '']
+        [head_value, event_value, bytearray('', 'utf-8')]
     process_helpers.return_value.poll.return_value = 1
     process_helpers.return_value.stderr.readline.return_value = ''
-    with catch_stdout() as caught_output:
-        events_command.action()
-        output = caught_output.getvalue()
-    assert head_value in output
-    assert event_value in output
+
+    events = get_events(job_name=job)
+    assert head_value.decode('utf-8') in events
+    assert event_value.decode('utf-8') in events
 
 
-def test_events_no_push_json_file(open_mock, verify_init, process_helpers,
-                                  os_path_mock):
-    os_path_mock.exists.return_value = False
-    events_command = EventsCommand({'events': True})
-    events_command.config = {'name': 'app', 'namespace': 'namespace'}
-
-    with catch_stdout() as caught_output:
-        with pytest.raises(SystemExit):
-            events_command.action()
-        output = caught_output.getvalue()
-
-    assert "This app has not been deployed yet" in output
+def test_events_no_push_json_file(open_mock, verify_init, process_helpers):
+    error_msg = "Please use --job-name flag to query for job events."
+    assert error_msg in get_events(catch_exception=SystemExit)
 
 
-def test_events_corrupted_app_run_id(json_mock, open_mock, verify_init,
-                                     process_helpers, os_path_mock):
-    run_id = '31dea6fc'
-    os_path_mock.exists.return_value = True
-    json_mock_data = {
-        'last_remote_container': 'gcr.io/app_name:container_id',
-        'last_push_duration': 0.18889,
-        'app_run_id': run_id}
-    json_mock.load.return_value = json_mock_data
-
-    events_command = EventsCommand({'events': True})
-    events_command.config = {'name': 'app', 'namespace': 'namespace'}
-
-    with catch_stdout() as caught_output:
-        with pytest.raises(SystemExit):
-            events_command.action()
-        output = caught_output.getvalue()
-
-    assert"Please re-deploy app again, something went wrong." in output
-
-
-def test_events_no_resources_found(json_mock, open_mock, verify_init,
-                                   process_helpers, os_path_mock):
-    run_id = str(uuid.uuid4())
-    os_path_mock.exists.return_value = True
-    json_mock_data = {
-        'last_remote_container': 'gcr.io/app_name:container_id',
-        'last_push_duration': 0.18889,
-        'app_run_id': run_id}
-    json_mock.load.return_value = json_mock_data
-
-    events_command = EventsCommand({'events': True})
-    events_command.config = {'name': 'app', 'namespace': 'namespace'}
-
+def test_events_no_resources_found(open_mock, verify_init,
+                                   get_only_one_job, process_helpers):
     process_helpers.side_effect = Exception("No resources found")
 
-    with catch_stdout() as caught_output:
-        with pytest.raises(SystemExit):
-            events_command.action()
-        output = caught_output.getvalue()
-
-    assert "No resources found" in output
+    assert "No resources found" in get_events(catch_exception=SystemExit)
 
 
-def test_events_no_events_to_display(json_mock, open_mock, verify_init,
-                                     process_helpers, os_path_mock):
-    run_id = str(uuid.uuid4())
-    os_path_mock.exists.return_value = True
-    json_mock_data = {
-        'last_remote_container': 'gcr.io/app_name:container_id',
-        'last_push_duration': 0.18889,
-        'app_run_id': run_id}
-    json_mock.load.return_value = json_mock_data
-
-    events_command = EventsCommand({'events': True})
-    events_command.config = {'name': 'app', 'namespace': 'namespace'}
-
+def test_events_no_events_to_display(open_mock, verify_init,
+                                     get_only_one_job, process_helpers):
     head_value = "LAST SEEN   FIRST SEEN   COUNT"
     process_helpers.return_value.stdout.readline.side_effect = \
-        [head_value, "current job events missing", '']
+        [head_value, bytearray("current job events missing", 'utf-8'),
+         bytearray('', 'utf-8')]
     process_helpers.return_value.poll.return_value = 1
     process_helpers.return_value.stderr.readline.return_value = ''
-    with catch_stdout() as caught_output:
-        events_command.action()
-        output = caught_output.getvalue()
 
-    assert "No events to display for this job" in output
+    assert "No events to display for this job" in get_events()

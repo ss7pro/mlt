@@ -29,12 +29,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         cmake \
         curl \
         git \
-        libcudnn7=${CUDNN_VERSION} \
+        libcudnn7-${CUDNN_VERSION} \
         libjpeg-dev \
-        libnccl-dev=${NCCL_VERSION} \
-        libnccl2=${NCCL_VERSION} \
+        libnccl-dev-${NCCL_VERSION} \
+        libnccl2-${NCCL_VERSION} \
         libpng-dev \
-        openssh-client openssh-server \
+        openssh-client \
+        openssh-server \
         python3 \
         python3-dev \
         wget

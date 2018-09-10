@@ -42,8 +42,8 @@ class TestDeployFlow(CommandTester):
         finally:
             # no matter what, undeploy and check status
             try:
-                self.undeploy()
-                self.status()
+                self.undeploy_for_test_teardown()
+                self.status(job_statuses=False)
             finally:
                 # tear down namespace at end of test
                 try:
@@ -71,6 +71,17 @@ class TestDeployFlow(CommandTester):
             else "Succeeded"
 
         self.verify_pod_status(expected_status=expected_status)
+        self.status()
+
+    def test_deploy_using_old_app(self):
+        """ Test to ensure build/deploy/status of an old MLT v0.2.1 app
+        works with the current MLT code. """
+        old_app_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                   "../old-mlt-app")
+        self.init(existing_app_dir=old_app_dir)
+        self.build()
+        self.deploy()
+        self.verify_pod_status()
         self.status()
 
     def test_deploy_enable_sync(self):
@@ -104,9 +115,11 @@ class TestDeployFlow(CommandTester):
         self.deploy()
         self.verify_pod_status()
         self.status()
+        self.logs(use_job_name=True)
         self.deploy(no_push=True)
         self.verify_pod_status()
-        self.status()
+        self.status(count=2)
+        self.undeploy(all_jobs=True)
 
     @pytest.mark.parametrize('template', ['hello-world', 'tf-distributed'])
     def test_interactive_deploy(self, template):
@@ -117,9 +130,17 @@ class TestDeployFlow(CommandTester):
         self.status()
         # we don't need the original deployment and it interferes with
         # picking the right tfjob pod to check
-        self.undeploy()
+        self.undeploy(use_job_name=True)
         self.deploy(interactive=True, no_push=True, retries=60)
         self.verify_pod_status(expected_status="Running")
+        self.status()
+
+    def test_verbose_deploy_and_build(self):
+        """tests hello-world template verbosely"""
+        self.init()
+        self.build(verbose=True)
+        self.deploy(verbose=True)
+        self.verify_pod_status()
         self.status()
 
     def test_watch_build_and_deploy_no_push(self):
@@ -130,7 +151,8 @@ class TestDeployFlow(CommandTester):
         self.status()
         self.deploy(no_push=True)
         self.verify_pod_status()
-        self.status()
+        self.status(count=2)
+        self.undeploy(all_jobs=True)
 
     def test_debug_wrapper(self):
         """tests debug_on_fail param"""
@@ -155,7 +177,7 @@ class TestDeployFlow(CommandTester):
         time.sleep(5)
         mlt_status = self.status()
         assert "Running" in mlt_status
-        self.undeploy()
+        self.undeploy(use_job_name=True)
 
         # Try again with debug disabled
         self.config(subcommand="set",

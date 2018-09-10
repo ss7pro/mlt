@@ -15,7 +15,7 @@
 
 * [mlt templates](#mlt-templates)
 * [mlt init](#mlt-init)
-* [mlt config](#mlt-config)
+* [mlt template_config](#mlt-template-config)
 * [mlt build](#mlt-build)
 * [mlt deploy](#mlt-deploy)
 * [mlt status (alpha)](#mlt-status-alpha)
@@ -24,6 +24,19 @@
 * [mlt undeploy](#mlt-undeploy)
 * [mlt update-template (alpha)](#mlt-update-template-alpha)
 * [mlt sync](#mlt-sync)
+
+## Global Config
+
+Environment variables will be used in place of `mlt` flags if named as below, with `MLT_` followed by the name of the flag. `-` are converted to `_`.
+
+Examples: 
+
+`MLT_REGISTRY`: `--registry`
+`MLT_NAMESPACE`: `--namespace`
+`MLT_TEMPLATE_REPO`: `--template-repo`
+`MLT_SKIP_CRD_CHECK`: `--skip-crd-check`
+
+Any template config variables will take precedence over global config vars, and any vars passed via command-line will take precedence over that.
 
 ### mlt templates
 
@@ -67,17 +80,17 @@ deploy the application.
 |---------------------|-------------|
 | `<name>` | Name of your application/project to initialize. |
 
-### mlt config
+### mlt template_config
 
 ```
-  mlt config list
+  mlt template_config list
 ```
 
 This command lists the configuration parameters for the current project
 directory.
 
 ```
-  mlt config set <name> <value>
+  mlt template_config set <name> <value>
 ```
 
 | Positional Argument | Description |
@@ -86,7 +99,7 @@ directory.
 | `<value>` | Value of the configuration parameter to set. |
 
 ```
-  mlt config remove <name>
+  mlt template_config remove <name>
 ```
 
 | Positional Argument | Description |
@@ -111,7 +124,7 @@ This command builds a local image for the current project directory.
 ```
   mlt deploy [--no-push] [-i | --interactive] [-l | --logs]
       [--retries=<retries>] [--skip-crd-check]
-      [--since=<duration>]
+      [--since=<duration>] [-v | --verbose]
 ```
 
 The `mlt deploy` command pushes the last image that was built for the
@@ -126,6 +139,7 @@ the cluster using Kubernetes.
 | `--retries=<retries>` | Number of times to retry waiting for pods to come up for `--logs` or `--interactive`.  Waits 1 second between retrying. | 10 |
 | `--since` | Returns logs newer than a relative duration like 10s, 1m, or 2h.  Only used in conjunction with the `--logs` option. | 1m |
 | `--skip-crd-check` | Skip checking for the cluster for CRDs required by the template. | False |
+| `-v` `--verbose` | Prints normal docker output rather than a progress bar, similar to `mlt build -v` | False |
 
 | Positional Argument | Description |
 |---------------------|-------------|
@@ -134,16 +148,22 @@ the cluster using Kubernetes.
 ### mlt status (alpha)
 
 ```
-  mlt status
+  mlt status [--job-name=<name>] [-n <count> | --count <count>]
 ```
 
-The `mlt status` command displays the job/pod status for the last job
-that was deployed for the current project directory.
+The `mlt status` command displays the job/pod status for jobs
+that were deployed for the current project directory.
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `--job-name=<name>` | The name of a job to show status for, if there are multiple deployed. |
+| `-n <count> --count <count>` | Number of jobs to display status for, sorted by creation time. | 10 |
 
 ### mlt logs (alpha)
 
 ```
   mlt (log | logs) [--since=<duration>] [--retries=<retries>]
+  [--job-name=<name>]
 ```
 
 The `mlt log` command waits for pods to start running, then tails the
@@ -153,25 +173,35 @@ logs for those pods using `kubetail`.
 |--------|-------------|---------|
 | `--retries=<retries>` | Number of times to retry waiting for pods to come up for `--logs` or `--interactive`.  Waits 1 second between retrying. | 10 |
 | `--since` | Returns logs newer than a relative duration like 10s, 1m, or 2h.  Only used in conjunction with the `--logs` option. | 1m |
+| `--job-name=<name>` | Name of the job to show logs for, if multiple jobs are deployed. |
 
 ### mlt events (alpha)
 
 ```
-  mlt events
+  mlt events [--job-name=<name>]
 ```
 
 This command displays the Kubernetes events related to the last job that
 was deployed for the current project directory.
 
+| Option | Description | Default |
+|--------|-------------|---------|
+| `--job-name=<name>` | Name of the job to show events for, if multiple jobs are deployed. |
+
 ### mlt undeploy
 
 ```
-  mlt undeploy
+  mlt undeploy [--all] [--job-name=<name>]
 ```
 
-This command undeploys the last job that was deployed from the current
+This command undeploys the jobs that were deployed from the current
 project directory.  This frees resources in Kubernetes by deleting the
 associated job, pods, deployments, etc.
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `--all` | Undeploys all the jobs that were deployed from the current project directory.|
+| `--job-name=<name>` | The name of the job to undeploy. |
 
 ### mlt update-template (alpha)
 

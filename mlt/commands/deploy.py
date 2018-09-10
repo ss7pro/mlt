@@ -24,7 +24,7 @@ import time
 import uuid
 import yaml
 from string import Template
-from subprocess import CalledProcessError, check_output, Popen, PIPE, STDOUT
+from subprocess import CalledProcessError, check_output, STDOUT
 from termcolor import colored
 
 from mlt.commands import Command
@@ -63,25 +63,14 @@ class DeployCommand(Command):
             self._tail_logs()
 
     def _push(self):
-        last_push_duration = files.fetch_action_arg(
-            'push', 'last_push_duration')
         self.container_name = files.fetch_action_arg(
             'build', 'last_container')
 
         self.started_push_time = time.time()
         self._push_docker()
 
-        progress_bar.duration_progress(
-            'Pushing {}'.format(self.config["name"]), last_push_duration,
-            lambda: self.push_process.poll() is not None)
-
-        # If the push fails, get the stdout and error message and display them
-        # to the user, with the error message in red.
-        if self.push_process.poll() != 0:
-            push_stdout, push_error = self.push_process.communicate()
-            print(push_stdout.decode("utf-8"))
-            print(colored(push_error.decode("utf-8"), 'red'))
-            sys.exit(1)
+        if not self.args['--verbose']:
+            self._poll_docker_proc()
 
         with open('.push.json', 'w') as f:
             f.write(json.dumps({
@@ -96,9 +85,35 @@ class DeployCommand(Command):
         self.remote_container_name = "{}/{}".format(
             self.config['registry'], self.container_name)
         self._tag()
-        self.push_process = Popen(
-            ["docker", "push", self.remote_container_name],
-            stdout=PIPE, stderr=PIPE)
+
+        push_cmd = ["docker", "push", self.remote_container_name]
+        if self.args['--verbose']:
+            self.push_process = process_helpers.run_popen(
+                push_cmd, stdout=True, stderr=True)
+            self.push_process.wait()
+            # add newline to separate push output from container deploy output
+            print('')
+        else:
+            self.push_process = process_helpers.run_popen(push_cmd)
+
+    def _poll_docker_proc(self):
+        """used only in the case of non-verbose deploy mode to dump loading
+           bar and any error that happened
+        """
+        last_push_duration = files.fetch_action_arg(
+            'push', 'last_push_duration')
+        with process_helpers.prevent_deadlock(self.push_process):
+            progress_bar.duration_progress(
+                'Pushing {}'.format(self.config["name"]), last_push_duration,
+                lambda: self.push_process.poll() is not None)
+
+        # If the push fails, get stdout/stderr messages and display them
+        # to the user, with the error message in red.
+        if self.push_process.poll() != 0:
+            push_stdout, push_error = self.push_process.communicate()
+            print(push_stdout.decode("utf-8"))
+            print(colored(push_error.decode("utf-8"), 'red'))
+            sys.exit(1)
 
     def _tag(self):
         process_helpers.run(
@@ -160,7 +175,7 @@ class DeployCommand(Command):
         if self.args["--interactive"] and not self._replicas_found \
                 and self._total_containers == 1:
             self._exec_into_pod(self._get_most_recent_podname())
-        else:
+        elif self.args["--interactive"]:
             print("More than one container created."
                   ".\nCall `kubectl exec -it {{pod_name_here}} "
                   "--namespace={} /bin/bash` on a `Running` pod NAME "
@@ -195,7 +210,7 @@ class DeployCommand(Command):
                 if self.args["--interactive"]:
                     # every pod will be made to `sleep infinity & wait`
                     out = self._patch_template_spec(out)
-                self._apply_template(out, filename)
+                self._apply_template(out, filename, app_name, app_run_id)
 
     def _ensure_correct_data_types(self, template_json):
         """Due to us editing the yaml now in init.py as well, we have some
@@ -227,17 +242,35 @@ class DeployCommand(Command):
                                   env=user_env,
                                   stderr=STDOUT)
             print(output.decode("utf-8").strip())
+            self._track_deployed_job(app_name, app_run_id)
         except CalledProcessError as e:
             print("Error while deploying app: {}".format(e.output))
 
-    def _apply_template(self, out, filename):
-        """take k8s-template data and create deployment in k8s dir"""
-        with open(os.path.join('k8s', filename), 'w') as f:
+    def _apply_template(self, out, filename, app_name, app_run_id):
+        """take k8s-template data and create deployment in k8s dir
+           job_sub_dir will be used in case of a mlt deploy -l to pass in the
+           most current job being deployed to tail just in case there are > 1
+           jobs that exist since mlt logs requires --job-name if > 1 job
+        """
+        self.job_sub_dir = self._track_deployed_job(app_name, app_run_id)
+        with open(os.path.join(self.job_sub_dir, filename), 'w') as f:
             f.write(out)
 
         process_helpers.run(
             ["kubectl", "--namespace", self.namespace,
-             "apply", "-R", "-f", "k8s"])
+             "apply", "-R", "-f", self.job_sub_dir])
+
+    def _track_deployed_job(self, app_name, app_run_id):
+        """create a subdirectory in k8s with the deployed job name."""
+        job_name = "-".join([app_name, app_run_id])
+        return self.create_job_subdir(job_name)
+
+    def create_job_subdir(self, job_name):
+        """create a sub-directory in k8s with the given job name."""
+        job_sub_dir = 'k8s/{}'.format(job_name)
+        if not os.path.exists(job_sub_dir):
+            os.makedirs(job_sub_dir)
+        return job_sub_dir
 
     def _get_most_recent_podname(self):
         """don't know of a better way to do this; grab the pod
@@ -363,4 +396,8 @@ class DeployCommand(Command):
                                   stdout=None, stderr=None).wait()
 
     def _tail_logs(self):
+        """need to tail the most recent job just in case there are more than
+           one and a user runs `mlt deploy -l`
+        """
+        self.args["--job-name"] = self.job_sub_dir.replace('k8s/', '')
         log_helpers.call_logs(self.config, self.args)
