@@ -7,7 +7,7 @@ Unless there is a good reason to run this scenario again, it's provided here for
 This is how we enabled `versioneer` support for `mlt`.
 
 ```bash
-$ git checkout https://github.com/IntelAI/mlt.git
+$ git clone https://github.com/IntelAI/mlt.git
 $ cd mlt
 $ make venv
 Creating python2 and 3 virtualenv in .venv and .venv3 dirs
