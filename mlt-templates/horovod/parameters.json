@@ -1,6 +1,9 @@
 {
   "template_parameters" : [
-    { "name": "num_workers", "value": "1" },
-    { "name": "gpus", "value": "0" }
+    {"name": "num_nodes", "value": "1"},
+    {"name":"num_workers_per_node", "value": "1"},
+    {"name":"num_inter_threads", "value": "1"},
+    {"name":"sockets_per_node", "value": "1"},
+    {"name": "gpus", "value": "0" },
   ]
 }

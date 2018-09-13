@@ -1,132 +1,260 @@
-# !/usr/bin/env python
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 #
-# Copyright 2017 Uber Technologies, Inc. All Rights Reserved.
+# Copyright (c) 2018 Intel Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
-#     http://www.apache.org/licenses/LICENSE-2.0
+#    http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# ==============================================================================
+#
+# SPDX-License-Identifier: EPL-2.0
+#
 
+"""
+
+Runs simple convolutional model to train MNIST
+
+"""
 import tensorflow as tf
-import horovod.tensorflow as hvd
-layers = tf.contrib.layers
-learn = tf.contrib.learn
+from tensorflow import layers
+from tensorflow.examples.tutorials.mnist import input_data
+
+import os
+from datetime import datetime
+
+
+FLAGS = tf.app.flags.FLAGS
+tf.app.flags.DEFINE_integer("num_inter_threads", 2,
+							"# inter op threads")
+
+tf.app.flags.DEFINE_integer("num_threads", os.cpu_count(),
+							"# intra op threads")
+
+tf.app.flags.DEFINE_integer("total_steps", 4000,
+							"Number of training steps")
+
+tf.app.flags.DEFINE_integer("log_steps", 20,
+							"Number of steps between logs")
+tf.app.flags.DEFINE_integer("batch_size", 128,
+							"Batch Size for Training")
+
+tf.app.flags.DEFINE_string("output_path", '/home/nfsshare/mnist/checkpoints',
+                            "Output log directory")
+
+tf.app.flags.DEFINE_string("data_path",
+                            '/home/nfsshare/mnist',
+                            "Data directory")
+
+tf.app.flags.DEFINE_boolean("no_horovod", False,
+							"Don't use Horovod. Single node training only.")
+
+tf.app.flags.DEFINE_float("learningrate", 0.001,
+							"Learning rate")
+
+config = tf.ConfigProto(intra_op_parallelism_threads=FLAGS.num_threads,
+						inter_op_parallelism_threads=FLAGS.num_inter_threads)
 
 tf.logging.set_verbosity(tf.logging.INFO)
 
+if not FLAGS.no_horovod:
+	import horovod.tensorflow as hvd
 
-def conv_model(feature, target, mode):
-    """2-layer convolution model."""
-    # Convert the target to a one-hot tensor of shape (batch_size, 10) and
-    # with a on-value of 1 for each one-hot vector of length 10.
-    target = tf.one_hot(tf.cast(target, tf.int32), 10, 1, 0)
+def get_model(feature, label):
 
-    # Reshape feature to 4d tensor with 2nd and 3rd dimensions being
-    # image width and height
-    # final dimension being the number of color channels.
-    feature = tf.reshape(feature, [-1, 28, 28, 1])
+	# Reshape the input vector into a 28x28 image
+	input_layer = tf.reshape(feature, [-1, 28, 28, 1])
 
-    # First conv layer will compute 32 features for each 5x5 patch
-    with tf.variable_scope('conv_layer1'):
-        h_conv1 = layers.conv2d(
-            feature, 32, kernel_size=[5, 5], activation_fn=tf.nn.relu)
-        h_pool1 = tf.nn.max_pool(
-            h_conv1, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME')
+	conv1 = tf.layers.conv2d(
+		inputs=input_layer,
+		filters=32,
+		kernel_size=[5, 5],
+		padding="same",
+		activation=tf.nn.relu,
+		name="conv1")
 
-    # Second conv layer will compute 64 features for each 5x5 patch.
-    with tf.variable_scope('conv_layer2'):
-        h_conv2 = layers.conv2d(
-            h_pool1, 64, kernel_size=[5, 5], activation_fn=tf.nn.relu)
-        h_pool2 = tf.nn.max_pool(
-            h_conv2, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME')
-        # reshape tensor into a batch of vectors
-        h_pool2_flat = tf.reshape(h_pool2, [-1, 7 * 7 * 64])
+	pool1 = tf.layers.max_pooling2d(
+			inputs=conv1,
+			pool_size=[2, 2],
+			strides=2,
+			name="pool1")
 
-    # Densely connected layer with 1024 neurons.
-    h_fc1 = layers.dropout(
-        layers.fully_connected(
-            h_pool2_flat, 1024, activation_fn=tf.nn.relu),
-        keep_prob=0.5,
-        is_training=mode == tf.contrib.learn.ModeKeys.TRAIN)
+	conv2 = tf.layers.conv2d(
+		 inputs=pool1,
+		 filters=64,
+		 kernel_size=[5, 5],
+		 padding="same",
+		 activation=tf.nn.relu,
+		 name="conv2")
 
-    # Compute logits (1 per class) and compute loss.
-    logits = layers.fully_connected(h_fc1, 10, activation_fn=None)
-    loss = tf.losses.softmax_cross_entropy(target, logits)
+	pool2 = tf.layers.max_pooling2d(
+		inputs=conv2,
+		pool_size=[2, 2],
+		strides=2,
+		name="pool2")
 
-    return tf.argmax(logits, 1), loss
+	# Flatten
+	pool2_flat = layers.Flatten()(pool2)
+
+	# Add a Dense layer
+	dense = tf.layers.dense(inputs=pool2_flat,
+							units=1024,
+							activation=tf.nn.relu,
+							name="Dense1")
+
+	# Add a dropout layer
+	dropout = tf.layers.dropout(
+		inputs=dense,
+		rate=0.4, # Dropout rate
+		training=True,
+		name="dropout")
+
+	# Logits Layer
+	logits = tf.layers.dense(inputs=dropout,
+							 units=10,
+							 name="Logits_layer")
+
+	onehot_labels = tf.one_hot(tf.cast(label, tf.int32), 10, 1, 0)
+
+	loss = tf.losses.softmax_cross_entropy(onehot_labels=onehot_labels,
+										   logits=logits)
+
+	correct_prediction = tf.equal(tf.cast(tf.argmax(logits,1),
+								  tf.float32), label)
+	accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+
+	"""
+	Print out TensorBoard Summaries
+	"""
+	tf.summary.scalar("loss", loss)
+	tf.summary.histogram("loss", loss)
+	tf.summary.scalar("training_accuracy", accuracy)
+	tf.summary.image("images", input_layer, max_outputs=3)
+	summary_op = tf.summary.merge_all()
+
+	return tf.argmax(logits, 1), loss, accuracy
 
 
 def main(_):
-    # Horovod: initialize Horovod.
-    hvd.init()
 
-    # Download and load MNIST dataset.
-    mnist = learn.datasets.mnist.read_data_sets('MNIST-data-%d' % hvd.rank())
+	start_time = datetime.now()
+	tf.logging.info("Starting at: {}".format(start_time))
+	tf.logging.info("Batch size: {} images per step".format(FLAGS.batch_size))
 
-    # Build model...
-    with tf.name_scope('input'):
-        image = tf.placeholder(tf.float32, [None, 784], name='image')
-        label = tf.placeholder(tf.float32, [None], name='label')
-    predict, loss = conv_model(image, label, tf.contrib.learn.ModeKeys.TRAIN)
+	if not FLAGS.no_horovod:
+		# Initialize Horovod.
+		hvd.init()
 
-    # Horovod: adjust learning rate based on number of GPUs.
-    opt = tf.train.RMSPropOptimizer(0.001 * hvd.size())
+	# Read data set from mounted location else download it
+    try:
+	    mnist = input_data.read_data_sets(FLAGS.data_path, one_hot=False)
+    except:
+        mnist = input_data.read_data_sets('MNIST-data-%d' % hvd.rank())
 
-    # Horovod: add Horovod Distributed Optimizer.
-    opt = hvd.DistributedOptimizer(opt)
+	# Input tensors
+	with tf.name_scope("input"):
+		image = tf.placeholder(tf.float32, [None, 784], name="image")
+		label = tf.placeholder(tf.float32, [None], name="label")
 
-    global_step = tf.contrib.framework.get_or_create_global_step()
-    train_op = opt.minimize(loss, global_step=global_step)
+	# Define model
+	predict, loss, accuracy = get_model(image, label)
 
-    hooks = [
-        # Horovod: BroadcastGlobalVariablesHook
-        # broadcasts initial variable states
-        # from rank 0 to all other processes.
-        # This is necessary to ensure consistent
-        # initialization of all workers when
-        # training is started with random weights
-        # or restored from a checkpoint.
-        hvd.BroadcastGlobalVariablesHook(0),
+	if not FLAGS.no_horovod:
+		# Horovod: adjust learning rate based on number workers
+		opt = tf.train.RMSPropOptimizer(FLAGS.learningrate * hvd.size())
+	else:
+		opt = tf.train.RMSPropOptimizer(FLAGS.learningrate)
 
-        # Horovod: adjust number of steps based on number of GPUs.
-        tf.train.StopAtStepHook(last_step=50 // hvd.size()),
+	# Wrap optimizer with Horovod Distributed Optimizer.
+	if FLAGS.no_horovod is None:
+		opt = hvd.DistributedOptimizer(opt)
 
-        tf.train.LoggingTensorHook(tensors={'step': global_step, 'loss': loss},
-                                   every_n_iter=10),
-    ]
+	global_step = tf.train.get_or_create_global_step()
+	train_op = opt.minimize(loss, global_step=global_step)
 
-    # Horovod: pin GPU to be used to
-    # process local rank (one GPU per process)
-    config = tf.ConfigProto()
-    config.gpu_options.allow_growth = True
-    config.gpu_options.visible_device_list = str(hvd.local_rank())
+	if not FLAGS.no_horovod:
+		last_step = FLAGS.total_steps // hvd.size()
+	else:
+		last_step = FLAGS.total_steps
 
-    # Horovod: save checkpoints only on
-    # worker 0 to prevent other workers from
-    # corrupting them.
-    checkpoint_dir = './checkpoints' if hvd.rank() == 0 else None
+	def formatter_log(tensors):
+		if FLAGS.no_horovod:
+			logstring= "Step {} of {}: " \
+			   " training loss = {:.4f}," \
+		       " training accuracy = {:.4f}".format(tensors["step"],
+			   last_step,
+			   tensors["loss"], tensors["accuracy"])
+		else:
+			   logstring= "HOROVOD (Worker #{}), Step {} of {}: " \
+			   " training loss = {:.4f}," \
+   		       " training accuracy = {:.4f}".format(
+			   hvd.rank(),
+			   tensors["step"],
+			   last_step,
+   			   tensors["loss"], tensors["accuracy"])
 
-    # The MonitoredTrainingSession takes
-    # care of session initialization,
-    # restoring from a checkpoint,
-    # saving to a checkpoint, and closing when done
-    # or an error occurs.
-    with tf.train.MonitoredTrainingSession(checkpoint_dir=checkpoint_dir,
-                                           hooks=hooks,
-                                           config=config) as mon_sess:
-        while not mon_sess.should_stop():
-            # Run a training step synchronously.
-            image_, label_ = mnist.train.next_batch(100)
-            mon_sess.run(train_op, feed_dict={image: image_, label: label_})
+		return logstring
 
+	hooks = [
+
+		tf.train.StopAtStepHook(last_step=last_step),
+
+		# Prints the loss and step every log_steps steps
+		tf.train.LoggingTensorHook(tensors={"step": global_step,
+									"loss": loss,
+									"accuracy": accuracy},
+								   every_n_iter=FLAGS.log_steps,
+								   formatter=formatter_log),
+	]
+
+	# Horovod: BroadcastGlobalVariablesHook broadcasts
+	# initial variable states from rank 0 to all other
+	# processes. This is necessary to ensure consistent
+	# initialization of all workers when training is
+	# started with random weights
+	# or restored from a checkpoint.
+	if not FLAGS.no_horovod:
+		hooks.append(hvd.BroadcastGlobalVariablesHook(0))
+
+		# Horovod: save checkpoints only on worker 0 to prevent other workers from
+		# corrupting them.
+		if hvd.rank() == 0:
+			checkpoint_dir = "{}/{}-workers/{}".format(FLAGS.output_path,
+							hvd.size(),
+							datetime.now().strftime("%Y%m%d-%H%M%S"))
+		else:
+			checkpoint_dir = None
+
+	else:
+		checkpoint_dir = "{}/no_hvd/{}".format(FLAGS.output_path,
+						datetime.now().strftime("%Y%m%d-%H%M%S"))
+
+	# The MonitoredTrainingSession takes care of session initialization,
+	# restoring from a checkpoint, saving to a checkpoint,
+	# and closing when done or an error occurs.
+	with tf.train.MonitoredTrainingSession(checkpoint_dir=checkpoint_dir,
+										   hooks=hooks,
+										   save_summaries_steps=FLAGS.log_steps,
+										   log_step_count_steps=FLAGS.log_steps,
+										   config=config) as mon_sess:
+		while not mon_sess.should_stop():
+
+			# Run a training step synchronously.
+			image_, label_ = mnist.train.next_batch(FLAGS.batch_size)
+			mon_sess.run(train_op, feed_dict={image: image_, label: label_})
+
+
+	stop_time = datetime.now()
+	tf.logging.info("Stopping at: {}".format(stop_time))
+	tf.logging.info("Elapsed time was: {}".format(stop_time-start_time))
 
 if __name__ == "__main__":
-    tf.app.run()
+
+	tf.app.run()
