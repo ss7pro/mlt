@@ -31,10 +31,12 @@ Environment variables will be used in place of `mlt` flags if named as below, wi
 
 Examples: 
 
-`MLT_REGISTRY`: `--registry`
-`MLT_NAMESPACE`: `--namespace`
-`MLT_TEMPLATE_REPO`: `--template-repo`
-`MLT_SKIP_CRD_CHECK`: `--skip-crd-check`
+```
+MLT_REGISTRY: --registry
+MLT_NAMESPACE: --namespace
+MLT_TEMPLATE_REPO: --template-repo
+MLT_SKIP_CRD_CHECK: --skip-crd-check
+```
 
 Any template config variables will take precedence over global config vars, and any vars passed via command-line will take precedence over that.
 
