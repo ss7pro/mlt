@@ -1,9 +1,17 @@
 {
   "template_parameters" : [
-    {"name": "num_nodes", "value": "1"},
-    {"name":"num_workers_per_node", "value": "1"},
-    {"name":"num_inter_threads", "value": "1"},
-    {"name":"sockets_per_node", "value": "1"},
     {"name": "gpus", "value": "0" },
+    {"name": "num_nodes", "value": "1"},
+    {"name": "num_workers_per_node", "value": "1"},
+    {"name": "sockets_per_node", "value": "1"},
+    {"name": "physical_cores", "value": "1"},
+    {"name": "num_inter_threads", "value": "1"},
+    {"name": "total_steps", "value": "4000"},
+    {"name": "log_steps", "value": "20"},
+    {"name": "batch_size", "value": "128"},
+    {"name": "data_path", "value": "/home/nfsshare/mnist"},
+    {"name": "output_path", "value": "/home/nfsshare/mnist/checkpoints"},
+    {"name": "no_horovod", "value": false},
+    {"name": "learning_rate", "value": "0.001"}
   ]
 }
