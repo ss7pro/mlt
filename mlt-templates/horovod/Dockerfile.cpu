@@ -44,7 +44,7 @@ RUN ln -sf /opt/anaconda3/bin/python /usr/bin/python
 # Install MKL optimized tensorflow.
 # If you wish to use general tensorflow. Please comment conda install -c anaconda tensorflow
 # and include tensorflow version in requirements.txt
-ARG TF_VERSION="1.8.0"
+ARG TF_VERSION="1.9.0"
 RUN conda install -c anaconda tensorflow==$TF_VERSION && \
     conda install pip && \
     conda clean --all
