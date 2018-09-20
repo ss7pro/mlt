@@ -69,7 +69,7 @@ cp -rf ../volume-mount/prototypes/openmpi.jsonnet vendor/kubeflow/openmpi/protot
 # Node selector helps to launch job on specific set of nodes with label.
 # For kubernetes nodes we assigned label called `node-type=highmem` to set of nodes.
 # Ex: kubectl label node gke-node-1 node-type=highmem
-NODE_SELECTOR="node-type=highmem"
+#NODE_SELECTOR="node-type=highmem"
 
 COMPONENT=${JOB_NAME}
 
@@ -94,7 +94,7 @@ EXEC="mpirun -np ${WORKERS} \
 --report-bindings \
 --oversubscribe bash /src/app/exec_multiworker.sh ${PPR} ${NUM_INTER_THREADS} ${DATA_PATH} ${OUTPUT_PATH}"
 
-ks generate openmpi ${COMPONENT} --image ${IMAGE} --secret ${SECRET} --workers ${WORKERS} --gpu ${GPU} --exec "${EXEC}" --nodeSelector "${NODE_SELECTOR}"
+ks generate openmpi ${COMPONENT} --image ${IMAGE} --secret ${SECRET} --workers ${WORKERS} --gpu ${GPU} --exec "${EXEC}"
 } &> /dev/null
 
 # Uncomment below params to mount data.
