@@ -1,0 +1,6 @@
+.build.json
+.push.json
+*.swp
+.push.log
+.build.log
+.DS_Store

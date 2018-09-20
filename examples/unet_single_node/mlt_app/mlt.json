@@ -1,0 +1,16 @@
+{
+  "name": "unet-horovod",
+  "template_name": "horovod",
+  "namespace": "unet",
+  "template_parameters": {
+    "num_nodes": "1",
+    "num_workers_per_node": "1",
+    "num_inter_threads": "2",
+    "sockets_per_node": "1",
+    "gpus": "0",
+    "data_path": "/home/nfsshare/unet",
+    "output_path": "/home/nfsshare/unet/single-node/checkpoints"
+  },
+  "registry": "aipg-infr-07.ra.intel.com:5000",
+  "template_git_sha": "f5ca4c85d559656d7a78549d3cde4a977db1a037"
+}
