@@ -109,8 +109,8 @@ ks generate openmpi ${COMPONENT} --image ${IMAGE} --secret ${SECRET} --workers $
 # volumeMounts - mountPath in this section will mount above volume at specified location
 if [[ -n "${DATA_PATH}" && -d "${DATA_PATH}" ]];
     then
-        ks param set ${COMPONENT} volumes '[{ "name": "vol", "hostPath": { "path":'+"${DATA_PATH}"+' }}]'
-        ks param set ${COMPONENT} volumeMounts '[{ "name": "vol", "mountPath": '+"${DATA_PATH}"+'}]'
+        ks param set ${COMPONENT} volumes '[{ "name": "vol", "hostPath": { "path": "'"${DATA_PATH}"'"}}]'
+        ks param set ${COMPONENT} volumeMounts '[{ "name": "vol", "mountPath": "'"${DATA_PATH}"'"}]'
 fi
 
 
