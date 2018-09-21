@@ -19,10 +19,12 @@ SHELL := /bin/bash
 
 .PHONY: \
 	build \
-	deploy \
+	ksync-watch \
 	main \
 	status \
-	undeploy
+	sync-create \
+	sync-delete \
+	sync-reload
 
 all: main
 
@@ -30,24 +32,20 @@ main: main.py
 	@echo "Should run linting and tests before submitting application"
 
 build:
-	@if [ "${GPUS}" == 0 ]; then \
-	    docker build --build-arg HTTP_PROXY=${HTTP_PROXY} --build-arg HTTPS_PROXY=${HTTPS_PROXY} --build-arg http_proxy=${http_proxy} --build-arg https_proxy=${https_proxy} --target=ubuntu_cpu -t ${CONTAINER_NAME} -f Dockerfile.cpu . ; \
-	else \
-	    docker build --build-arg HTTP_PROXY=${HTTP_PROXY} --build-arg HTTPS_PROXY=${HTTPS_PROXY} --build-arg http_proxy=${http_proxy} --build-arg https_proxy=${https_proxy} --target=ubuntu_gpu -t ${CONTAINER_NAME} -f Dockerfile.gpu . ; \
-	fi;
-
-deploy:
-	@GITHUB_TOKEN=${GITHUB_TOKEN} ./deploy.sh
-
-undeploy:
-	@if [ -d ${JOB_NAME} ]; then \
-		cd ${JOB_NAME} && ks delete default ; \
-		ks component rm ${JOB_NAME} ; \
-		cd - ; \
-		rm -rf ${JOB_NAME} ; \
-	else \
-		echo "Job not yet deployed" ; \
-	fi;
+	@docker build --build-arg HTTP_PROXY=${HTTP_PROXY} --build-arg HTTPS_PROXY=${HTTPS_PROXY} --build-arg http_proxy=${http_proxy} --build-arg https_proxy=${https_proxy} -t ${CONTAINER_NAME} .
 
 status:
-	@kubectl get pods --namespace ${NAMESPACE} -o wide -a -l app=${JOB_NAME}
+	@kubectl get pods --namespace ${NAMESPACE} -o wide -a -l job-name=${JOB_NAME}
+
+# targets starting with 'ksync' are not meant to be exposed by mlt directly
+ksync-watch:
+	@if ! pgrep -x "ksync" > /dev/null; then echo `ksync watch -d`; sleep 5; fi
+
+sync-create: ksync-watch
+	@ksync create --name ${SYNC_SPEC} -n ${NAMESPACE} --selector=job-name=${JOB_NAME} `pwd` /src/app
+
+sync-reload: ksync-watch
+	@ksync reload ${SYNC_SPEC}
+
+sync-delete: ksync-watch
+	@ksync delete ${SYNC_SPEC}

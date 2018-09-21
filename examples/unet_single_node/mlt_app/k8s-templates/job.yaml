@@ -1,0 +1,22 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: $app-$run
+spec:
+  template:
+    spec:
+      containers:
+      - name: $app
+        image: $image
+        volumeMounts:
+        - mountPath: /home/nfsshare/unet/2016_dataset
+          name: unet-volume
+      volumes:
+      - name: unet-volume
+        hostPath:
+          # directory location on host
+          path: /home/nfsshare/unet/2016_dataset
+          # this field is optional
+          type: Directory
+      restartPolicy: Never
+  backoffLimit: 4

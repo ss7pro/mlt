@@ -1,7 +1,6 @@
 setuptools==39.1.0
 h5py
 keras
-horovod
 cython
 SimpleITK
 pycodestyle==2.3.1
