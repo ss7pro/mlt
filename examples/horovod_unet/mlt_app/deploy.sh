@@ -98,13 +98,14 @@ EXEC="mpirun -np ${WORKERS} \
 ks generate openmpi ${COMPONENT} --image ${IMAGE} --secret ${SECRET} --workers ${WORKERS} --gpu ${GPU} --exec "${EXEC}" --nodeSelector "${NODE_SELECTOR}"
 } &> /dev/null
 
-# Uncomment below params to mount data.
 
 # If you have data on your host, if you want to mount that as volume. Please update below paths
 # volumes - path in this section will create a volume for you based on host path provided
 # volumeMounts - mountPath in this section will mount above volume at specified location
-ks param set ${COMPONENT} volumes '[{ "name": "vol", "hostPath": { "path": "/var/datasets/unet/vck-resource-8fd827a8-809a-11e8-b982-0a580a480bd4" }}]'
-ks param set ${COMPONENT} volumeMounts '[{ "name": "vol", "mountPath": "/var/datasets/unet/vck-resource-8fd827a8-809a-11e8-b982-0a580a480bd4"}]'
-
+if [ -n "${DATA_PATH}" ];
+    then
+        ks param set ${COMPONENT} volumes '[{ "name": "vol", "hostPath": { "path": "'"${DATA_PATH}"'"}}]'
+        ks param set ${COMPONENT} volumeMounts '[{ "name": "vol", "mountPath": "'"${DATA_PATH}"'"}]'
+fi
 # Deploy to your cluster.
 ks apply default
