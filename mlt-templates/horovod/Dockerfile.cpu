@@ -76,4 +76,4 @@ RUN cat /etc/ssh/ssh_config | grep -v StrictHostKeyChecking > /etc/ssh/ssh_confi
 WORKDIR /src/app
 ADD . /src/app
 
-#RUN pycodestyle -v .
+RUN pycodestyle -v .
