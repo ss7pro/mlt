@@ -98,7 +98,6 @@ EXEC="mpirun -np ${WORKERS} \
 ks generate openmpi ${COMPONENT} --image ${IMAGE} --secret ${SECRET} --workers ${WORKERS} --gpu ${GPU} --exec "${EXEC}" --nodeSelector "${NODE_SELECTOR}"
 } &> /dev/null
 
-# Uncomment below params to mount data.
 
 # If you have data on your host, if you want to mount that as volume. Please update below paths
 # volumes - path in this section will create a volume for you based on host path provided
