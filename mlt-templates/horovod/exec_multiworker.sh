@@ -7,4 +7,13 @@ export physical_cores=`lscpu | grep "Core(s) per socket" | cut -d':' -f2 | sed "
 
 export num_threads=$(( ${1} * $physical_cores )) # Total number of physical cores on this machine
 
-python main.py --num_inter_threads=${2} --num_threads=$num_threads --data_path=${3} --output_path=${4}
+python main.py \
+--num_inter_threads=${2} \
+--num_threads=$num_threads \
+--total_steps=${3} \
+--log_steps=${4} \
+--batch_size=${5} \
+--data_path=${6} \
+--output_path=${7} \
+--no_horovod=${8} \
+--learning_rate=${9}

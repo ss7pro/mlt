@@ -1,3 +1,4 @@
+
 #! /bin/bash
 # Copyright (c) 2018 Intel Corporation
 #
@@ -20,15 +21,12 @@
 
 VERSION=master
 SECRET=openmpi-secret
+
 # https://github.com/ksonnet/ksonnet/issues/298
 export USER=root
 
 # set your GITHUB_TOKEN otherwise deployment will fail with API Limit error
 export GITHUB_TOKEN=$GITHUB_TOKEN
-
-# Please update physical cores value. Below command works for linux.
-#export PHYSICAL_CORES=`lscpu | grep "Core(s) per socket" | cut -d':' -f2 | sed "s/ //g"` # Total number of physical cores per socket
-export PHYSICAL_CORES=4
 
 {
 # Generate one-time ssh keys used by Open MPI.
@@ -69,33 +67,41 @@ cp -rf ../volume-mount/prototypes/openmpi.jsonnet vendor/kubeflow/openmpi/protot
 # Node selector helps to launch job on specific set of nodes with label.
 # For kubernetes nodes we assigned label called `node-type=highmem` to set of nodes.
 # Ex: kubectl label node gke-node-1 node-type=highmem
-#NODE_SELECTOR="node-type=highmem"
-
 COMPONENT=${JOB_NAME}
-
-# data path for training data
-DATA_PATH=${DATA_PATH}
-
-# output path to store results
-OUTPUT_PATH=${OUTPUT_PATH}
-
 IMAGE=${IMAGE}
 WORKERS=$(( ${NUM_NODES} * ${NUM_WORKERS_PER_NODE} ))
-SOCKETS_PER_NODE=${SOCKETS_PER_NODE}
+GPU=${GPUS}
+NODE_SELECTOR=${NODE_SELECTOR}
+MEMORY=${MEMORY}
+
 NUM_INTER_THREADS=${NUM_INTER_THREADS}
+SOCKETS_PER_NODE=${SOCKETS_PER_NODE}
+NUM_WORKERS_PER_NODE=${NUM_WORKERS_PER_NODE}
+PHYSICAL_CORES=${PHYSICAL_CORES}
+TOTAL_STEPS=${TOTAL_STEPS}
+LOG_STEPS=${LOG_STEPS}
+BATCH_SIZE=${BATCH_SIZE}
+DATA_PATH=${DATA_PATH} # data path for training data
+OUTPUT_PATH=${OUTPUT_PATH} # output path to store results
+NO_HOROVOD=${NO_HOROVOD}
+LEARNING_RATE=${LEARNING_RATE}
 
 PPR=$(( $NUM_WORKERS_PER_NODE / $SOCKETS_PER_NODE ))
-PE=$(( $PHYSICAL_CORES / $PPR ))
 
-GPU=${GPUS}
 EXEC="mpirun -np ${WORKERS} \
 --hostfile /kubeflow/openmpi/assets/hostfile \
 --map-by socket \
--cpus-per-proc $PHYSICAL_CORES \
+-cpus-per-proc ${PHYSICAL_CORES} \
 --report-bindings \
---oversubscribe bash /src/app/exec_multiworker.sh ${PPR} ${NUM_INTER_THREADS} ${DATA_PATH} ${OUTPUT_PATH}"
+--oversubscribe bash /src/app/exec_multiworker.sh ${PPR} ${NUM_INTER_THREADS} ${TOTAL_STEPS} ${LOG_STEPS} ${BATCH_SIZE} ${DATA_PATH} ${OUTPUT_PATH} ${NO_HOROVOD} ${LEARNING_RATE}"
 
-ks generate openmpi ${COMPONENT} --image ${IMAGE} --secret ${SECRET} --workers ${WORKERS} --gpu ${GPU} --exec "${EXEC}"
+ks generate openmpi ${COMPONENT} \
+--image ${IMAGE} \
+--secret ${SECRET} \
+--workers ${WORKERS} \
+--gpu ${GPU} \
+--exec "${EXEC}" #--nodeSelector ${NODE_SELECTOR} --memory ${MEMORY} # To set memory, uncomment.
+
 } &> /dev/null
 
 # Uncomment below params to mount data.
