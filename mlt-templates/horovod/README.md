@@ -11,11 +11,7 @@ Template structure as follows:
 * [exec_multiworker.sh](exec_multiworker.sh) - Entry point in deploy.sh file which initiates the training
 * [main.py](main.py) - Model file
 * [parameters.json](parameters.json) - Extra template parameters
-* [requriements.txt](requriemments.txt) - Extra python packages
-
-
-## How to create horovod template
-`mlt init --template=horovod --registry={gcr.io/<project_id> or docker.io/<dockeruser-id>} <name_as_you_like>`
+* [requriements.txt](requriements.txt) - Extra python packages
 
 
 ## Volume support
