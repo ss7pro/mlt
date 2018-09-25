@@ -20,6 +20,7 @@
 
 VERSION=master
 SECRET=openmpi-secret
+
 # https://github.com/ksonnet/ksonnet/issues/298
 export USER=root
 
@@ -55,18 +56,50 @@ ks env set default --namespace ${NAMESPACE}
 ks registry add kubeflow github.com/kubeflow/kubeflow/tree/${VERSION}/kubeflow
 ks pkg install kubeflow/openmpi@${VERSION}
 
-# Temporary fix for volume-mount.
+# Temporary fix for volume-mount
 # Untill this is merged : https://github.com/kubeflow/kubeflow/issues/838
 cp -rf ../volume-mount/workloads.libsonnet vendor/kubeflow/openmpi/
 cp -rf ../volume-mount/prototypes/openmpi.jsonnet vendor/kubeflow/openmpi/prototypes/
 
 # Generate openmpi components.
+
+# Node selector helps to launch job on specific set of nodes with label.
+# For kubernetes nodes we assigned label called `node-type=highmem` to set of nodes.
+# Ex: kubectl label node gke-node-1 node-type=highmem
 COMPONENT=${JOB_NAME}
 IMAGE=${IMAGE}
-WORKERS=${NUM_WORKERS}
+WORKERS=$(( ${NUM_NODES} * ${NUM_WORKERS_PER_NODE} ))
 GPU=${GPUS}
-EXEC="mpiexec -n ${WORKERS} --hostfile /kubeflow/openmpi/assets/hostfile --allow-run-as-root --display-map --tag-output --timestamp-output sh -c 'python /src/app/main.py'"
-ks generate openmpi ${COMPONENT} --image ${IMAGE} --secret ${SECRET} --workers ${WORKERS} --gpu ${GPU} --exec "${EXEC}"
+NODE_SELECTOR=${NODE_SELECTOR}
+MEMORY=${MEMORY}
+
+NUM_INTER_THREADS=${NUM_INTER_THREADS}
+SOCKETS_PER_NODE=${SOCKETS_PER_NODE}
+NUM_WORKERS_PER_NODE=${NUM_WORKERS_PER_NODE}
+PHYSICAL_CORES=${PHYSICAL_CORES}
+TOTAL_STEPS=${TOTAL_STEPS}
+LOG_STEPS=${LOG_STEPS}
+BATCH_SIZE=${BATCH_SIZE}
+DATA_PATH=${DATA_PATH} # data path for training data
+OUTPUT_PATH=${OUTPUT_PATH} # output path to store results
+NO_HOROVOD=${NO_HOROVOD}
+LEARNING_RATE=${LEARNING_RATE}
+
+PPR=$(( $NUM_WORKERS_PER_NODE / $SOCKETS_PER_NODE ))
+
+EXEC="mpirun -np ${WORKERS} \
+--hostfile /kubeflow/openmpi/assets/hostfile \
+--map-by socket \
+-cpus-per-proc ${PHYSICAL_CORES} \
+--report-bindings \
+--oversubscribe bash /src/app/exec_multiworker.sh ${PPR} ${NUM_INTER_THREADS} ${TOTAL_STEPS} ${LOG_STEPS} ${BATCH_SIZE} ${DATA_PATH} ${OUTPUT_PATH} ${NO_HOROVOD} ${LEARNING_RATE}"
+
+ks generate openmpi ${COMPONENT} \
+--image ${IMAGE} \
+--secret ${SECRET} \
+--workers ${WORKERS} \
+--gpu ${GPU} \
+--exec "${EXEC}" #--nodeSelector ${NODE_SELECTOR} --memory ${MEMORY} # To set memory, uncomment.
 
 } &> /dev/null
 
@@ -75,8 +108,11 @@ ks generate openmpi ${COMPONENT} --image ${IMAGE} --secret ${SECRET} --workers $
 # If you have data on your host, if you want to mount that as volume. Please update below paths
 # volumes - path in this section will create a volume for you based on host path provided
 # volumeMounts - mountPath in this section will mount above volume at specified location
-#ks param set ${COMPONENT} volumes '[{ "name": "vol", "hostPath": { "path": "<path_on_host_data>" }}]'
-#ks param set ${COMPONENT} volumeMounts '[{ "name": "vol", "mountPath": "<mount_path_in_container"}]'
+if [ -n "${DATA_PATH}" ];
+    then
+        ks param set ${COMPONENT} volumes '[{ "name": "vol", "hostPath": { "path": "'"${DATA_PATH}"'"}}]'
+        ks param set ${COMPONENT} volumeMounts '[{ "name": "vol", "mountPath": "'"${DATA_PATH}"'"}]'
+fi
 
 # Deploy to your cluster.
 ks apply default
