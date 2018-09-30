@@ -1,6 +1,6 @@
 # Please don't add tensorflow here since it's being installed by the Docker
 setuptools==39.1.0
-tensorflow==1.10.0
+tensorflow==1.11.0
 h5py
 keras
 horovod
